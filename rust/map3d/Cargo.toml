@@ -1,6 +1,7 @@
 [package]
-name = "rustmap3d"
+name = "map3d"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+nalgebra-glm = "0.18"

@@ -1,14 +1,15 @@
 use pyo3::prelude::*;
+use map3d::geo;
 
-/// Formats the sum of two numbers as string.
+
 #[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
+pub fn ecef2lla(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    return geo::ecef2lla_ferarri(x, y, z);
 }
 
-/// A Python module implemented in Rust.
+
 #[pymodule]
-fn rustmap3d_py(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(ecef2lla, m)?)?;
     Ok(())
 }

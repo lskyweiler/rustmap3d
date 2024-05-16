@@ -26,3 +26,4 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
 WORKDIR /home/${USER}/rustmap3d
 
 COPY --chown=${USER} . .
+RUN ${VENV}/bin/python -m pip install -r python/requirements.txt

@@ -1,12 +1,16 @@
 [package]
-name = "rustmap3d_py"
+name = "rustmap3d"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "rustmap3d_py"
+name = "rustmap3d"
 crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.21.2"
+map3d = { path = "../map3d" }
+
+[features]
+extension-module = ["pyo3/extension-module"]
