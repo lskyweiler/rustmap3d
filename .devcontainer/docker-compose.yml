@@ -1,6 +1,6 @@
 services:
   rust-test:
-    image: rust-python-testbed:latest
+    image: rustmap3d:latest
     build:
       context: ../
       args: &default-args
@@ -8,11 +8,11 @@ services:
         - GID
         - USER=rust
 
-    working_dir: /home/rust/rust-python-testbed
+    working_dir: /home/rust/rustmap3d
     network_mode: host
     user: $UID:$GID
     command: /bin/sh -c "while sleep 1000; do :; done"
     volumes:
-      - ../:/home/rust/rust-python-testbed:rw
+      - ../:/home/rust/rustmap3d:rw
       - ~/.gitconfig:/etc/gitconfig
       - ~/.ssh/:/home/rust/.ssh/

@@ -1,1 +1,1 @@
-docker build -t rust-python-testbed --build-arg UID=$(id -u) .
+docker build -t rustmap3d --build-arg UID=$(id -u) .

@@ -1,8 +1,8 @@
 {
-	"name": "rust-test",
+	"name": "rustmap3d",
 	"dockerComposeFile": "docker-compose.yml",
-	"service": "rust-test",
-	"workspaceFolder": "/home/rust/rust-python-testbed",
+	"service": "rustmap3d",
+	"workspaceFolder": "/home/rust/rustmap3d",
 	"shutdownAction": "stopCompose",
 	"remoteUser": "rust",
 	"customizations": {

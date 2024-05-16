@@ -1,4 +1,4 @@
-FROM python:3.10-slim as rust-python-testbed
+FROM python:3.10-slim as rustmap3d
 
 ARG UID=1000
 ARG GID=100
@@ -23,6 +23,6 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
     ${VENV}/bin/python -m pip install maturin && \
     echo "source ${VENV}/bin/activate" >> /home/rust/.bashrc
 
-WORKDIR /home/${USER}/rust-python-testbed
+WORKDIR /home/${USER}/rustmap3d
 
 COPY --chown=${USER} . .
