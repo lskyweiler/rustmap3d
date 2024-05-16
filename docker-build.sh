@@ -1,0 +1,1 @@
+docker build -t rust-python-testbed --build-arg UID=$(id -u) .

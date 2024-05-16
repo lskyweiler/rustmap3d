@@ -1,0 +1,34 @@
+{
+	"name": "rust-test",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "rust-test",
+	"workspaceFolder": "/home/rust/rust-python-testbed",
+	"shutdownAction": "stopCompose",
+	"remoteUser": "rust",
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"[python]": {
+					"diffEditor.ignoreTrimWhitespace": false,
+					"editor.formatOnType": false,
+					"editor.wordBasedSuggestions": "currentDocument",
+					"editor.defaultFormatter": "ms-python.black-formatter"
+				}
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-python.python",
+				"ms-python.black-formatter",
+				"ms-vscode.cpptools",
+				"serayuzgur.crates",
+				"1yib.rust-bundle",
+				"rust-lang.rust-analyzer",
+				"ms-python.debugpy",
+				"dustypomerleau.rust-syntax"
+			]
+		}
+	}
+
+}

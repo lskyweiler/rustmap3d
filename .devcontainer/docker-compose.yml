@@ -1,0 +1,18 @@
+services:
+  rust-test:
+    image: rust-python-testbed:latest
+    build:
+      context: ../
+      args: &default-args
+        - UID
+        - GID
+        - USER=rust
+
+    working_dir: /home/rust/rust-python-testbed
+    network_mode: host
+    user: $UID:$GID
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    volumes:
+      - ../:/home/rust/rust-python-testbed:rw
+      - ~/.gitconfig:/etc/gitconfig
+      - ~/.ssh/:/home/rust/.ssh/
