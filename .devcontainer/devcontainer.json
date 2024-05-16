@@ -1,7 +1,7 @@
 {
 	"name": "rustmap3d",
 	"dockerComposeFile": "docker-compose.yml",
-	"service": "rustmap3d",
+	"service": "rustmap3d-dev",
 	"workspaceFolder": "/home/rust/rustmap3d",
 	"shutdownAction": "stopCompose",
 	"remoteUser": "rust",

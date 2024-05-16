@@ -2,4 +2,3 @@
 .github/
 Cargo.lock
 target/
-pyproject.toml

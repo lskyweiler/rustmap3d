@@ -1,5 +1,5 @@
 services:
-  rust-test:
+  rustmap3d-dev:
     image: rustmap3d:latest
     build:
       context: ../
