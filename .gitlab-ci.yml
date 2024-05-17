@@ -1,7 +1,7 @@
 stages:
     - build
     - test
-    # - package
+    - package
     # - test-deploy
 
 .only_run_on_default_branch_rules:
@@ -10,13 +10,16 @@ stages:
 
 variables:
     CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    PACKAGE_REG_INDEX: https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
+    MATURIN_PACKAGE_REG_USERNAME: https://gitlab-ci-token
+    MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
+    MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
 
 build-py3.10:
   stage: build
   tags: 
     - shell
   script:
+    - echo ${PACKAGE_REG_INDEX}
     - docker build -t $CONTAINER_TEST_IMAGE --build-arg UID=$(id -u) --build-arg PYTHON_VERSION=3.10 .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push $CONTAINER_TEST_IMAGE
@@ -27,23 +30,20 @@ test:
   tags:
     - docker
   script:
-    - echo ${PACKAGE_REG_INDEX}
     - cd rust/map3d
     - /home/rust/.cargo/bin/cargo test
 
-# package:
-#   stage: package
-#   image: $CI_REGISTRY_IMAGE:latest
-#   tags:
-#     - am-docker
-#   rules:
-#     - !reference [.only_run_on_default_branch_rules, rules]
-#   script:
-#     - git config --global --add safe.directory "*"
-#     - bash scripts/package-whls.sh
-#     - pip install twine
-#     # pypi cant accept the same name/version: https://forum.gitlab.com/t/pypi-repository-package-doesnt-override-packages-with-the-same-version/41020/5
-#     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python3 -m twine upload --skip-existing --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+package:
+  stage: package
+  image: $CONTAINER_TEST_IMAGE
+  tags:
+    - docker
+  # rules:
+  #   - !reference [.only_run_on_default_branch_rules, rules]
+  script:
+    - cd rust/rustmap3d
+    # pypi cant accept the same name/version: https://forum.gitlab.com/t/pypi-repository-package-doesnt-override-packages-with-the-same-version/41020/5
+    - maturin publish --username ${MATURIN_PACKAGE_REG_USERNAME} --password ${MATURIN_PACKAGE_REG_PASSWORD} --repository-url ${MATURIN_PACKAGE_REG_INDEX}
 
 # test-amsim-deploy:
 #   stage: test-deploy
