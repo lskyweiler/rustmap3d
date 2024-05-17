@@ -1,0 +1,80 @@
+stages:
+    - build
+    - test
+    - package
+    - test-deploy
+
+.only_run_on_default_branch_rules:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+variables:
+    CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    # PACKAGE_REG_INDEX: https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.sdo.psdo.leidos.com/api/v4/projects/3457/packages/pypi/simple
+
+build:
+  stage: build
+  tags: 
+    - shell
+  script:
+    - ./docker-build.sh
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker tag alphamosaic $CONTAINER_TEST_IMAGE
+    - docker push $CONTAINER_TEST_IMAGE
+
+test:
+  stage: test
+  image: $CONTAINER_TEST_IMAGE
+  tags:
+    - docker
+  script:
+    - cd rust/map3d
+    - cargo test
+
+# package:
+#   stage: package
+#   image: $CI_REGISTRY_IMAGE:latest
+#   tags:
+#     - am-docker
+#   rules:
+#     - !reference [.only_run_on_default_branch_rules, rules]
+#   script:
+#     - git config --global --add safe.directory "*"
+#     - bash scripts/package-whls.sh
+#     - pip install twine
+#     # pypi cant accept the same name/version: https://forum.gitlab.com/t/pypi-repository-package-doesnt-override-packages-with-the-same-version/41020/5
+#     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python3 -m twine upload --skip-existing --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+
+# test-amsim-deploy:
+#   stage: test-deploy
+#   image: python:3.10-slim
+#   tags:
+#     - am-docker
+#   script:
+#     - apt-get update && apt-get install ffmpeg libsm6 libxext6  -y  # python:3.10-slim image does not have gl libs out-of-the-box
+#     - pip install amSim --index-url ${PACKAGE_REG_INDEX}
+#     - python <<< "import amSim; print('amSim successfully installed');"
+#     # todo: test function
+# 
+# test-amcds-deploy:
+#   stage: test-deploy
+#   image: python:3.10-slim
+#   tags:
+#     - am-docker
+#   script:
+#     - apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+#     - pip install amCDS --index-url ${PACKAGE_REG_INDEX}
+#     - python <<< "import amCDS, amSim; print('amSim successfully installed');"
+#     # todo: test function
+# 
+# test-amgym-deploy:
+#   stage: test-deploy
+#   image: python:3.10-slim
+#   tags:
+#     - am-docker
+#   script:
+#     - apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+#     - pip install amgym --index-url ${PACKAGE_REG_INDEX}
+#     - python <<< "import amCDS, amSim, amgym, amformations; print('amgym successfully installed');"
+#     # todo: test function
+
