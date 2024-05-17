@@ -20,7 +20,6 @@ static _ECEF2LLA_EP2: f64 = _ECEF2LLA_A2 / _ECEF2LLA_B2 - 1.0;
 static _ECEF2LLA_E2EP2: f64 = _ECEF2LLA_E2 * _ECEF2LLA_EP2;
 static _ECEF2LLA_EP22: f64 = _ECEF2LLA_EP2 * _ECEF2LLA_EP2;
 static _ECEF2LLA_EP24: f64 = _ECEF2LLA_EP22 * _ECEF2LLA_EP22;
-static _ECEF2LLA_TWO_THRIDS: f64 = 2.0 / 3.0;
 
 pub fn ecef2lla_ferarri(ecef: &glm::DVec3) -> glm::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
@@ -124,6 +123,7 @@ pub fn lla2ecef(lla: &glm::DVec3) -> glm::DVec3 {
     return glm::DVec3::new(x, y, z);
 }
 
+// todo: need to test these
 fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64) -> f64 {
     let jd = 367. * year as f64 - ((7. * (year as f64 + ((month as f64 + 9.) / 12.))) / 4.)
         + (275. * month as f64 / 9.)
@@ -1192,5 +1192,18 @@ mod geotests {
         let actual_rae = rae2enu(&glm::DVec3::new(123450., 15., 370.));
         let expected_rae = glm::DVec3::new(31465.800427043872, 117431.96589455023, 21436.8675329825);
         assert_vecs_close(&actual_rae, &expected_rae, 1e-6);
+    }
+
+    #[rstest]
+    fn test_enu2heading_45(){
+        let actual_heading = enu2heading(&glm::DVec3::new(1000., 1000., 0.));
+        let expected_heading = 45.;
+        assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
+    }
+    #[rstest]
+    fn test_enu2heading_135(){
+        let actual_heading = enu2heading(&glm::DVec3::new(1000., -1000., 0.));
+        let expected_heading = 135.;
+        assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
     }
 }
