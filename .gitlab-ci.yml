@@ -42,7 +42,17 @@ package:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
     - cd rust/rustmap3d_py
-    - /home/rust/.venv/bin/python -m maturin build --release -i 3.8 3.9 3.10 3.11 3.12
+    - rustup target add x86_64-pc-windows-gnu
+    # build many linux
+    - /home/rust/.venv/bin/python -m maturin build 
+        --release 
+        -i 3.8 3.9 3.10 3.11 3.12
+    # build windows
+    - /home/rust/.venv/bin/python -m maturin build 
+        --release 
+        -i 3.8 3.9 3.10 3.11 3.12
+        --target x86_64-pc-windows-gnu
+    # upload wheels to gitlab registry
     - /home/rust/.venv/bin/python -m maturin upload 
         --skip-existing 
         --username ${MATURIN_PACKAGE_REG_USERNAME} 

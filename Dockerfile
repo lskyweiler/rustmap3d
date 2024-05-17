@@ -26,6 +26,7 @@ RUN apt-get update -y && \
         git \
         ca-certificates \
         libffi-dev \
+        mingw-w64 \
     && apt-get clean autoclean \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
