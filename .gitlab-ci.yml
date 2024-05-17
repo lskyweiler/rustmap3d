@@ -13,6 +13,7 @@ variables:
   MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
   MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
   MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
+  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@${MATURIN_PACKAGE_REG_INDEX}
 
 build-py3.10:
   stage: build
@@ -49,5 +50,5 @@ test-deployed-py3.10:
   tags:
     - docker
   script:
-    - pip install rustmap3d --index-url ${PACKAGE_REG_INDEX}
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
     - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
