@@ -26,7 +26,9 @@
 				"1yib.rust-bundle",
 				"rust-lang.rust-analyzer",
 				"ms-python.debugpy",
-				"dustypomerleau.rust-syntax"
+				"tamasfe.even-better-toml",				
+				"dustypomerleau.rust-syntax",
+				"redhat.vscode-yaml"
 			]
 		}
 	}
