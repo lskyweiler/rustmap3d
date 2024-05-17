@@ -42,7 +42,7 @@ package:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
     - cd rust/rustmap3d_py
-    - /home/rust/.venv/bin/python -m maturin build --release
+    - /home/rust/.venv/bin/python -m maturin build --release -i 3.8 3.9 3.10 3.11 3.12
     - /home/rust/.venv/bin/python -m maturin upload 
         --skip-existing 
         --username ${MATURIN_PACKAGE_REG_USERNAME} 
@@ -50,9 +50,41 @@ package:
         --repository-url ${MATURIN_PACKAGE_REG_INDEX}
         target/wheels/*
 
+test-deployed-py3.8:
+  stage: test-deploy
+  image: python:3.8-slim
+  tags:
+    - docker
+  script:
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
+    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
+test-deployed-py3.9:
+  stage: test-deploy
+  image: python:3.9-slim
+  tags:
+    - docker
+  script:
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
+    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
 test-deployed-py3.10:
   stage: test-deploy
   image: python:3.10-slim
+  tags:
+    - docker
+  script:
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
+    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
+test-deployed-py3.11:
+  stage: test-deploy
+  image: python:3.11-slim
+  tags:
+    - docker
+  script:
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
+    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
+test-deployed-py3.12:
+  stage: test-deploy
+  image: python:3.12-slim
   tags:
     - docker
   script:
