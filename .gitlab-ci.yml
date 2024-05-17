@@ -1,8 +1,8 @@
 stages:
     - build
     - test
-    - package
-    - test-deploy
+    # - package
+    # - test-deploy
 
 .only_run_on_default_branch_rules:
   rules:
@@ -10,16 +10,15 @@ stages:
 
 variables:
     CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    # PACKAGE_REG_INDEX: https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.sdo.psdo.leidos.com/api/v4/projects/3457/packages/pypi/simple
+    PACKAGE_REG_INDEX: https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
 
-build:
+build-py3.10:
   stage: build
   tags: 
     - shell
   script:
-    - ./docker-build.sh
+    - docker build -t $CONTAINER_TEST_IMAGE --build-arg UID=$(id -u) --build-arg PYTHON_VERSION=3.10 .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker tag alphamosaic $CONTAINER_TEST_IMAGE
     - docker push $CONTAINER_TEST_IMAGE
 
 test:
@@ -28,8 +27,9 @@ test:
   tags:
     - docker
   script:
+    - echo ${PACKAGE_REG_INDEX}
     - cd rust/map3d
-    - cargo test
+    - /home/rust/.cargo/bin/cargo test
 
 # package:
 #   stage: package
