@@ -31,7 +31,7 @@ test:
     - docker
   script:
     - cd rust/map3d
-    - /home/rust/.cargo/bin/cargo test # not sure why its' not finding cargo bin
+    - /home/rust/.cargo/bin/cargo test --release # not sure why its' not finding cargo bin
 
 package:
   stage: package
@@ -42,7 +42,7 @@ package:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
     - cd rust/rustmap3d_py
-    - /home/rust/.venv/bin/python -m maturin publish --username ${MATURIN_PACKAGE_REG_USERNAME} --password ${MATURIN_PACKAGE_REG_PASSWORD} --repository-url ${MATURIN_PACKAGE_REG_INDEX}
+    - /home/rust/.venv/bin/python -m maturin publish --skip-existing --username ${MATURIN_PACKAGE_REG_USERNAME} --password ${MATURIN_PACKAGE_REG_PASSWORD} --repository-url ${MATURIN_PACKAGE_REG_INDEX}
 
 test-deployed-py3.10:
   stage: test-deploy
