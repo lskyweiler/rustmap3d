@@ -1198,15 +1198,16 @@ mod geotests {
     }
 
     #[rstest]
-    fn test_enu2heading_45() {
-        let actual_heading = enu2heading(&glm::DVec3::new(1000., 1000., 0.));
-        let expected_heading = 45.;
-        assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
-    }
-    #[rstest]
-    fn test_enu2heading_135() {
-        let actual_heading = enu2heading(&glm::DVec3::new(1000., -1000., 0.));
-        let expected_heading = 135.;
-        assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
+    fn test_enu2heading() {
+        {
+            let actual_heading = enu2heading(&glm::DVec3::new(1000., 1000., 0.));
+            let expected_heading = 45.;
+            assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
+        }
+        {
+            let actual_heading = enu2heading(&glm::DVec3::new(1000., -1000., 0.));
+            let expected_heading = 135.;
+            assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
+        }
     }
 }
