@@ -1,5 +1,4 @@
-ARG PYTHON_VERSION=3.10
-FROM python:${PYTHON_VERSION}-slim as rustmap3d
+FROM python:3.10-slim as rustmap3d
 
 ARG UID=1000
 ARG GID=100

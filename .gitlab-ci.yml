@@ -13,16 +13,16 @@ variables:
   MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
   MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
   MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
-  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@${MATURIN_PACKAGE_REG_INDEX}
+  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@gitlab.sdo.psdo.leidos.com/api/v4/projects/${CI_PROJECT_ID}/packages/pypi/simple
 
 build-py3.10:
   stage: build
   tags:
     - shell
   script:
-    - docker build -t $CONTAINER_TEST_IMAGE --build-arg UID=$(id -u) --build-arg PYTHON_VERSION=3.10 .
+    - docker build -t ${CONTAINER_TEST_IMAGE} --build-arg UID=$(id -u) --build-arg PYTHON_VERSION=3.10 .
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CONTAINER_TEST_IMAGE
+    - docker push ${CONTAINER_TEST_IMAGE}
 
 test:
   stage: test
