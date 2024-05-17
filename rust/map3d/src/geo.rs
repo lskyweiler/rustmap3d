@@ -1,5 +1,6 @@
 extern crate nalgebra_glm as glm;
 use almost;
+use chrono::{Datelike, NaiveDateTime, Timelike};
 use rand;
 
 static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0;
@@ -124,7 +125,7 @@ pub fn lla2ecef(lla: &glm::DVec3) -> glm::DVec3 {
 }
 
 // todo: need to test these
-fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64) -> f64 {
+pub fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64) -> f64 {
     let jd = 367. * year as f64 - ((7. * (year as f64 + ((month as f64 + 9.) / 12.))) / 4.)
         + (275. * month as f64 / 9.)
         + day as f64
@@ -133,6 +134,18 @@ fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64) ->
         + min as f64 / 1440.
         + sec as f64 / 86400.;
     return jd;
+}
+pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) -> f64 {
+    let datetime_fmt = fmt.unwrap_or("%Y-%m-%dT%H:%M:%S".to_string());
+    let utc = NaiveDateTime::parse_from_str(&utc_datetime_str, datetime_fmt.as_str()).unwrap();
+    return juliandate(
+        utc.year() as i64,
+        utc.month() as i64,
+        utc.day() as i64,
+        utc.hour() as i64,
+        utc.minute() as i64,
+        utc.second() as i64,
+    );
 }
 pub fn linear_velocity_from_earth_rotation(earth_pos: &glm::DVec3) -> glm::DVec3 {
     let rot_axis = glm::DVec3::new(0., 0., EARTH_ANGULAR_VEL_RADPS);
@@ -150,34 +163,26 @@ pub fn eci2ecef(eci: &glm::DVec3, time_since_eci_lock: f64) -> glm::DVec3 {
 }
 pub fn ecef2eci_j2000(
     ecef: &glm::DVec3,
-    year: i64,
-    month: i64,
-    day: i64,
-    hour: i64,
-    min: i64,
-    sec: i64,
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
 ) -> glm::DVec3 {
-    let jd = juliandate(year, month, day, hour, min, sec);
+    let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
     let tu = jd - 2451545.0;
     let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
     return glm::rotate_z_vec3(ecef, earth_rot_angle);
 }
 pub fn eci2ecef_j2000(
     eci: &glm::DVec3,
-    year: i64,
-    month: i64,
-    day: i64,
-    hour: i64,
-    min: i64,
-    sec: i64,
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
 ) -> glm::DVec3 {
-    let jd = juliandate(year, month, day, hour, min, sec);
+    let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
     let tu = jd - 2451545.0;
     let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
     return glm::rotate_z_vec3(eci, -earth_rot_angle);
 }
 
-fn enu2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
+pub fn enu2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
     let lat_rad: f64 = f64::to_radians(lat);
     let lon_rad: f64 = f64::to_radians(lon);
 
@@ -194,11 +199,11 @@ fn enu2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
     );
     return dcm;
 }
-fn ecef2enu_quat(lat: f64, lon: f64) -> glm::DQuat {
+pub fn ecef2enu_quat(lat: f64, lon: f64) -> glm::DQuat {
     let enu2ecef_rot = enu2ecef_quat(lat, lon);
     return enu2ecef_rot.conjugate();
 }
-fn ned2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
+pub fn ned2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
     let enu2ecef_q = enu2ecef_quat(lat, lon);
     let enu2ecef_mat = glm::quat_to_mat3(&enu2ecef_q);
 
@@ -217,55 +222,51 @@ fn ned2ecef_quat(lat: f64, lon: f64) -> glm::DQuat {
     );
     return glm::to_quat(&ned_mat);
 }
-fn ecef2ned_quat(lat: f64, lon: f64) -> glm::DQuat {
+pub fn ecef2ned_quat(lat: f64, lon: f64) -> glm::DQuat {
     let ned2ecef_rot = ned2ecef_quat(lat, lon);
     return ned2ecef_rot.conjugate();
 }
 
-fn enu2ecef_dcm(lat: f64, lon: f64) -> glm::DMat3 {
+pub fn enu2ecef_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     let q = enu2ecef_quat(lat, lon);
     return glm::quat_to_mat3(&q);
 }
-fn ecef2enu_dcm(lat: f64, lon: f64) -> glm::DMat3 {
+pub fn ecef2enu_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     let q = ecef2enu_quat(lat, lon);
     return glm::quat_to_mat3(&q);
 }
-fn ned2ecef_dcm(lat: f64, lon: f64) -> glm::DMat3 {
+pub fn ned2ecef_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     let q = ned2ecef_quat(lat, lon);
     return glm::quat_to_mat3(&q);
 }
-fn ecef2ned_dcm(lat: f64, lon: f64) -> glm::DMat3 {
+pub fn ecef2ned_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     let q = ecef2ned_quat(lat, lon);
     return glm::quat_to_mat3(&q);
 }
 
-fn ecef2enu(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn ecef2enu(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let rot = ecef2enu_quat(ref_lat_lon.x, ref_lat_lon.y);
     return glm::quat_rotate_vec3(&rot, ecef);
 }
-fn enu2ecef(enu: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn enu2ecef(enu: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let rot = enu2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
     return glm::quat_rotate_vec3(&rot, enu);
 }
-fn ecef2ned(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn ecef2ned(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let rot = ecef2ned_quat(ref_lat_lon.x, ref_lat_lon.y);
     return glm::quat_rotate_vec3(&rot, ecef);
 }
-fn ned2ecef(ned: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn ned2ecef(ned: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let rot = ned2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
     return glm::quat_rotate_vec3(&rot, ned);
 }
-fn enu2rae(enu: &glm::DVec3) -> glm::DVec3 {
+pub fn enu2rae(enu: &glm::DVec3) -> glm::DVec3 {
     let az = f64::atan2(enu.x, enu.y);
     let el = f64::atan2(enu.z, glm::length(&enu.xy()));
-    let rae = glm::DVec3::new(
-        glm::length(enu), 
-        f64::to_degrees(az), 
-        f64::to_degrees(el)
-    );
+    let rae = glm::DVec3::new(glm::length(enu), f64::to_degrees(az), f64::to_degrees(el));
     return rae;
 }
-fn rae2enu(rae: &glm::DVec3) -> glm::DVec3 {
+pub fn rae2enu(rae: &glm::DVec3) -> glm::DVec3 {
     let r = rae.x;
     let az = f64::to_radians(rae.y);
     let el = f64::to_radians(rae.z);
@@ -275,37 +276,37 @@ fn rae2enu(rae: &glm::DVec3) -> glm::DVec3 {
     let up = r * f64::sin(el);
     return glm::DVec3::new(east, north, up);
 }
-fn ecef2rae(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn ecef2rae(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let enu = ecef2enu(ecef, ref_lat_lon);
     return enu2rae(&enu);
 }
-fn rae2ecef(aer: &glm::DVec3, ref_lat_lon_alt: &glm::DVec3) -> glm::DVec3 {
+pub fn rae2ecef(aer: &glm::DVec3, ref_lat_lon_alt: &glm::DVec3) -> glm::DVec3 {
     let enu = rae2enu(aer);
     return enu2ecef(&enu, &ref_lat_lon_alt.xy()) + lla2ecef(ref_lat_lon_alt);
 }
 
-fn enu2heading(enu: &glm::DVec3) -> f64 {
+pub fn enu2heading(enu: &glm::DVec3) -> f64 {
     let angle_off_east = f64::atan2(enu.y, enu.x);
     let mut heading = -angle_off_east + std::f64::consts::FRAC_PI_2;
     heading = f64::to_degrees(heading);
     return heading;
 }
-fn ecef_dcm2heading(ecef_dcm: &glm::DMat3, ref_lat_lon: &glm::DVec2) -> f64 {
+pub fn ecef_dcm2heading(ecef_dcm: &glm::DMat3, ref_lat_lon: &glm::DVec2) -> f64 {
     let ecef2enu = ecef2enu_dcm(ref_lat_lon.x, ref_lat_lon.y);
     let enu_dcm = ecef2enu * ecef_dcm;
     let forward = glm::column(&enu_dcm, 0);
     return enu2heading(&forward);
 }
-fn ecef_quat2heading(ecef_quat: &glm::DQuat, ref_lat_lon: &glm::DVec2) -> f64 {
+pub fn ecef_quat2heading(ecef_quat: &glm::DQuat, ref_lat_lon: &glm::DVec2) -> f64 {
     let ecef_dcm = glm::quat_to_mat3(ecef_quat);
     return ecef_dcm2heading(&ecef_dcm, ref_lat_lon);
 }
-fn ecef2heading(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> f64 {
+pub fn ecef2heading(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> f64 {
     let enu = ecef2enu(ecef, ref_lat_lon);
     return enu2heading(&enu);
 }
 
-fn rand_ecef(
+pub fn rand_ecef(
     x_min: Option<f64>,
     x_max: Option<f64>,
     y_min: Option<f64>,
@@ -319,7 +320,7 @@ fn rand_ecef(
         glm::lerp_scalar(z_min.unwrap_or(-1e7), z_max.unwrap_or(1e7), rand::random()),
     );
 }
-fn rand_lla(
+pub fn rand_lla(
     lat_min: Option<f64>,
     lat_max: Option<f64>,
     lon_min: Option<f64>,
@@ -351,7 +352,7 @@ mod geotests {
     use super::*;
     use rstest::*;
 
-    fn assert_vecs_close(a: &glm::DVec3, b: &glm::DVec3, tol: f64){
+    fn assert_vecs_close(a: &glm::DVec3, b: &glm::DVec3, tol: f64) {
         assert!(almost::equal_with(a.x, b.x, tol));
         assert!(almost::equal_with(a.y, b.y, tol));
         assert!(almost::equal_with(a.z, b.z, tol));
@@ -1182,26 +1183,28 @@ mod geotests {
     }
 
     #[rstest]
-    fn test_enu2rae(){
+    fn test_enu2rae() {
         let actual_rae = enu2rae(&glm::DVec3::new(1000., 100., 10000.));
-        let expected_rae = glm::DVec3::new(10050.373127401788, 84.28940686250037, 84.26111457290625);
+        let expected_rae =
+            glm::DVec3::new(10050.373127401788, 84.28940686250037, 84.26111457290625);
         assert_vecs_close(&actual_rae, &expected_rae, 1e-6);
     }
     #[rstest]
-    fn test_rae2enu(){
+    fn test_rae2enu() {
         let actual_rae = rae2enu(&glm::DVec3::new(123450., 15., 370.));
-        let expected_rae = glm::DVec3::new(31465.800427043872, 117431.96589455023, 21436.8675329825);
+        let expected_rae =
+            glm::DVec3::new(31465.800427043872, 117431.96589455023, 21436.8675329825);
         assert_vecs_close(&actual_rae, &expected_rae, 1e-6);
     }
 
     #[rstest]
-    fn test_enu2heading_45(){
+    fn test_enu2heading_45() {
         let actual_heading = enu2heading(&glm::DVec3::new(1000., 1000., 0.));
         let expected_heading = 45.;
         assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
     }
     #[rstest]
-    fn test_enu2heading_135(){
+    fn test_enu2heading_135() {
         let actual_heading = enu2heading(&glm::DVec3::new(1000., -1000., 0.));
         let expected_heading = 135.;
         assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
