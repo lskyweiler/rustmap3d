@@ -1,22 +1,22 @@
 stages:
-    - build
-    - test
-    - package
-    - test-deploy
+  - build
+  - test
+  - package
+  - test-deploy
 
 .only_run_on_default_branch_rules:
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
 
 variables:
-    CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    MATURIN_PACKAGE_REG_USERNAME: https://gitlab-ci-token
-    MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
-    MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
+  MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
+  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
 
 build-py3.10:
   stage: build
-  tags: 
+  tags:
     - shell
   script:
     - docker build -t $CONTAINER_TEST_IMAGE --build-arg UID=$(id -u) --build-arg PYTHON_VERSION=3.10 .
@@ -30,7 +30,7 @@ test:
     - docker
   script:
     - cd rust/map3d
-    - /home/rust/.cargo/bin/cargo test  # not sure why its' not finding cargo bin
+    - /home/rust/.cargo/bin/cargo test # not sure why its' not finding cargo bin
 
 package:
   stage: package
@@ -41,7 +41,6 @@ package:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
     - cd rust/rustmap3d_py
-    # pypi cant accept the same name/version: https://forum.gitlab.com/t/pypi-repository-package-doesnt-override-packages-with-the-same-version/41020/5
     - /home/rust/.venv/bin/python -m maturin publish --username ${MATURIN_PACKAGE_REG_USERNAME} --password ${MATURIN_PACKAGE_REG_PASSWORD} --repository-url ${MATURIN_PACKAGE_REG_INDEX}
 
 test-deployed-py3.10:
