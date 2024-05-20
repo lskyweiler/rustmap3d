@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - bench
   - package
   - test-deploy
 
@@ -31,7 +32,22 @@ test:
     - docker
   script:
     - cd rust/map3d
-    - /home/rust/.cargo/bin/cargo test --release # not sure why its' not finding cargo bin
+    - /home/rust/.cargo/bin/cargo test --release
+
+bench:
+  stage: bench
+  image: $CONTAINER_TEST_IMAGE
+  tags:
+    - docker
+  script:
+    - cd rust/map3d
+    - /home/rust/.cargo/bin/cargo bench
+  artifacts:
+    when: on_success
+    access: all
+    expire_in: "30 days"
+    paths:
+      - rust/map3d/target/criterion
 
 package-gitlab:
   stage: package
