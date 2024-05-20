@@ -44,7 +44,6 @@ bench:
     - /home/rust/.cargo/bin/cargo bench
   artifacts:
     when: on_success
-    access: all
     expire_in: "30 days"
     paths:
       - rust/map3d/target/criterion
