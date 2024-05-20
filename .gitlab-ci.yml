@@ -41,7 +41,7 @@ package-gitlab:
   # rules:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
-    - script/build-wheels.sh
+    - scripts/build-wheels.sh
     # upload wheels to gitlab registry
     - /home/rust/.venv/bin/python -m maturin upload 
         --skip-existing 
