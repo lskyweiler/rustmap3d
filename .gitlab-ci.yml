@@ -46,7 +46,7 @@ bench:
     when: on_success
     expire_in: "30 days"
     paths:
-      - rust/map3d/target/criterion
+      - rust/map3d/target/criterion/*
 
 package-gitlab:
   stage: package
