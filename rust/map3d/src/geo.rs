@@ -3,59 +3,62 @@ use almost;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use rand;
 
-static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0;
-static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
-static EARTH_SEMI_MINOR_AXIS: f64 = 6356752.314245;
-static EARTH_SEMI_MINOR_AXIS_2: f64 = EARTH_SEMI_MINOR_AXIS * EARTH_SEMI_MINOR_AXIS;
-static EARTH_FLATTENING_FACTOR: f64 = 0.003352810664740;
-static EARTH_ANGULAR_VEL_RADPS: f64 = 7.292115900000000e-05;
-static EARTH_E: f64 = 521854.0084255785;
-static EARTH_E_2: f64 = EARTH_E * EARTH_E;
+mod geo_const {
+    pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0;
+    pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
+    pub static EARTH_SEMI_MINOR_AXIS: f64 = 6356752.314245;
+    pub static EARTH_SEMI_MINOR_AXIS_2: f64 = EARTH_SEMI_MINOR_AXIS * EARTH_SEMI_MINOR_AXIS;
+    pub static EARTH_FLATTENING_FACTOR: f64 = 0.003352810664740;
+    pub static EARTH_ANGULAR_VEL_RADPS: f64 = 7.292115900000000e-05;
+    pub static EARTH_E: f64 = 521854.0084255785;
+    pub static EARTH_E_2: f64 = EARTH_E * EARTH_E;
 
-static _ECEF2LLA_A: f64 = EARTH_SEMI_MAJOR_AXIS;
-static _ECEF2LLA_B: f64 = _ECEF2LLA_A * (1.0 - EARTH_FLATTENING_FACTOR);
-static _ECEF2LLA_A2: f64 = _ECEF2LLA_A * _ECEF2LLA_A;
-static _ECEF2LLA_B2: f64 = _ECEF2LLA_B * _ECEF2LLA_B;
-static _ECEF2LLA_E2: f64 = 1.0 - _ECEF2LLA_B2 / _ECEF2LLA_A2;
-static _ECEF2LLA_EP2: f64 = _ECEF2LLA_A2 / _ECEF2LLA_B2 - 1.0;
-static _ECEF2LLA_E2EP2: f64 = _ECEF2LLA_E2 * _ECEF2LLA_EP2;
-static _ECEF2LLA_EP22: f64 = _ECEF2LLA_EP2 * _ECEF2LLA_EP2;
-static _ECEF2LLA_EP24: f64 = _ECEF2LLA_EP22 * _ECEF2LLA_EP22;
+    pub static ECEF2LLA_A: f64 = EARTH_SEMI_MAJOR_AXIS;
+    pub static ECEF2LLA_B: f64 = ECEF2LLA_A * (1.0 - EARTH_FLATTENING_FACTOR);
+    pub static ECEF2LLA_A2: f64 = ECEF2LLA_A * ECEF2LLA_A;
+    pub static ECEF2LLA_B2: f64 = ECEF2LLA_B * ECEF2LLA_B;
+    pub static ECEF2LLA_E2: f64 = 1.0 - ECEF2LLA_B2 / ECEF2LLA_A2;
+    pub static ECEF2LLA_EP2: f64 = ECEF2LLA_A2 / ECEF2LLA_B2 - 1.0;
+    pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
+}
 
 pub fn ecef2lla_ferarri(ecef: &glm::DVec3) -> glm::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
     let range_: f64 = f64::sqrt(range_squared);
-    let f_term: f64 = 54. * f64::powf(EARTH_SEMI_MINOR_AXIS, 2.) * z_ecef_squared;
-    let g_term: f64 = range_squared + (1. - _ECEF2LLA_E2) * z_ecef_squared
-        - _ECEF2LLA_E2
-            * (f64::powf(EARTH_SEMI_MAJOR_AXIS, 2.) - f64::powf(EARTH_SEMI_MINOR_AXIS, 2.));
+    let f_term: f64 = 54. * f64::powf(geo_const::EARTH_SEMI_MINOR_AXIS, 2.) * z_ecef_squared;
+    let g_term: f64 = range_squared + (1. - geo_const::ECEF2LLA_E2) * z_ecef_squared
+        - geo_const::ECEF2LLA_E2
+            * (f64::powf(geo_const::EARTH_SEMI_MAJOR_AXIS, 2.)
+                - f64::powf(geo_const::EARTH_SEMI_MINOR_AXIS, 2.));
 
-    let c_term: f64 = _ECEF2LLA_EP22 * f_term * range_squared / f64::powf(g_term, 3.);
+    let c_term: f64 = geo_const::ECEF2LLA_EP22 * f_term * range_squared / f64::powf(g_term, 3.);
     let c_term_sqrt_mod: f64 = f64::sqrt(f64::powf(c_term, 2.) + 2. * c_term);
     let s_term: f64 = f64::powf(1. + c_term + c_term_sqrt_mod, 1. / 3.);
     let p_term: f64 =
         f_term / (3. * f64::powf(s_term + 1. / s_term + 1., 2.) * f64::powf(g_term, 2.));
-    let q_term: f64 = f64::sqrt(1. + 2. * _ECEF2LLA_EP22 * p_term);
+    let q_term: f64 = f64::sqrt(1. + 2. * geo_const::ECEF2LLA_EP22 * p_term);
     let sqrt_mod2: f64 = f64::sqrt(
-        0.5 * f64::powf(EARTH_SEMI_MAJOR_AXIS, 2.) * (1. + 1. / q_term)
-            - p_term * (1. - _ECEF2LLA_E2) * z_ecef_squared / (q_term * (1. + q_term))
+        0.5 * f64::powf(geo_const::EARTH_SEMI_MAJOR_AXIS, 2.) * (1. + 1. / q_term)
+            - p_term * (1. - geo_const::ECEF2LLA_E2) * z_ecef_squared / (q_term * (1. + q_term))
             - 0.5 * p_term * range_squared,
     );
-    let r0_term: f64 = -(p_term * _ECEF2LLA_E2 * range_) / (1. + q_term) + sqrt_mod2;
-    let uv_subterm: f64 = f64::powf(range_ - _ECEF2LLA_E2 * r0_term, 2.);
+    let r0_term: f64 = -(p_term * geo_const::ECEF2LLA_E2 * range_) / (1. + q_term) + sqrt_mod2;
+    let uv_subterm: f64 = f64::powf(range_ - geo_const::ECEF2LLA_E2 * r0_term, 2.);
     let u_term: f64 = f64::sqrt(uv_subterm + z_ecef_squared);
-    let v_term: f64 = f64::sqrt(uv_subterm + (1. - _ECEF2LLA_E2) * z_ecef_squared);
-    let z0_term: f64 =
-        f64::powf(EARTH_SEMI_MINOR_AXIS, 2.) * ecef.z / (EARTH_SEMI_MAJOR_AXIS * v_term);
+    let v_term: f64 = f64::sqrt(uv_subterm + (1. - geo_const::ECEF2LLA_E2) * z_ecef_squared);
+    let z0_term: f64 = f64::powf(geo_const::EARTH_SEMI_MINOR_AXIS, 2.) * ecef.z
+        / (geo_const::EARTH_SEMI_MAJOR_AXIS * v_term);
     let lat_rad: f64 = if range_ != 0. {
-        f64::atan2(ecef.z + _ECEF2LLA_EP2 * z0_term, range_)
+        f64::atan2(ecef.z + geo_const::ECEF2LLA_EP2 * z0_term, range_)
     } else {
         0.0
     };
     let lon_rad: f64 = f64::atan2(ecef.y, ecef.x);
-    let alt: f64 =
-        u_term * (1. - f64::powf(EARTH_SEMI_MINOR_AXIS, 2.) / (EARTH_SEMI_MAJOR_AXIS * v_term));
+    let alt: f64 = u_term
+        * (1.
+            - f64::powf(geo_const::EARTH_SEMI_MINOR_AXIS, 2.)
+                / (geo_const::EARTH_SEMI_MAJOR_AXIS * v_term));
 
     let lat: f64 = f64::to_degrees(lat_rad);
     let lon: f64 = f64::to_degrees(lon_rad);
@@ -65,10 +68,11 @@ pub fn ecef2lla_map3d(ecef: &glm::DVec3) -> glm::DVec3 {
     let r = f64::sqrt(ecef.x * ecef.x + ecef.y * ecef.y + ecef.z * ecef.z);
     let r2 = r * r;
     let u = f64::sqrt(
-        0.5 * (r2 - EARTH_E_2) + 0.5 * f64::hypot(r2 - EARTH_E_2, 2.0 * EARTH_E * ecef.z),
+        0.5 * (r2 - geo_const::EARTH_E_2)
+            + 0.5 * f64::hypot(r2 - geo_const::EARTH_E_2, 2.0 * geo_const::EARTH_E * ecef.z),
     );
     let hxy = f64::hypot(ecef.x, ecef.y);
-    let hue = f64::hypot(u, EARTH_E);
+    let hue = f64::hypot(u, geo_const::EARTH_E);
 
     // rust signum returns 1 for 0.0, but we need 0.0 here for sign
     let sign = if ecef.z != 0.0 {
@@ -80,21 +84,25 @@ pub fn ecef2lla_map3d(ecef: &glm::DVec3) -> glm::DVec3 {
 
     if !almost::zero(u) && !almost::zero(hxy) {
         beta = f64::atan(hue / u * ecef.z / hxy);
-        beta += ((EARTH_SEMI_MINOR_AXIS * u - EARTH_SEMI_MAJOR_AXIS * hue + EARTH_E_2)
+        beta += ((geo_const::EARTH_SEMI_MINOR_AXIS * u - geo_const::EARTH_SEMI_MAJOR_AXIS * hue
+            + geo_const::EARTH_E_2)
             * f64::sin(beta))
-            / (EARTH_SEMI_MAJOR_AXIS * hue * 1. / f64::cos(beta) - EARTH_E_2 * f64::cos(beta))
+            / (geo_const::EARTH_SEMI_MAJOR_AXIS * hue * 1. / f64::cos(beta)
+                - geo_const::EARTH_E_2 * f64::cos(beta))
     }
 
-    let lat = f64::atan(EARTH_SEMI_MAJOR_AXIS / EARTH_SEMI_MINOR_AXIS * f64::tan(beta));
+    let lat = f64::atan(
+        geo_const::EARTH_SEMI_MAJOR_AXIS / geo_const::EARTH_SEMI_MINOR_AXIS * f64::tan(beta),
+    );
     let lon = f64::atan2(ecef.y, ecef.x);
 
     let mut alt = f64::hypot(
-        ecef.z - EARTH_SEMI_MINOR_AXIS * f64::sin(beta),
-        hxy - EARTH_SEMI_MAJOR_AXIS * f64::cos(beta),
+        ecef.z - geo_const::EARTH_SEMI_MINOR_AXIS * f64::sin(beta),
+        hxy - geo_const::EARTH_SEMI_MAJOR_AXIS * f64::cos(beta),
     );
-    let inside = ecef.x * ecef.x / EARTH_SEMI_MAJOR_AXIS_2
-        + ecef.y * ecef.y / EARTH_SEMI_MAJOR_AXIS_2
-        + ecef.z * ecef.z / EARTH_SEMI_MINOR_AXIS_2
+    let inside = ecef.x * ecef.x / geo_const::EARTH_SEMI_MAJOR_AXIS_2
+        + ecef.y * ecef.y / geo_const::EARTH_SEMI_MAJOR_AXIS_2
+        + ecef.z * ecef.z / geo_const::EARTH_SEMI_MINOR_AXIS_2
         < 1.;
     alt *= if inside { -1. } else { 1.0 };
     return glm::DVec3::new(f64::to_degrees(lat), f64::to_degrees(lon), alt);
@@ -112,14 +120,19 @@ pub fn lla2ecef(lla: &glm::DVec3) -> glm::DVec3 {
     let lon = f64::to_radians(lla.y);
     let alt = lla.z;
 
-    let alt_correction = EARTH_SEMI_MAJOR_AXIS_2
+    let alt_correction = geo_const::EARTH_SEMI_MAJOR_AXIS_2
         / f64::hypot(
-            EARTH_SEMI_MAJOR_AXIS * f64::cos(lat),
-            EARTH_SEMI_MINOR_AXIS * f64::sin(lat),
+            geo_const::EARTH_SEMI_MAJOR_AXIS * f64::cos(lat),
+            geo_const::EARTH_SEMI_MINOR_AXIS * f64::sin(lat),
         );
     let x = (alt_correction + lla.z) * f64::cos(lat) * f64::cos(lon);
     let y = (alt_correction + lla.z) * f64::cos(lat) * f64::sin(lon);
-    let z = (alt_correction * f64::powf(EARTH_SEMI_MINOR_AXIS / EARTH_SEMI_MAJOR_AXIS, 2.0) + alt)
+    let z = (alt_correction
+        * f64::powf(
+            geo_const::EARTH_SEMI_MINOR_AXIS / geo_const::EARTH_SEMI_MAJOR_AXIS,
+            2.0,
+        )
+        + alt)
         * f64::sin(lat);
     return glm::DVec3::new(x, y, z);
 }
@@ -148,16 +161,16 @@ pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) ->
     );
 }
 pub fn linear_velocity_from_earth_rotation(earth_pos: &glm::DVec3) -> glm::DVec3 {
-    let rot_axis = glm::DVec3::new(0., 0., EARTH_ANGULAR_VEL_RADPS);
+    let rot_axis = glm::DVec3::new(0., 0., geo_const::EARTH_ANGULAR_VEL_RADPS);
     return glm::cross(&rot_axis, earth_pos);
 }
 pub fn ecef2eci(ecef: &glm::DVec3, time_since_eci_lock: f64) -> glm::DVec3 {
-    let earth_rotation_angle: f64 = time_since_eci_lock * EARTH_ANGULAR_VEL_RADPS;
+    let earth_rotation_angle: f64 = time_since_eci_lock * geo_const::EARTH_ANGULAR_VEL_RADPS;
     let eci = glm::rotate_z_vec3(ecef, earth_rotation_angle);
     return eci;
 }
 pub fn eci2ecef(eci: &glm::DVec3, time_since_eci_lock: f64) -> glm::DVec3 {
-    let earth_rotation_angle: f64 = time_since_eci_lock * -EARTH_ANGULAR_VEL_RADPS;
+    let earth_rotation_angle: f64 = time_since_eci_lock * -geo_const::EARTH_ANGULAR_VEL_RADPS;
     let ecef = glm::rotate_z_vec3(eci, earth_rotation_angle);
     return ecef;
 }

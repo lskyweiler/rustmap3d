@@ -61,9 +61,15 @@ def profile_method(ecef_points: list[tuple[float, float, float]], ecef2lla_fn):
     return time.time() - tic
 
 
+numba_ecef2lla(0, 0, 0)
+
+
 ecef_points = [rustmap3d.rand_ecef() for _ in range(500000)]
+print("profiling rustmap3d")
 rustmap3d_prof = profile_method(ecef_points, rustmap3d.ecef2lla)
+print("profiling numba")
 numba_prof = profile_method(ecef_points, numba_ecef2lla)
+print("profiling pymap3d")
 pymap3d_prof = profile_method(ecef_points, pymap3d.ecef2geodetic)
 
 print(
