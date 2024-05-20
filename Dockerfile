@@ -28,6 +28,7 @@ RUN apt-get update -y && \
         libffi-dev \
         mingw-w64 \
         ssh \
+        openssh-client\
         gdb \
     && apt-get clean autoclean \
     && apt-get autoremove -y \

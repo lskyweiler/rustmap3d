@@ -33,7 +33,7 @@ test:
     - cd rust/map3d
     - /home/rust/.cargo/bin/cargo test --release # not sure why its' not finding cargo bin
 
-package:
+package-gitlab:
   stage: package
   image: $CONTAINER_TEST_IMAGE
   tags:
@@ -41,17 +41,7 @@ package:
   # rules:
   #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
-    - cd rust/rustmap3d_py
-    - rustup target add x86_64-pc-windows-gnu
-    # build many linux
-    - /home/rust/.venv/bin/python -m maturin build 
-        --release 
-        -i 3.8 3.9 3.10 3.11 3.12
-    # build windows
-    - /home/rust/.venv/bin/python -m maturin build 
-        --release 
-        -i 3.8 3.9 3.10 3.11 3.12
-        --target x86_64-pc-windows-gnu
+    - script/build-wheels.sh
     # upload wheels to gitlab registry
     - /home/rust/.venv/bin/python -m maturin upload 
         --skip-existing 
@@ -59,6 +49,14 @@ package:
         --password ${MATURIN_PACKAGE_REG_PASSWORD} 
         --repository-url ${MATURIN_PACKAGE_REG_INDEX}
         target/wheels/*
+
+# package-waho:
+#   stage: package
+#   image: $CONTAINER_TEST_IMAGE
+#   tags:
+#     - docker
+#   script:
+#     - script/build-wheels.sh
 
 test-deployed-py3.8:
   stage: test-deploy
