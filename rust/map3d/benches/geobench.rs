@@ -95,7 +95,7 @@ fn bench_geo(c: &mut Criterion) {
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
                 let obs_ecef = map3d::geo::rand_ecef();
-                let obs_quat = map3d::geo::rand_orienation();
+                let obs_quat = map3d::util::rand_orienation();
                 let targ_ecef = map3d::geo::rand_ecef();
                 map3d::geo::orient_ecef_quat_towards_lla(&obs_ecef, &obs_quat, &targ_ecef);
             })
