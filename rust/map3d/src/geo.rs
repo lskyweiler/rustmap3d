@@ -22,6 +22,8 @@ mod geo_const {
     pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
 }
 
+// todo: check performance with glam
+
 pub fn ecef2lla_ferarri(ecef: &glm::DVec3) -> glm::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
@@ -253,6 +255,7 @@ pub fn ecef2ned_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     return glm::quat_to_mat3(&q);
 }
 
+// todo: test multiplying quat * axis vs mat cast + column perfromance
 pub fn quat_forward(q: &glm::DQuat) -> glm::DVec3 {
     let mat = glm::quat_to_mat3(q);
     return glm::column(&mat, 0);
@@ -266,6 +269,12 @@ pub fn quat_up(q: &glm::DQuat) -> glm::DVec3 {
     return glm::column(&mat, 20);
 }
 
+fn angle_between(a: &glm::DVec2, b: &glm::DVec2) -> f64 {
+    let mut dot = glm::dot(a, b);
+    dot = f64::clamp(dot, -1., 1.);
+    return f64::acos(dot);
+}
+
 /// Construct a quaternion that orients one ecef towards another ecef point that is tangent to the earth
 /// Frame is initially aligned to the enu frame
 /// Altitude difference is linearly inerpolated in pitch
@@ -276,29 +285,28 @@ pub fn orient_ecef_quat_towards_lla(
     obs_ecef_quat: &glm::DQuat,
     target_ecef: &glm::DVec3,
 ) -> glm::DQuat {
-    
     let obs2targ_ecef = target_ecef - obs_ecef;
-    if glm::length(&obs2targ_ecef) == 0.{
+    if glm::length(&obs2targ_ecef) == 0. {
         return obs_ecef_quat.clone();
     }
     let obs_lla = ecef2lla(&obs_ecef);
 
-    let ecef2enu_at_obs = ecef2enu_quat(obs_lla.x, obs_lla.y);
-    let obs2targ_enu = glm::quat_rotate_vec3(&ecef2enu_at_obs, &obs2targ_ecef);
+    let ecef2enu_dcm_at_obs = ecef2enu_dcm(obs_lla.x, obs_lla.y);
+    let obs2targ_enu = ecef2enu_dcm_at_obs * obs2targ_ecef;
     let obs2targ_enu_dir = glm::normalize(&obs2targ_enu);
 
     let targ_lla = ecef2lla(&target_ecef);
     let alt_diff: f64 = targ_lla.z - obs_lla.z;
 
-    let obs_enu_quat = ecef2enu_at_obs * obs_ecef_quat;
-    let obs_enu_forward = quat_forward(&obs_enu_quat);
+    let obs_enu_dcm = ecef2enu_dcm_at_obs * glm::quat_to_mat3(obs_ecef_quat);
+    let obs_enu_forward = glm::column(&obs_enu_dcm, 0);
 
     // roll angle is based off east/north difference
     let en_diff = obs2targ_enu - obs_enu_forward;
-    let mut roll_angle: f64 = f64::acos(glm::dot(
+    let mut roll_angle: f64 = angle_between(
         &glm::normalize(&obs2targ_enu.xy()),
         &glm::normalize(&obs_enu_forward.xy()),
-    ));
+    );
     roll_angle = f64::clamp(roll_angle, 0., std::f64::consts::FRAC_PI_2);
     roll_angle *= -f64::signum(en_diff.y);
 
@@ -376,14 +384,19 @@ pub fn ecef_quat2heading(ecef_quat: &glm::DQuat, ref_lat_lon: &glm::DVec2) -> f6
     let ecef_dcm = glm::quat_to_mat3(ecef_quat);
     return ecef_dcm2heading(&ecef_dcm, ref_lat_lon);
 }
-pub fn ecef2heading(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> f64 {
-    let enu = ecef2enu(ecef, ref_lat_lon);
+pub fn ecef2heading(ecef_rel: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> f64 {
+    let enu = ecef2enu(ecef_rel, ref_lat_lon);
     return enu2heading(&enu);
+}
+pub fn ecef2bearing(obs_ecef: &glm::DVec3, targ_ecef: &glm::DVec3) -> f64 {
+    let obs_lla = ecef2lla(obs_ecef);
+    let diff = targ_ecef - obs_ecef;
+    return ecef2heading(&diff, &obs_lla.xy());
 }
 
 pub fn rand_ecef() -> glm::DVec3 {
-    let bounds: f64 = 1e-7;
-    return rand_ecef_in_range(bounds, bounds, bounds, bounds, bounds, bounds);
+    let bounds: f64 = 1e7;
+    return rand_ecef_in_range(-bounds, bounds, -bounds, bounds, -bounds, bounds);
 }
 pub fn rand_ecef_in_range(
     x_min: f64,
@@ -1311,5 +1324,37 @@ mod geotests {
         assert!(almost::equal_with(actual.coords.y, oriented.coords.y, 1e-6));
         assert!(almost::equal_with(actual.coords.z, oriented.coords.z, 1e-6));
         assert!(almost::equal_with(actual.w, oriented.w, 1e-6));
+    }
+    #[rstest]
+    fn test_orient_ecef_no_nan() {
+        let mut oriented = orient_ecef_quat_towards_lla(
+            &glm::DVec3::new(6305378.849302336, 388308.7942886081, 875852.4072903388),
+            &glm::DQuat::new(
+                -0.5502415067503782,
+                0.47887021402861657,
+                -0.4489595996023603,
+                0.5160938677122108,
+            ),
+            &glm::DVec3::new(6306774.13352542, 365852.079373571, 875850.3946216722),
+        );
+        assert!(!f64::is_nan(oriented.coords.x));
+        assert!(!f64::is_nan(oriented.coords.y));
+        assert!(!f64::is_nan(oriented.coords.z));
+        assert!(!f64::is_nan(oriented.w));
+
+        oriented = orient_ecef_quat_towards_lla(
+            &glm::DVec3::new(6121830.402233266, 167012.75190830903, 1776355.8276747267),
+            &glm::DQuat::new(
+                0.5742464303807674,
+                -0.430360480648345,
+                0.4178937059909104,
+                -0.5571317118817186,
+            ),
+            &glm::DVec3::new(6121975.8644942725, 162014.83423220483, 1776352.5269659779),
+        );
+        assert!(!f64::is_nan(oriented.coords.x));
+        assert!(!f64::is_nan(oriented.coords.y));
+        assert!(!f64::is_nan(oriented.coords.z));
+        assert!(!f64::is_nan(oriented.w));
     }
 }

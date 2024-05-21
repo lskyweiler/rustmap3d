@@ -51,7 +51,7 @@ def numba_ecef2lla(x: float, y: float, z: float) -> tuple[float, float, float]:
         < 1
     )
     alt *= -1 if inside else 1
-    return lat, lon, alt
+    return np.degrees(lat), np.degrees(lon), alt
 
 
 def profile_method(ecef_points: list[tuple[float, float, float]], ecef2lla_fn):
@@ -61,10 +61,13 @@ def profile_method(ecef_points: list[tuple[float, float, float]], ecef2lla_fn):
     return time.time() - tic
 
 
-numba_ecef2lla(0, 0, 0)
+N = 500000
+ecef_points = [rustmap3d.rand_ecef() for _ in range(N)]
 
+# double check equal and call numba once to jit compile
+expected = numba_ecef2lla(*ecef_points[0])
+actual = rustmap3d.ecef2lla(*ecef_points[0])
 
-ecef_points = [rustmap3d.rand_ecef() for _ in range(500000)]
 print("profiling rustmap3d")
 rustmap3d_prof = profile_method(ecef_points, rustmap3d.ecef2lla)
 print("profiling numba")

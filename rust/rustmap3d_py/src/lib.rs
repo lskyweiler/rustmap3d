@@ -39,6 +39,11 @@ pub fn rand_ecef() -> Vec3Tup {
     return vec3_to_tuple(&ecef);
 }
 #[pyfunction]
+pub fn rand_orientation() -> QuatTup {
+    let quat = geo::rand_orienation();
+    return quat_to_tuple(&quat);
+}
+#[pyfunction]
 pub fn orient_ecef_quat_towards_lla(
     obs_ecef: Vec3Tup,
     obs_ecef_quat: QuatTup,
@@ -59,5 +64,6 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rand_lla, m)?)?;
     m.add_function(wrap_pyfunction!(rand_ecef, m)?)?;
     m.add_function(wrap_pyfunction!(orient_ecef_quat_towards_lla, m)?)?;
+    m.add_function(wrap_pyfunction!(rand_orientation, m)?)?;
     Ok(())
 }
