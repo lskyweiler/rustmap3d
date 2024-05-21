@@ -3,6 +3,8 @@ use almost;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use rand;
 
+use crate::util;
+
 mod geo_const {
     pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0;
     pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
@@ -255,26 +257,6 @@ pub fn ecef2ned_dcm(lat: f64, lon: f64) -> glm::DMat3 {
     return glm::quat_to_mat3(&q);
 }
 
-// todo: test multiplying quat * axis vs mat cast + column perfromance
-pub fn quat_forward(q: &glm::DQuat) -> glm::DVec3 {
-    let mat = glm::quat_to_mat3(q);
-    return glm::column(&mat, 0);
-}
-pub fn quat_left(q: &glm::DQuat) -> glm::DVec3 {
-    let mat = glm::quat_to_mat3(q);
-    return glm::column(&mat, 1);
-}
-pub fn quat_up(q: &glm::DQuat) -> glm::DVec3 {
-    let mat = glm::quat_to_mat3(q);
-    return glm::column(&mat, 20);
-}
-
-fn angle_between(a: &glm::DVec2, b: &glm::DVec2) -> f64 {
-    let mut dot = glm::dot(a, b);
-    dot = f64::clamp(dot, -1., 1.);
-    return f64::acos(dot);
-}
-
 /// Construct a quaternion that orients one ecef towards another ecef point that is tangent to the earth
 /// Frame is initially aligned to the enu frame
 /// Altitude difference is linearly inerpolated in pitch
@@ -303,7 +285,7 @@ pub fn orient_ecef_quat_towards_lla(
 
     // roll angle is based off east/north difference
     let en_diff = obs2targ_enu - obs_enu_forward;
-    let mut roll_angle: f64 = angle_between(
+    let mut roll_angle: f64 = util::angle_between(
         &glm::normalize(&obs2targ_enu.xy()),
         &glm::normalize(&obs_enu_forward.xy()),
     );
@@ -428,15 +410,6 @@ pub fn rand_lla_in_range(
         glm::lerp_scalar(lon_min, lon_max, rand::random()),
         glm::lerp_scalar(alt_min, alt_max, rand::random()),
     );
-}
-
-pub fn rand_orienation() -> glm::DQuat {
-    return glm::quat_normalize(&glm::DQuat::new(
-        rand::random(),
-        rand::random(),
-        rand::random(),
-        rand::random(),
-    ));
 }
 
 #[cfg(test)]
