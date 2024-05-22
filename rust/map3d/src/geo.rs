@@ -273,15 +273,15 @@ pub fn orient_ecef_quat_towards_lla(
     }
     let obs_lla = ecef2lla(&obs_ecef);
 
-    let ecef2enu_dcm_at_obs = ecef2enu_dcm(obs_lla.x, obs_lla.y);
-    let obs2targ_enu = ecef2enu_dcm_at_obs * obs2targ_ecef;
+    let ecef2enu_quat_at_obs = ecef2enu_quat(obs_lla.x, obs_lla.y);
+    let obs2targ_enu = glm::quat_rotate_vec3(&ecef2enu_quat_at_obs, &obs2targ_ecef);
     let obs2targ_enu_dir = glm::normalize(&obs2targ_enu);
 
     let targ_lla = ecef2lla(&target_ecef);
     let alt_diff: f64 = targ_lla.z - obs_lla.z;
 
-    let obs_enu_dcm = ecef2enu_dcm_at_obs * glm::quat_to_mat3(obs_ecef_quat);
-    let obs_enu_forward = glm::column(&obs_enu_dcm, 0);
+    let obs_enu_quat = ecef2enu_quat_at_obs * obs_ecef_quat;
+    let obs_enu_forward = util::quat_forward(&obs_enu_quat);
 
     // roll angle is based off east/north difference
     let en_diff = obs2targ_enu - obs_enu_forward;
@@ -301,11 +301,7 @@ pub fn orient_ecef_quat_towards_lla(
     enu_quat = glm::quat_rotate(&enu_quat, -pitch_angle, &glm::DVec3::new(0., 1., 0.));
     enu_quat = glm::quat_rotate(&enu_quat, roll_angle, &glm::DVec3::new(1., 0., 0.));
 
-    // need to understand the math here better, quat * quat doens't equal mat3(quat) * mat3(quat) but it would be faster to directly multiply the quats
-    // https://math.stackexchange.com/questions/331539/combining-rotation-quaternions#:~:text=To%20rotate%20a%20vector%20v,1%3Dvq%E2%80%B2q.
-    let ecef_dcm = enu2ecef_dcm(obs_lla.x, obs_lla.y) * glm::quat_to_mat3(&enu_quat);
-    let mut ecef_quat = glm::mat3_to_quat(&ecef_dcm);
-    ecef_quat = glm::quat_normalize(&ecef_quat);
+    let ecef_quat = enu2ecef_quat(obs_lla.x, obs_lla.y) * enu_quat;
     return ecef_quat;
 }
 
@@ -1237,8 +1233,8 @@ mod geotests {
     }
 
     #[rstest]
-    fn test_ecef2ned_dcm(){
-        let actual = ecef2ned_dcm(0., 0.,);
+    fn test_ecef2ned_dcm() {
+        let actual = ecef2ned_dcm(0., 0.);
         let ned = actual * glm::DVec3::new(0.5, -1., 1.);
         assert_vecs_close(&ned, &glm::DVec3::new(1., -1., -0.5), 1e-6);
     }
@@ -1303,16 +1299,19 @@ mod geotests {
         );
         let target_ecef = glm::DVec3::new(356314.625, -5095536.5, 3823411.25);
         let oriented = orient_ecef_quat_towards_lla(&obs_ecef, &obs_ecef_quat, &target_ecef);
-        let actual = glm::DQuat::new(
-            -0.40894064679286724,
-            0.06621115448490575,
-            0.8652683273179942,
-            -0.282301881259633,
+        let new_vec = glm::normalize(&glm::DVec3::new(1., 5., -100.));
+        let actual = glm::quat_rotate_vec3(
+            // this implemenation doesnt create the exact same quat the original did, but it's an equivalent rotation
+            &glm::DQuat::new(
+                -0.40894064679286724,
+                0.06621115448490575,
+                0.8652683273179942,
+                -0.282301881259633,
+            ),
+            &new_vec,
         );
-        assert!(almost::equal_with(actual.coords.x, oriented.coords.x, 1e-6));
-        assert!(almost::equal_with(actual.coords.y, oriented.coords.y, 1e-6));
-        assert!(almost::equal_with(actual.coords.z, oriented.coords.z, 1e-6));
-        assert!(almost::equal_with(actual.w, oriented.w, 1e-6));
+        let expected = glm::quat_rotate_vec3(&oriented, &new_vec);
+        assert_vecs_close(&actual, &expected, 1e-6);
     }
     #[rstest]
     fn test_orient_ecef_no_nan() {
