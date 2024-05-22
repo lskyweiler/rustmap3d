@@ -11,7 +11,7 @@ pub fn tuple_to_vec3(tup: &Vec3Tup) -> glm::DVec3 {
     return glm::DVec3::new(tup.0, tup.1, tup.2);
 }
 pub fn quat_to_tuple(q: &glm::DQuat) -> QuatTup {
-    return (q.w, q.coords.x, q.coords.y, q.coords.z);
+    return (q.w, q.i, q.j, q.k);
 }
 pub fn tuple_to_quat(q: &QuatTup) -> glm::DQuat {
     return glm::DQuat::new(q.0, q.1, q.2, q.3);
