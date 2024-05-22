@@ -325,29 +325,39 @@ pub fn ned2ecef(ned: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let rot = ned2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
     return glm::quat_rotate_vec3(&rot, ned);
 }
-pub fn enu2rae(enu: &glm::DVec3) -> glm::DVec3 {
+pub fn enu2aer(enu: &glm::DVec3) -> glm::DVec3 {
     let az = f64::atan2(enu.x, enu.y);
     let el = f64::atan2(enu.z, glm::length(&enu.xy()));
-    let rae = glm::DVec3::new(glm::length(enu), f64::to_degrees(az), f64::to_degrees(el));
-    return rae;
+    let aer = glm::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), glm::length(enu));
+    return aer;
 }
-pub fn rae2enu(rae: &glm::DVec3) -> glm::DVec3 {
-    let r = rae.x;
-    let az = f64::to_radians(rae.y);
-    let el = f64::to_radians(rae.z);
+pub fn aer2enu(aer: &glm::DVec3) -> glm::DVec3 {
+    let r = aer.z;
+    let az = f64::to_radians(aer.x);
+    let el = f64::to_radians(aer.y);
     let east_north = r * f64::cos(el);
     let east = east_north * f64::sin(az);
     let north = east_north * f64::cos(az);
     let up = r * f64::sin(el);
     return glm::DVec3::new(east, north, up);
 }
-pub fn ecef2rae(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
+pub fn ecef2aer(ecef: &glm::DVec3, ref_lat_lon: &glm::DVec2) -> glm::DVec3 {
     let enu = ecef2enu(ecef, ref_lat_lon);
-    return enu2rae(&enu);
+    return enu2aer(&enu);
 }
-pub fn rae2ecef(aer: &glm::DVec3, ref_lat_lon_alt: &glm::DVec3) -> glm::DVec3 {
-    let enu = rae2enu(aer);
-    return enu2ecef(&enu, &ref_lat_lon_alt.xy()) + lla2ecef(ref_lat_lon_alt);
+pub fn aer2ecef(aer: &glm::DVec3, ref_lla: &glm::DVec3) -> glm::DVec3 {
+    let enu = aer2enu(aer);
+    return enu2ecef(&enu, &ref_lla.xy()) + lla2ecef(ref_lla);
+}
+pub fn ned2aer(ned: &glm::DVec3) -> glm::DVec3 {
+    let az = f64::atan2(ned.y, ned.x);
+    let el = f64::atan2(-ned.z, glm::length(&ned.xy()));
+    let aer = glm::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), glm::length(ned));
+    return aer;
+}
+pub fn aer2ned(aer: &glm::DVec3) -> glm::DVec3 {
+    let enu = aer2enu(aer);
+    return glm::DVec3::new(enu.y, enu.x, -enu.z);
 }
 
 pub fn enu2heading(enu: &glm::DVec3) -> f64 {
@@ -1227,6 +1237,12 @@ mod geotests {
     }
 
     #[rstest]
+    fn test_ecef2ned_dcm(){
+        let actual = ecef2ned_dcm(0., 0.,);
+        let ned = actual * glm::DVec3::new(0.5, -1., 1.);
+        assert_vecs_close(&ned, &glm::DVec3::new(1., -1., -0.5), 1e-6);
+    }
+    #[rstest]
     fn test_ecef2ned(ecef2ned_fixture: (Vec<(glm::DVec3, glm::DVec2)>, Vec<glm::DVec3>)) {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
@@ -1249,17 +1265,17 @@ mod geotests {
 
     #[rstest]
     fn test_enu2rae() {
-        let actual_rae = enu2rae(&glm::DVec3::new(1000., 100., 10000.));
-        let expected_rae =
-            glm::DVec3::new(10050.373127401788, 84.28940686250037, 84.26111457290625);
-        assert_vecs_close(&actual_rae, &expected_rae, 1e-6);
+        let actual_aer = enu2aer(&glm::DVec3::new(1000., 100., 10000.));
+        let expected_aer =
+            glm::DVec3::new(84.28940686250037, 84.26111457290625, 10050.373127401788);
+        assert_vecs_close(&actual_aer, &expected_aer, 1e-6);
     }
     #[rstest]
     fn test_rae2enu() {
-        let actual_rae = rae2enu(&glm::DVec3::new(123450., 15., 370.));
-        let expected_rae =
+        let actual_enu = aer2enu(&glm::DVec3::new(15., 370., 123450.));
+        let expected_enu =
             glm::DVec3::new(31465.800427043872, 117431.96589455023, 21436.8675329825);
-        assert_vecs_close(&actual_rae, &expected_rae, 1e-6);
+        assert_vecs_close(&actual_enu, &expected_enu, 1e-6);
     }
 
     #[rstest]
