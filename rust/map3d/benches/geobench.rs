@@ -8,8 +8,8 @@ fn bench_geo(c: &mut Criterion) {
         "ecef2lla_ferrari",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::ecef2lla_ferarri(black_box(&point));
+                let point = map3d::rand_ecef();
+                map3d::ecef2lla_ferarri(black_box(&point));
             })
         },
     );
@@ -17,8 +17,8 @@ fn bench_geo(c: &mut Criterion) {
         "ecef2lla_map3d",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::ecef2lla_map3d(black_box(&point));
+                let point = map3d::rand_ecef();
+                map3d::ecef2lla_map3d(black_box(&point));
             })
         },
     );
@@ -26,8 +26,8 @@ fn bench_geo(c: &mut Criterion) {
         "lla2ecef",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let point = map3d::geo::rand_lla();
-                map3d::geo::lla2ecef(black_box(&point));
+                let point = map3d::rand_lla();
+                map3d::lla2ecef(black_box(&point));
             })
         },
     );
@@ -35,8 +35,8 @@ fn bench_geo(c: &mut Criterion) {
         "ecef2enu_quat",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let point = map3d::geo::rand_lla();
-                map3d::geo::ecef2enu_quat(black_box(point.x), black_box(point.y));
+                let point = map3d::rand_lla();
+                map3d::ecef2enu_quat(black_box(point.x), black_box(point.y));
             })
         },
     );
@@ -44,8 +44,8 @@ fn bench_geo(c: &mut Criterion) {
         "enu2ecef_quat",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let point = map3d::geo::rand_lla();
-                map3d::geo::enu2ecef_quat(black_box(point.x), black_box(point.y));
+                let point = map3d::rand_lla();
+                map3d::enu2ecef_quat(black_box(point.x), black_box(point.y));
             })
         },
     );
@@ -53,9 +53,9 @@ fn bench_geo(c: &mut Criterion) {
         "ecef2enu",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let ref_point = map3d::geo::rand_lla();
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::ecef2enu(&point, &ref_point.xy());
+                let ref_point = map3d::rand_lla();
+                let point = map3d::rand_ecef();
+                map3d::ecef2enu(&point, &ref_point.xy());
             })
         },
     );
@@ -63,9 +63,9 @@ fn bench_geo(c: &mut Criterion) {
         "enu2ecef",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let ref_point = map3d::geo::rand_lla();
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::enu2ecef(&point, &ref_point.xy());
+                let ref_point = map3d::rand_lla();
+                let point = map3d::rand_ecef();
+                map3d::enu2ecef(&point, &ref_point.xy());
             })
         },
     );
@@ -73,9 +73,9 @@ fn bench_geo(c: &mut Criterion) {
         "ecef2rae",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let ref_point = map3d::geo::rand_lla();
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::ecef2aer(&point, &ref_point.xy());
+                let ref_point = map3d::rand_lla();
+                let point = map3d::rand_ecef();
+                map3d::ecef2aer(&point, &ref_point.xy());
             })
         },
     );
@@ -83,9 +83,9 @@ fn bench_geo(c: &mut Criterion) {
         "rae2ecef",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let ref_point = map3d::geo::rand_lla();
-                let point = map3d::geo::rand_ecef();
-                map3d::geo::aer2ecef(&point, &ref_point);
+                let ref_point = map3d::rand_lla();
+                let point = map3d::rand_ecef();
+                map3d::aer2ecef(&point, &ref_point);
             })
         },
     );
@@ -94,10 +94,10 @@ fn bench_geo(c: &mut Criterion) {
         "ecef orient to lla",
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
-                let obs_ecef = map3d::geo::rand_ecef();
+                let obs_ecef = map3d::rand_ecef();
                 let obs_quat = map3d::util::rand_orienation();
-                let targ_ecef = map3d::geo::rand_ecef();
-                map3d::geo::orient_ecef_quat_towards_lla(&obs_ecef, &obs_quat, &targ_ecef);
+                let targ_ecef = map3d::rand_ecef();
+                map3d::orient_ecef_quat_towards_lla(&obs_ecef, &obs_quat, &targ_ecef);
             })
         },
     );
