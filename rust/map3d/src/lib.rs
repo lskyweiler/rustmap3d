@@ -1,4 +1,4 @@
-pub mod geo;
+mod geo;
+mod util;
 pub use geo::*;
-pub mod util;
 pub use util::*;
