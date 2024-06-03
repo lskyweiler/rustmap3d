@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-
+use glam;
+use glam::Vec3Swizzles;
 use map3d;
-extern crate nalgebra_glm as glm;
 
 fn bench_geo(c: &mut Criterion) {
     c.bench_function(

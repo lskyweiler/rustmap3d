@@ -28,7 +28,8 @@
 				"ms-python.debugpy",
 				"tamasfe.even-better-toml",				
 				"dustypomerleau.rust-syntax",
-				"redhat.vscode-yaml"
+				"redhat.vscode-yaml",
+				"vadimcn.vscode-lldb"
 			]
 		}
 	}

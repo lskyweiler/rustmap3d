@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.21.2", features = ["extension-module", "generate-import-lib"] }
 map3d = { path = "../map3d" }
-nalgebra-glm = "0.18"
+glam = "0.27.0"
 
 [features]
 extension-module = ["pyo3/extension-module"]

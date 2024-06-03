@@ -30,6 +30,10 @@ pub fn mat3_to_tuple(mat3: &glam::DMat3) -> Mat3Tup {
     );
 }
 
+pub fn lerp(x: f64, y: f64, a: f64) -> f64 {
+    return (y - x) * a + x;
+}
+
 // todo: test multiplying quat * axis vs mat cast + column perfromance
 pub fn quat_forward(q: &glam::DQuat) -> glam::DVec3 {
     return glam::DMat3::from_quat(*q).col(0);

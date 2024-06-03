@@ -285,7 +285,7 @@ pub fn orient_ecef_quat_towards_lla(
     let yaw = glam::DQuat::from_rotation_z(yaw_angle);
     let pitch = glam::DQuat::from_rotation_y(-pitch_angle);
     let roll = glam::DQuat::from_rotation_x(roll_angle);
-    let enu_quat = roll * pitch * yaw;
+    let enu_quat = yaw * pitch * roll;
 
     let ecef_quat = enu2ecef_quat(obs_lla.x, obs_lla.y) * enu_quat;
     return ecef_quat;
@@ -368,9 +368,6 @@ pub fn ecef2bearing(obs_ecef: &glam::DVec3, targ_ecef: &glam::DVec3) -> f64 {
     return ecef2heading(&diff, &obs_lla.xy());
 }
 
-fn lerp(x: f64, y: f64, a: f64) -> f64 {
-    return (y - x) * a + x;
-}
 pub fn rand_ecef() -> glam::DVec3 {
     let bounds: f64 = 1e7;
     return rand_ecef_in_range(-bounds, bounds, -bounds, bounds, -bounds, bounds);
@@ -384,9 +381,9 @@ pub fn rand_ecef_in_range(
     z_max: f64,
 ) -> glam::DVec3 {
     return glam::DVec3::new(
-        lerp(x_min, x_max, rand::random()),
-        lerp(y_min, y_max, rand::random()),
-        lerp(z_min, z_max, rand::random()),
+        util::lerp(x_min, x_max, rand::random()),
+        util::lerp(y_min, y_max, rand::random()),
+        util::lerp(z_min, z_max, rand::random()),
     );
 }
 pub fn rand_lla() -> glam::DVec3 {
@@ -401,9 +398,9 @@ pub fn rand_lla_in_range(
     alt_max: f64,
 ) -> glam::DVec3 {
     return glam::DVec3::new(
-        lerp(lat_min, lat_max, rand::random()),
-        lerp(lon_min, lon_max, rand::random()),
-        lerp(alt_min, alt_max, rand::random()),
+        util::lerp(lat_min, lat_max, rand::random()),
+        util::lerp(lon_min, lon_max, rand::random()),
+        util::lerp(alt_min, alt_max, rand::random()),
     );
 }
 
@@ -1281,20 +1278,20 @@ mod geotests {
     fn test_orient_ecef() {
         let obs_ecef = glam::DVec3::new(450230.78125, -5146161.5, 3728609.5);
         let obs_ecef_quat = glam::DQuat::from_xyzw(
-            0.16012815380508713,
-            0.8006407690254357,
             0.48038446141526137,
             0.32025630761017426,
+            0.16012815380508713,
+            0.8006407690254357,
         );
         let target_ecef = glam::DVec3::new(356314.625, -5095536.5, 3823411.25);
         let oriented = orient_ecef_quat_towards_lla(&obs_ecef, &obs_ecef_quat, &target_ecef);
         let new_vec = glam::DVec3::new(1., 5., -100.).normalize();
         let actual = // this implemenation doesnt create the exact same quat the original did, but it's an equivalent rotation
             glam::DQuat::from_xyzw(
-                -0.40894064679286724,
                 0.06621115448490575,
                 0.8652683273179942,
                 -0.282301881259633,
+                -0.40894064679286724,
             ) * new_vec;
         let expected = oriented * new_vec;
         assert_vecs_close(&actual, &expected, 1e-6);

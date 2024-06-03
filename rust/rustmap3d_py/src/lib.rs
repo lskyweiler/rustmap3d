@@ -1,23 +1,23 @@
 use map3d;
 use map3d::{Vec3Tup, QuatTup, Mat3Tup};
 use pyo3::prelude::*;
-extern crate nalgebra_glm as glm;
+use glam;
 
 #[pyfunction]
 pub fn ecef2lla(x: f64, y: f64, z: f64) -> Vec3Tup {
-    let lla = map3d::ecef2lla_map3d(&glm::DVec3::new(x, y, z));
+    let lla = map3d::ecef2lla_map3d(&glam::DVec3::new(x, y, z));
     return map3d::vec3_to_tuple(&lla);
 }
 #[pyfunction]
 pub fn lla2ecef(lat: f64, lon: f64, alt: f64) -> Vec3Tup {
-    let ecef = map3d::lla2ecef(&glm::DVec3::new(lat, lon, alt));
+    let ecef = map3d::lla2ecef(&glam::DVec3::new(lat, lon, alt));
     return map3d::vec3_to_tuple(&ecef);
 }
 #[pyfunction]
 pub fn ecef2enu(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
     let enu = map3d::ecef2enu(
         &map3d::tuple_to_vec3(&(x, y, z)),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return map3d::vec3_to_tuple(&enu);
 }
@@ -25,7 +25,7 @@ pub fn ecef2enu(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
 pub fn enu2ecef(e: f64, n: f64, u: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
     let ecef = map3d::enu2ecef(
         &map3d::tuple_to_vec3(&(e, n, u)),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return map3d::vec3_to_tuple(&ecef);
 }
@@ -33,7 +33,7 @@ pub fn enu2ecef(e: f64, n: f64, u: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
 pub fn ecef2ned(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
     let ned = map3d::ecef2ned(
         &map3d::tuple_to_vec3(&(x, y, z)),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return map3d::vec3_to_tuple(&ned);
 }
@@ -41,7 +41,7 @@ pub fn ecef2ned(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
 pub fn ned2ecef(n: f64, e: f64, d: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
     let ecef = map3d::ned2ecef(
         &map3d::tuple_to_vec3(&(n, e, d)),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return map3d::vec3_to_tuple(&ecef);
 }
@@ -49,7 +49,7 @@ pub fn ned2ecef(n: f64, e: f64, d: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
 pub fn ecef2aer(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
     let aer = map3d::ecef2aer(
         &map3d::tuple_to_vec3(&(x, y, z)),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return map3d::vec3_to_tuple(&aer);
 }
@@ -57,7 +57,7 @@ pub fn ecef2aer(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
 pub fn aer2ecef(a: f64, e: f64, r: f64, ref_lat: f64, ref_lon: f64, alt: f64) -> Vec3Tup {
     let ecef = map3d::aer2ecef(
         &map3d::tuple_to_vec3(&(a, e, r)),
-        &glm::DVec3::new(ref_lat, ref_lon, alt),
+        &glam::DVec3::new(ref_lat, ref_lon, alt),
     );
     return map3d::vec3_to_tuple(&ecef);
 }
@@ -161,7 +161,7 @@ pub fn enu2heading(east: f64, north: f64, up: f64) -> f64 {
 pub fn ecef_quat2heading(ecef_quat: QuatTup, ref_lat: f64, ref_lon: f64) -> f64 {
     let heading = map3d::ecef_quat2heading(
         &map3d::tuple_to_quat(&ecef_quat),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return heading;
 }
@@ -169,7 +169,7 @@ pub fn ecef_quat2heading(ecef_quat: QuatTup, ref_lat: f64, ref_lon: f64) -> f64 
 pub fn ecef2heading(ecef_rel: Vec3Tup, ref_lat: f64, ref_lon: f64) -> f64 {
     let heading = map3d::ecef2heading(
         &map3d::tuple_to_vec3(&ecef_rel),
-        &glm::DVec2::new(ref_lat, ref_lon),
+        &glam::DVec2::new(ref_lat, ref_lon),
     );
     return heading;
 }
@@ -184,7 +184,7 @@ pub fn ecef2bearing(obs_ecef: Vec3Tup, targ_ecef: Vec3Tup) -> f64 {
 
 #[pyfunction]
 pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
-    return map3d::angle_between(&map3d::tuple_to_vec3(&a), &map3d::tuple_to_vec3(&b));
+    return map3d::angle_between_vec3(&map3d::tuple_to_vec3(&a), &map3d::tuple_to_vec3(&b));
 }
 
 #[pymodule]
