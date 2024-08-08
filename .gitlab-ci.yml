@@ -5,16 +5,13 @@ stages:
   - package
   - test-deploy
 
-.only_run_on_default_branch_rules:
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-
 variables:
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
   MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
-  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
-  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@gitlab.sdo.psdo.leidos.com/api/v4/projects/${CI_PROJECT_ID}/packages/pypi/simple
+  REG_PROJECT_ID: 4516
+  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${REG_PROJECT_ID}/packages/pypi
+  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@gitlab.sdo.psdo.leidos.com/api/v4/projects/${REG_PROJECT_ID}/packages/pypi/simple
 
 build:
   stage: build
@@ -53,8 +50,6 @@ package-gitlab:
   image: $CONTAINER_TEST_IMAGE
   tags:
     - docker
-  # rules:
-  #   - !reference [.only_run_on_default_branch_rules, rules]
   script:
     - ./scripts/build-wheels.sh 
     # upload wheels to gitlab registry
