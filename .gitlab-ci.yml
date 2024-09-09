@@ -9,10 +9,8 @@ variables:
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
   MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
-  REG_PROJECT_ID: 4516
-  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${REG_PROJECT_ID}/packages/pypi
+  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/4516/packages/pypi
   PYPI_INDEX_URL: ${MATURIN_PACKAGE_REG_INDEX}/simple
-  ACT3_PACKAGE_REG: https://git.act3-ace.com/api/v4/projects/1701/packages/pypi
 
 build:
   stage: build
