@@ -2,7 +2,7 @@ stages:
   - build
   - test
   - bench
-  - package
+  - publish
   - test-deploy
 
 variables:
@@ -11,7 +11,8 @@ variables:
   MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
   REG_PROJECT_ID: 4516
   MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/${REG_PROJECT_ID}/packages/pypi
-  PYPI_INDEX_URL: https://${MATURIN_PACKAGE_REG_USERNAME}:${MATURIN_PACKAGE_REG_PASSWORD}@gitlab.sdo.psdo.leidos.com/api/v4/projects/${REG_PROJECT_ID}/packages/pypi/simple
+  PYPI_INDEX_URL: ${MATURIN_PACKAGE_REG_INDEX}/simple
+  ACT3_PACKAGE_REG: https://git.act3-ace.com/api/v4/projects/1701/packages/pypi
 
 build:
   stage: build
@@ -29,7 +30,7 @@ test:
     - docker
   script:
     - cd rust/map3d
-    - /home/rust/.cargo/bin/cargo test --release
+    - cargo test --release
 
 bench:
   stage: bench
@@ -38,15 +39,15 @@ bench:
     - docker
   script:
     - cd rust/map3d
-    - /home/rust/.cargo/bin/cargo bench
+    - cargo bench
   artifacts:
     when: on_success
     expire_in: "30 days"
     paths:
       - rust/map3d/target/criterion/*
 
-package-gitlab:
-  stage: package
+publish-package:
+  stage: publish
   image: $CONTAINER_TEST_IMAGE
   tags:
     - docker
@@ -60,13 +61,13 @@ package-gitlab:
         --repository-url ${MATURIN_PACKAGE_REG_INDEX}
         rust/rustmap3d_py/target/wheels/*
 
-# package-waho:
-#   stage: package
-#   image: $CONTAINER_TEST_IMAGE
-#   tags:
-#     - docker
-#   script:
-#     - script/build-wheels.sh
+    - /home/rust/.venv/bin/python -m maturin upload 
+        --skip-existing 
+        --username ${ACT3_USERNAME} 
+        --password ${ACT3_TOKEN} 
+        --repository-url ${ACT3_PACKAGE_REG}
+        --verbose
+        rust/rustmap3d_py/target/wheels/*
 
 test-deployed-py3.8:
   stage: test-deploy

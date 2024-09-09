@@ -1,3 +1,5 @@
+use core::fmt;
+
 use almost;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam::{self, Vec3Swizzles};
@@ -5,7 +7,7 @@ use rand;
 
 use crate::util;
 
-mod geo_const {
+pub mod geo_const {
     pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0;
     pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
     pub static EARTH_SEMI_MINOR_AXIS: f64 = 6356752.314245;
@@ -23,8 +25,6 @@ mod geo_const {
     pub static ECEF2LLA_EP2: f64 = ECEF2LLA_A2 / ECEF2LLA_B2 - 1.0;
     pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
 }
-
-// todo: check performance with glam
 
 pub fn ecef2lla_ferarri(ecef: &glam::DVec3) -> glam::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
@@ -212,9 +212,9 @@ pub fn ned2ecef_quat(lat: f64, lon: f64) -> glam::DQuat {
     let enu2ecef_q = enu2ecef_quat(lat, lon);
     let enu2ecef_mat = glam::DMat3::from_quat(enu2ecef_q);
 
-    let east = enu2ecef_mat.col(0);
-    let north = enu2ecef_mat.col(1);
-    let up = enu2ecef_mat.col(2);
+    let east = enu2ecef_mat.x_axis;
+    let north = enu2ecef_mat.y_axis;
+    let up = enu2ecef_mat.z_axis;
     let down = -up;
 
     #[rustfmt::skip]
@@ -259,18 +259,18 @@ pub fn orient_ecef_quat_towards_lla(
     }
     let obs_lla = ecef2lla(&obs_ecef);
 
-    let ecef2enu_quat_at_obs = ecef2enu_quat(obs_lla.x, obs_lla.y);
-    let obs2targ_enu = ecef2enu_quat_at_obs * obs2targ_ecef;
+    let ecef2enu_dcm_at_obs = ecef2enu_dcm(obs_lla.x, obs_lla.y);
+    let obs2targ_enu = ecef2enu_dcm_at_obs * obs2targ_ecef;
     let obs2targ_enu_dir = obs2targ_enu.normalize();
 
     let targ_lla = ecef2lla(&target_ecef);
     let alt_diff: f64 = targ_lla.z - obs_lla.z;
 
-    let obs_enu_quat = ecef2enu_quat_at_obs * (*obs_ecef_quat);
-    let obs_enu_forward = util::quat_forward(&obs_enu_quat);
+    let obs_enu_dcm = ecef2enu_dcm_at_obs * glam::DMat3::from_quat(*obs_ecef_quat);
+    let obs_enu_forward = obs_enu_dcm.x_axis;
 
     // roll angle is based off east/north difference
-    let en_diff = obs2targ_enu - obs_enu_forward;
+    let en_diff = obs2targ_enu_dir - obs_enu_forward;
     let mut roll_angle: f64 = util::angle_between_vec2(
         &obs2targ_enu.xy().normalize(),
         &obs_enu_forward.xy().normalize(),
@@ -282,12 +282,17 @@ pub fn orient_ecef_quat_towards_lla(
     let pitch_angle: f64 = f64::atan2(alt_diff, obs2targ_enu.xy().length());
 
     // 321 Euler sequence
-    let yaw = glam::DQuat::from_rotation_z(yaw_angle);
-    let pitch = glam::DQuat::from_rotation_y(-pitch_angle);
-    let roll = glam::DQuat::from_rotation_x(roll_angle);
-    let enu_quat = yaw * pitch * roll;
+    let enu_rot = glam::DMat3::from_euler(
+        glam::EulerRot::ZYX, 
+        yaw_angle,
+        -pitch_angle, 
+        roll_angle
+    );
 
-    let ecef_quat = enu2ecef_quat(obs_lla.x, obs_lla.y) * enu_quat;
+    let enu2ecef_rot = enu2ecef_dcm(obs_lla.x, obs_lla.y);
+    let ecef_dcm = enu2ecef_rot * enu_rot;
+    let mut ecef_quat = glam::DQuat::from_mat3(&ecef_dcm);
+    ecef_quat = ecef_quat.normalize();
     return ecef_quat;
 }
 
@@ -351,7 +356,7 @@ pub fn enu2heading(enu: &glam::DVec3) -> f64 {
 pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, ref_lat_lon: &glam::DVec2) -> f64 {
     let ecef2enu = ecef2enu_dcm(ref_lat_lon.x, ref_lat_lon.y);
     let enu_dcm = ecef2enu * (*ecef_dcm);
-    let forward = enu_dcm.col(0);
+    let forward = enu_dcm.x_axis;
     return enu2heading(&forward);
 }
 pub fn ecef_quat2heading(ecef_quat: &glam::DQuat, ref_lat_lon: &glam::DVec2) -> f64 {
@@ -387,7 +392,7 @@ pub fn rand_ecef_in_range(
     );
 }
 pub fn rand_lla() -> glam::DVec3 {
-    return rand_lla_in_range(-90., 90., -180., 180., 0., 1e10);
+    return rand_lla_in_range(-90., 90., -180., 180., 0., 10_000.);
 }
 pub fn rand_lla_in_range(
     lat_min: f64,
@@ -402,6 +407,78 @@ pub fn rand_lla_in_range(
         util::lerp(lon_min, lon_max, rand::random()),
         util::lerp(alt_min, alt_max, rand::random()),
     );
+}
+
+#[derive(Debug, Clone)]
+pub struct IllFormedDMSError{
+    pub bad_dms: String
+}
+impl fmt::Display for IllFormedDMSError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Got ill-formed degrees minutes seconds: {}. Should be format DD:MM:SS.SSSC where C is a cardinal direction [N, S, E, W]", 
+            self.bad_dms
+        )
+    }
+}
+
+/// Converts degrees minutes seconds to decimal degrees
+/// Format: Degrees:Minutes:Seconds.DecSecondsDirection where Direction is one of N,E,S,W
+///     Example: 
+///         "25:22:44.738N" -> 25.379094
+///         "74:59:55.525W" -> -74.998757
+pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
+    let parts = degrees_minutes_seconds.split(":").collect::<Vec<&str>>();
+    
+    if parts.len() == 3 {
+        let sdeg = parts[0];
+        let smin = parts[1];
+        let sec_card = parts[2];
+        if let Some(cardinal) = sec_card.chars().last() {
+            let lower_card = &cardinal.to_lowercase().to_string()[..];
+            let ssec = &sec_card[..sec_card.len() - 1];
+            if let (Ok(deg), Ok(min), Ok(sec)) = (sdeg.parse::<f64>(), smin.parse::<f64>(), ssec.parse::<f64>()) {
+                if vec!["n", "s", "e", "w"].contains(&lower_card){
+                    let mut dd = deg + min / 60. + sec / 3600.;
+                    if lower_card == "s" || lower_card == "w" {
+                        dd *= -1.;
+                    }
+                    return Ok(dd);
+                }
+            }
+        }
+    }
+    return Err(IllFormedDMSError{bad_dms: degrees_minutes_seconds.to_string()});
+}
+pub fn dd2dms(degrees: f64, is_lat: bool) -> String {
+    let dir: &str;
+
+    if is_lat {
+        if degrees > 0. {
+            dir = "N";
+        }
+        else {
+            dir = "S";
+        }
+    }
+    else {
+        if degrees > 0. {
+            dir = "E";
+        }
+        else {
+            dir = "W";
+        }
+    }
+
+    let deg = f64::abs(degrees) * 3600.;
+    let (mnt, sec) = (deg / 60., deg % 60.);
+    let (deg, min) = (mnt / 60., mnt % 60.);
+    return format!("{:.0}:{:.0}:{:.3}{}", deg.floor(), min.floor(), sec, dir);
+}
+
+pub fn ll2dms(lat: f64, lon: f64) -> (String, String) {
+    return (dd2dms(lat, true), dd2dms(lon, false));
 }
 
 #[cfg(test)]
@@ -1285,16 +1362,16 @@ mod geotests {
         );
         let target_ecef = glam::DVec3::new(356314.625, -5095536.5, 3823411.25);
         let oriented = orient_ecef_quat_towards_lla(&obs_ecef, &obs_ecef_quat, &target_ecef);
-        let new_vec = glam::DVec3::new(1., 5., -100.).normalize();
-        let actual = // this implemenation doesnt create the exact same quat the original did, but it's an equivalent rotation
-            glam::DQuat::from_xyzw(
-                0.06621115448490575,
-                0.8652683273179942,
-                -0.282301881259633,
-                -0.40894064679286724,
-            ) * new_vec;
-        let expected = oriented * new_vec;
-        assert_vecs_close(&actual, &expected, 1e-6);
+        let actual = glam::DQuat::from_xyzw(
+            0.06621115448490575,
+            0.8652683273179942,
+            -0.282301881259633,
+            -0.40894064679286724,
+        );
+        assert!(almost::equal_with(actual.x, oriented.x, 1e-6));
+        assert!(almost::equal_with(actual.y, oriented.y, 1e-6));
+        assert!(almost::equal_with(actual.z, oriented.z, 1e-6));
+        assert!(almost::equal_with(actual.w, oriented.w, 1e-6));
     }
     #[rstest]
     fn test_orient_ecef_no_nan() {
@@ -1327,5 +1404,62 @@ mod geotests {
         assert!(!f64::is_nan(oriented.y));
         assert!(!f64::is_nan(oriented.z));
         assert!(!f64::is_nan(oriented.w));
+    }
+
+    #[test]
+    fn test_dms_lower2dd() {
+        let lat_dms = "25:22:44.738n";
+        let lon_dms = "74:59:55.525w";
+        let lat = dms2dd(&lat_dms);
+        let lon = dms2dd(&lon_dms);
+
+        assert!(lat.is_ok());
+        assert!(lon.is_ok());
+        assert!(almost::equal_with(lat.unwrap(), 25.379094, 1e-6));
+        assert!(almost::equal_with(lon.unwrap(), -74.998757, 1e-6));
+    }
+    #[test]
+    fn test_dms_upper2dd() {
+        let lat_dms = "25:22:44.738N";
+        let lon_dms = "74:59:55.525W";
+        let lat = dms2dd(&lat_dms);
+        let lon = dms2dd(&lon_dms);
+
+        assert!(lat.is_ok());
+        assert!(lon.is_ok());
+        assert!(almost::equal_with(lat.unwrap(), 25.379094, 1e-6));
+        assert!(almost::equal_with(lon.unwrap(), -74.998757, 1e-6));
+    }
+    #[test]
+    fn test_dms2dd_throws_err_on_bad_cardinal() {
+        let lat_dms = "25:22:44.738R";
+        let lat = dms2dd(&lat_dms);
+
+        assert!(lat.is_err());
+    }
+    #[test]
+    fn test_dms2dd_int_sec() {
+        let lat_dms = "25:22:44N";
+        let lat = dms2dd(&lat_dms);
+
+        assert!(lat.is_ok());
+    }
+    #[test]
+    fn test_dms2dd_throws_err_on_bad_min() {
+        let lat_dms = "25:2244N";
+        let lat = dms2dd(&lat_dms);
+
+        assert!(lat.is_err());
+    }
+
+    #[test]
+    fn test_dd2dms() {
+        let lat_dd = 25.379094;
+        let lon_dd = -74.998757;
+        let lat_dms = dd2dms(lat_dd, true);
+        let lon_dms = dd2dms(lon_dd, false);
+        assert!(lat_dms == "25:22:44.738N");
+        assert!(lon_dms == "74:59:55.525W");
+
     }
 }

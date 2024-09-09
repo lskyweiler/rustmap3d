@@ -1,10 +1,11 @@
-FROM ubuntu:22.04 as rustmap3d
+FROM rust:latest as rustmap3d
 
 ARG UID=1000
 ARG GID=100
 ARG USER=rust
 RUN echo "Building docker with uid:${UID} - gid:${GID} - user:${USER}"
 
+# https://github.com/cross-rs/cross/tree/main/docker
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update -y && \
     apt-get install -yq --no-install-recommends \
@@ -30,6 +31,8 @@ RUN apt-get update -y && \
         ssh \
         openssh-client\
         gdb \
+        g++-aarch64-linux-gnu libc6-dev-arm64-cross \
+        g++-arm-linux-gnueabihf libc6-dev-armhf-cross \
     && apt-get clean autoclean \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
@@ -59,8 +62,22 @@ ENV PATH=/home/${USER}/.pyenv/versions/3.12.2/bin:${PATH}
 ENV PATH=/home/rust/.cargo/bin:${PATH}
 ENV VENV=/home/${USER}/.venv
 
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
-    python -m venv ${VENV} && \
+RUN rustup target add x86_64-pc-windows-gnu && \
+    rustup target add aarch64-unknown-linux-gnu && \
+    rustup target add aarch64-apple-darwin && \
+    rustup target add x86_64-apple-darwin && \
+    rustup target add x86_64-unknown-linux-musl
+
+RUN rustup toolchain install stable-aarch64-unknown-linux-gnu
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
+    CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
+    CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+    CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
+    CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
+
+RUN python -m venv ${VENV} && \
     echo "source ${VENV}/bin/activate" >> /home/rust/.bashrc
 
 WORKDIR /home/${USER}/rustmap3d
