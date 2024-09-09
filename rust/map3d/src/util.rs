@@ -14,7 +14,8 @@ pub fn quat_to_tuple(q: &glam::DQuat) -> QuatTup {
     return (q.w, q.x, q.y, q.z);
 }
 pub fn tuple_to_quat(q: &QuatTup) -> glam::DQuat {
-    return glam::DQuat::from_xyzw(q.0, q.1, q.2, q.3);
+    // pyglm serializes as w, x, y, z
+    return glam::DQuat::from_xyzw(q.1, q.2, q.3, q.0);
 }
 pub fn mat3_to_tuple(mat3: &glam::DMat3) -> Mat3Tup {
     return (
@@ -34,15 +35,14 @@ pub fn lerp(x: f64, y: f64, a: f64) -> f64 {
     return (y - x) * a + x;
 }
 
-// todo: test multiplying quat * axis vs mat cast + column perfromance
 pub fn quat_forward(q: &glam::DQuat) -> glam::DVec3 {
-    return glam::DMat3::from_quat(*q).col(0);
+    return glam::DMat3::from_quat(*q).x_axis;
 }
 pub fn quat_left(q: &glam::DQuat) -> glam::DVec3 {
-    return glam::DMat3::from_quat(*q).col(1);
+    return glam::DMat3::from_quat(*q).y_axis;
 }
 pub fn quat_up(q: &glam::DQuat) -> glam::DVec3 {
-    return glam::DMat3::from_quat(*q).col(2);
+    return glam::DMat3::from_quat(*q).z_axis;
 }
 
 pub fn angle_between_vec2(a: &glam::DVec2, b: &glam::DVec2) -> f64 {
