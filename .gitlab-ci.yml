@@ -52,6 +52,7 @@ publish-package:
   only:
     - tags
   script:
+    - pip install maturin
     - ./scripts/build-wheels.sh 
     # upload wheels to gitlab registry
     - /home/rust/.venv/bin/python -m maturin upload 
