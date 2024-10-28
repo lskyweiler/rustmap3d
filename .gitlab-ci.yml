@@ -49,6 +49,8 @@ publish-package:
   image: $CONTAINER_TEST_IMAGE
   tags:
     - docker
+  only:
+    - tags
   script:
     - ./scripts/build-wheels.sh 
     # upload wheels to gitlab registry
@@ -102,6 +104,14 @@ test-deployed-py3.11:
 test-deployed-py3.12:
   stage: test-deploy
   image: python:3.12-slim
+  tags:
+    - docker
+  script:
+    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
+    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
+test-deployed-py3.13:
+  stage: test-deploy
+  image: python:3.13-slim
   tags:
     - docker
   script:

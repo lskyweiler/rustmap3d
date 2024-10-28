@@ -47,7 +47,7 @@ WORKDIR /home/${USER}
 RUN git clone https://github.com/pyenv/pyenv /home/${USER}/.pyenv/
 
 # Install the desired versions of Python.
-RUN for PYTHON_VERSION in 3.8.18 3.9.18 3.10.13 3.11.8 3.12.2; do \
+RUN for PYTHON_VERSION in 3.8.18 3.9.18 3.10.13 3.11.8 3.12.2 3.13.0; do \
   set -ex \
     && /home/${USER}/.pyenv/bin/pyenv install ${PYTHON_VERSION} \
     && /home/${USER}/.pyenv/versions/${PYTHON_VERSION}/bin/python -m pip install --upgrade pip \
@@ -59,6 +59,7 @@ ENV PATH=/home/${USER}/.pyenv/versions/3.9.18/bin:${PATH}
 ENV PATH=/home/${USER}/.pyenv/versions/3.10.13/bin:${PATH}
 ENV PATH=/home/${USER}/.pyenv/versions/3.11.8/bin:${PATH}
 ENV PATH=/home/${USER}/.pyenv/versions/3.12.2/bin:${PATH}
+ENV PATH=/home/${USER}/.pyenv/versions/3.13.0/bin:${PATH}
 ENV PATH=/home/rust/.cargo/bin:${PATH}
 ENV VENV=/home/${USER}/.venv
 
@@ -83,4 +84,4 @@ RUN python -m venv ${VENV} && \
 WORKDIR /home/${USER}/rustmap3d
 
 COPY --chown=${USER} . .
-RUN ${VENV}/bin/python -m pip install -r python/requirements.txt
+# RUN ${VENV}/bin/python -m pip install -r python/requirements.txt
