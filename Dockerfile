@@ -1,4 +1,4 @@
-FROM rust:latest as rustmap3d
+FROM rust:latest AS rustmap3d
 
 ARG UID=1000
 ARG GID=100
@@ -84,4 +84,4 @@ RUN python -m venv ${VENV} && \
 WORKDIR /home/${USER}/rustmap3d
 
 COPY --chown=${USER} . .
-# RUN ${VENV}/bin/python -m pip install -r python/requirements.txt
+RUN ${VENV}/bin/python -m pip install maturin
