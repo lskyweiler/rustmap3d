@@ -9,7 +9,7 @@ name = "rustmap3d"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.21.2", features = ["extension-module", "generate-import-lib"] }
+pyo3 = { version = "0.22.5", features = ["extension-module", "generate-import-lib"] }
 map3d = { path = "../map3d" }
 glam = "0.27.0"
 
