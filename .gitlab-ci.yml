@@ -52,17 +52,16 @@ publish-package:
   only:
     - tags
   script:
-    - /home/rust/.venv/bin/python -m pip install maturin
     - ./scripts/build-wheels.sh 
     # upload wheels to gitlab registry
-    - /home/rust/.venv/bin/python -m maturin upload 
+    - uv run --with=maturin maturin upload 
         --skip-existing 
         --username ${MATURIN_PACKAGE_REG_USERNAME} 
         --password ${MATURIN_PACKAGE_REG_PASSWORD} 
         --repository-url ${MATURIN_PACKAGE_REG_INDEX}
         rust/rustmap3d_py/target/wheels/*
 
-    - /home/rust/.venv/bin/python -m maturin upload 
+    - uv run --with=maturin maturin upload 
         --skip-existing 
         --username ${ACT3_USERNAME} 
         --password ${ACT3_TOKEN} 
