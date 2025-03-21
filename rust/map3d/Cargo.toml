@@ -4,7 +4,8 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-glam = "0.29"
+# use latest by default, but allows downstream packages to use a compatable version
+glam = "*"
 almost = "0.2.0"
 rand = "0.9"
 chrono = "0.4.38"
