@@ -282,12 +282,7 @@ pub fn orient_ecef_quat_towards_lla(
     let pitch_angle: f64 = f64::atan2(alt_diff, obs2targ_enu.xy().length());
 
     // 321 Euler sequence
-    let enu_rot = glam::DMat3::from_euler(
-        glam::EulerRot::ZYX, 
-        yaw_angle,
-        -pitch_angle, 
-        roll_angle
-    );
+    let enu_rot = glam::DMat3::from_euler(glam::EulerRot::ZYX, yaw_angle, -pitch_angle, roll_angle);
 
     let enu2ecef_rot = enu2ecef_dcm(obs_lla.x, obs_lla.y);
     let ecef_dcm = enu2ecef_rot * enu_rot;
@@ -410,8 +405,8 @@ pub fn rand_lla_in_range(
 }
 
 #[derive(Debug, Clone)]
-pub struct IllFormedDMSError{
-    pub bad_dms: String
+pub struct IllFormedDMSError {
+    pub bad_dms: String,
 }
 impl fmt::Display for IllFormedDMSError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -425,12 +420,12 @@ impl fmt::Display for IllFormedDMSError {
 
 /// Converts degrees minutes seconds to decimal degrees
 /// Format: Degrees:Minutes:Seconds.DecSecondsDirection where Direction is one of N,E,S,W
-///     Example: 
+///     Example:
 ///         "25:22:44.738N" -> 25.379094
 ///         "74:59:55.525W" -> -74.998757
 pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
     let parts = degrees_minutes_seconds.split(":").collect::<Vec<&str>>();
-    
+
     if parts.len() == 3 {
         let sdeg = parts[0];
         let smin = parts[1];
@@ -438,8 +433,12 @@ pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
         if let Some(cardinal) = sec_card.chars().last() {
             let lower_card = &cardinal.to_lowercase().to_string()[..];
             let ssec = &sec_card[..sec_card.len() - 1];
-            if let (Ok(deg), Ok(min), Ok(sec)) = (sdeg.parse::<f64>(), smin.parse::<f64>(), ssec.parse::<f64>()) {
-                if vec!["n", "s", "e", "w"].contains(&lower_card){
+            if let (Ok(deg), Ok(min), Ok(sec)) = (
+                sdeg.parse::<f64>(),
+                smin.parse::<f64>(),
+                ssec.parse::<f64>(),
+            ) {
+                if vec!["n", "s", "e", "w"].contains(&lower_card) {
                     let mut dd = deg + min / 60. + sec / 3600.;
                     if lower_card == "s" || lower_card == "w" {
                         dd *= -1.;
@@ -449,7 +448,9 @@ pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
             }
         }
     }
-    return Err(IllFormedDMSError{bad_dms: degrees_minutes_seconds.to_string()});
+    return Err(IllFormedDMSError {
+        bad_dms: degrees_minutes_seconds.to_string(),
+    });
 }
 pub fn dd2dms(degrees: f64, is_lat: bool) -> String {
     let dir: &str;
@@ -457,16 +458,13 @@ pub fn dd2dms(degrees: f64, is_lat: bool) -> String {
     if is_lat {
         if degrees > 0. {
             dir = "N";
-        }
-        else {
+        } else {
             dir = "S";
         }
-    }
-    else {
+    } else {
         if degrees > 0. {
             dir = "E";
-        }
-        else {
+        } else {
             dir = "W";
         }
     }
@@ -479,6 +477,117 @@ pub fn dd2dms(degrees: f64, is_lat: bool) -> String {
 
 pub fn ll2dms(lat: f64, lon: f64) -> (String, String) {
     return (dd2dms(lat, true), dd2dms(lon, false));
+}
+
+/// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
+/// solution to determine outputs using the WGS84 ellipsoidal Earth model.
+///
+/// See reference:
+/// https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+/// * `range_m` - Range (i.e., distance) from point A to point B [meters].
+/// * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
+/// * `abs_tol` - Absolute tolerance used for convergence.
+/// * `max_iters` - Maximum possible number of iterations before early termination.
+///
+/// # Returns
+///
+/// A tuple `(lat_deg, lon_deg)` where:
+/// - `lat_deg` is the latitude location [degrees].
+/// - `lon_deg` is the longitude location [degrees].
+pub fn vincenty_direct(
+    lat_deg: f64,
+    lon_deg: f64,
+    range_m: f64,
+    bearing_deg: f64,
+    atol: f64,
+    max_iters: u16,
+) -> Result<(f64, f64), String> {
+    if lon_deg.abs() > 90.0 {
+        return Err(format!(
+            "Longitude ({}) must be in domain [-90.0, 90.0].",
+            lon_deg
+        ));
+    }
+
+    if range_m < 0.0 {
+        return Err(format!(
+            "Range ({}) must be greater than or equal to zero.",
+            range_m
+        ));
+    }
+
+    if atol <= 0.0 {
+        return Err(format!(
+            "Absolute tolerance ({}) must be greater than zero.",
+            atol
+        ));
+    }
+
+    let lat_rad = lat_deg.to_radians();
+    let lon_rad = lon_deg.to_radians();
+    let bearing_rad = bearing_deg.to_radians();
+
+    let u1 = ((1.0 - geo_const::EARTH_FLATTENING_FACTOR) * lat_rad.tan()).atan();
+    let s1 = u1.tan().atan2(bearing_rad.cos());
+    let sina = u1.cos() * bearing_rad.sin();
+    let cos2a = 1.0 - sina.powi(2);
+    let u2 = cos2a * (geo_const::EARTH_SEMI_MAJOR_AXIS_2 - geo_const::EARTH_SEMI_MINOR_AXIS_2)
+        / geo_const::EARTH_SEMI_MINOR_AXIS_2;
+
+    let k1 = ((1.0 + u2).sqrt() - 1.0) / ((1.0 + u2).sqrt() + 1.0);
+    let a = (1.0 + 0.25 * k1.powi(2)) / (1.0 - k1);
+    let b = k1 * (1.0 - 3. / 8.0 * k1.powi(2));
+
+    // Loop variables that get updated throughout iteration.
+    let mut steps: u16 = 0;
+    let mut sigma = range_m / (geo_const::EARTH_SEMI_MINOR_AXIS * a);
+    let mut twosigm = 2.0 * s1 + sigma;
+    let mut cos2sm = twosigm.cos();
+    let mut sins = sigma.sin();
+    let mut coss = sigma.cos();
+
+    loop {
+        let delta_sigma_term_1 = coss * (-1.0 + 2.0 * cos2sm.powi(2));
+        let delta_sigma_term_2 = (-3.0 + 4.0 * sins.powi(2)) * (-3.0 + 4.0 * cos2sm.powi(2));
+        let delta_sigma_term_3 = b / 6.0 * cos2sm * delta_sigma_term_2;
+        let delta_sigma_term_4 = delta_sigma_term_1 - delta_sigma_term_3;
+        let delta_sigma = b * sins * (cos2sm + 0.25 * b * delta_sigma_term_4);
+        let sigma_old = sigma;
+
+        sigma = range_m / (geo_const::EARTH_SEMI_MINOR_AXIS * a) + delta_sigma;
+        twosigm = 2.0 * s1 + sigma;
+        cos2sm = twosigm.cos();
+        sins = sigma.sin();
+        coss = sigma.cos();
+
+        steps += 1;
+        if ((sigma_old - sigma).abs() < atol) || (steps >= max_iters) {
+            break;
+        }
+    }
+
+    let phi2_term_1 = u1.sin() * coss + u1.cos() * sins * bearing_rad.cos();
+    let phi2_term_2 = (u1.sin() * sins - u1.cos() * coss * bearing_rad.cos()).powi(2);
+    let phi2_term_3 =
+        (1.0 - geo_const::EARTH_FLATTENING_FACTOR) * (sina.powi(2) + phi2_term_2).sqrt();
+    let phi2 = phi2_term_1.atan2(phi2_term_3);
+
+    let lam =
+        (sins * bearing_rad.sin()).atan2(u1.cos() * coss - u1.sin() * sins * bearing_rad.cos());
+    let c = geo_const::EARTH_FLATTENING_FACTOR / 16.0
+        * cos2a
+        * (4.0 + geo_const::EARTH_FLATTENING_FACTOR * (4.0 - 3.0 * cos2a));
+
+    let l_term_1 = sigma + c * sins * (cos2sm + c * coss * (-1.0 + 2.0 * cos2sm.powi(2)));
+    let l = lam - (1.0 - c) * geo_const::EARTH_FLATTENING_FACTOR * sina * l_term_1;
+    let l2 = l + lon_rad;
+
+    Ok((phi2.to_degrees(), l2.to_degrees()))
 }
 
 #[cfg(test)]
@@ -1460,6 +1569,22 @@ mod geotests {
         let lon_dms = dd2dms(lon_dd, false);
         assert!(lat_dms == "25:22:44.738N");
         assert!(lon_dms == "74:59:55.525W");
+    }
 
+    #[test]
+    fn test_vincenty_direct() {
+        let truth = (-12.884359520148694, -87.12194168465778);
+        let result = vincenty_direct(-10.0, -80., 840000.0, -113.0, 1.0E-13, 2000);
+        assert!(result.is_ok());
+
+        let test = result.unwrap();
+        assert!(
+            almost::equal_with(test.0, truth.0, 1.0e-9),
+            "Incorrect latitude."
+        );
+        assert!(
+            almost::equal_with(test.1, truth.1, 1.0e-9),
+            "Incorrect longitude."
+        );
     }
 }
