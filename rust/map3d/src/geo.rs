@@ -1,4 +1,5 @@
 use core::fmt;
+use std::f64::INFINITY;
 
 use almost;
 use chrono::{Datelike, NaiveDateTime, Timelike};
@@ -479,6 +480,29 @@ pub fn ll2dms(lat: f64, lon: f64) -> (String, String) {
     return (dd2dms(lat, true), dd2dms(lon, false));
 }
 
+#[derive(Debug, Clone)]
+pub struct DomainError {
+    pub var: &'static str,
+    pub value: f64,
+    pub min: f64,
+    pub max: f64,
+    pub min_inclusive: bool, // If true, min is included in domain as an acceptable value.
+    pub max_inclusive: bool, // If true, max is included in domain as an acceptable value.
+}
+
+impl fmt::Display for DomainError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let min_inequality: &str = if self.min_inclusive { "[" } else { "(" };
+        let max_inequality: &str = if self.max_inclusive { "]" } else { ")" };
+
+        write!(
+            f,
+            "{} must be in domain {}{}, {}{} but received {}",
+            self.var, min_inequality, self.min, self.max, max_inequality, self.value
+        )
+    }
+}
+
 /// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
 /// solution to determine outputs using the WGS84 ellipsoidal Earth model.
 ///
@@ -506,26 +530,38 @@ pub fn vincenty_direct(
     bearing_deg: f64,
     atol: f64,
     max_iters: u16,
-) -> Result<(f64, f64), String> {
+) -> Result<(f64, f64), DomainError> {
     if lon_deg.abs() > 90.0 {
-        return Err(format!(
-            "Longitude ({}) must be in domain [-90.0, 90.0].",
-            lon_deg
-        ));
+        return Err(DomainError {
+            var: "lon_deg",
+            value: lon_deg,
+            min: -90.0,
+            max: 90.0,
+            min_inclusive: true,
+            max_inclusive: true,
+        });
     }
 
     if range_m < 0.0 {
-        return Err(format!(
-            "Range ({}) must be greater than or equal to zero.",
-            range_m
-        ));
+        return Err(DomainError {
+            var: "range_m",
+            value: range_m,
+            min: 0.0,
+            max: INFINITY,
+            min_inclusive: true,
+            max_inclusive: false,
+        });
     }
 
     if atol <= 0.0 {
-        return Err(format!(
-            "Absolute tolerance ({}) must be greater than zero.",
-            atol
-        ));
+        return Err(DomainError {
+            var: "atol",
+            value: atol,
+            min: 0.0,
+            max: INFINITY,
+            min_inclusive: false,
+            max_inclusive: false,
+        });
     }
 
     let lat_rad = lat_deg.to_radians();
