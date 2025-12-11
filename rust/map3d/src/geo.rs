@@ -531,7 +531,7 @@ pub fn vincenty_direct(
     atol: f64,
     max_iters: u16,
 ) -> Result<(f64, f64), DomainError> {
-    if lon_deg.abs() > 90.0 {
+    if lat_deg.abs() > 90.0 {
         return Err(DomainError {
             var: "lon_deg",
             value: lon_deg,
@@ -1607,10 +1607,13 @@ mod geotests {
         assert!(lon_dms == "74:59:55.525W");
     }
 
-    #[test]
-    fn test_vincenty_direct() {
-        let truth = (-12.884359520148694, -87.12194168465778);
-        let result = vincenty_direct(-10.0, -80., 840000.0, -113.0, 1.0E-13, 2000);
+    #[rstest]
+    #[case((45.0, 120.0, 0.0, 0.0), (45.0, 120.0))] // Edge case (same location)
+    #[case((45.0, 120.0, 3000.0, 30.0), (45.02337670419947, 120.0190319660863))] // Sample case 1
+    #[case((-10.0, -80.0, 840000.0, -113.0), (-12.884359520148694, -87.12194168465778))] // Sample case 2
+    #[case((-60.0, 24.0, 12000000.0, -45.0), (37.34976350706342, -33.49808323545486))] // Sample case 3
+    fn test_vincenty_direct(#[case] args: (f64, f64, f64, f64), #[case] truth: (f64, f64)) {
+        let result = vincenty_direct(args.0, args.1, args.2, args.3, 1.0E-13, 2000);
         assert!(result.is_ok());
 
         let test = result.unwrap();
