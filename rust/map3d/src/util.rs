@@ -56,7 +56,6 @@ pub fn angle_between_vec3(a: &glam::DVec3, b: &glam::DVec3) -> f64 {
     return f64::acos(dot);
 }
 
-
 pub fn rand_orienation() -> glam::DQuat {
     return glam::DQuat::from_xyzw(
         rand::random(),
@@ -65,4 +64,42 @@ pub fn rand_orienation() -> glam::DQuat {
         rand::random(),
     )
     .normalize();
+}
+
+/// Wraps an angle to the domains [[-pi, pi]].
+///
+/// # Arguments
+///
+/// * `angle` - Angle [[radians]].
+///
+/// # Returns
+///
+/// - `angle` - Angle guaranteed to be in domain [[-pi, pi]] [[radians]].
+pub fn wrap_to_pi(angle: f64) -> f64 {
+    return (angle).sin().atan2((angle).cos());
+}
+
+#[cfg(test)]
+mod geotests {
+    use super::*;
+    use approx::relative_eq;
+    use rstest::*;
+    use std::f64::consts::PI;
+
+    #[rstest]
+    #[case(-4.0*PI, 0.0)]
+    #[case(-1.2*PI, 0.8*PI)]
+    #[case(-0.5*PI, -0.5*PI)]
+    #[case(0.0, 0.0)]
+    #[case(0.6*PI, 0.6*PI)]
+    #[case(1.6*PI, -0.4*PI)]
+    fn test_wrap_to_pi(#[case] angle: f64, #[case] truth: f64) {
+        let test = wrap_to_pi(angle);
+        assert!(relative_eq!(
+            test,
+            truth,
+            max_relative = 1e-13,
+            epsilon = 1e-14
+        ));
+    }
 }

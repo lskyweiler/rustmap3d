@@ -9,6 +9,7 @@ glam = "*"
 almost = "0.2.0"
 rand = "0.9"
 chrono = "0.4.38"
+approx = "0.5.1"
 
 [dev-dependencies]
 rstest = "0.25"
