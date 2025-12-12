@@ -80,7 +80,7 @@ pub fn wrap_to_pi(angle: f64) -> f64 {
 }
 
 #[cfg(test)]
-mod geotests {
+mod util_tests {
     use super::*;
     use approx::relative_eq;
     use rstest::*;
