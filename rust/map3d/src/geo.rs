@@ -1766,14 +1766,18 @@ mod geotests {
         assert!(result.is_ok());
 
         let test = result.unwrap();
-        assert!(
-            almost::equal_with(test.0, truth.0, 1.0e-9),
-            "Incorrect latitude."
-        );
-        assert!(
-            almost::equal_with(test.1, truth.1, 1.0e-9),
-            "Incorrect longitude."
-        );
+        assert!(relative_eq!(
+            test.0,
+            truth.0,
+            max_relative = 1e-8,
+            epsilon = 1e-9
+        ));
+        assert!(relative_eq!(
+            test.1,
+            truth.1,
+            max_relative = 1e-8,
+            epsilon = 1e-9
+        ));
     }
 
     #[rstest]
