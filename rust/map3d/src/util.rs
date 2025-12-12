@@ -76,7 +76,15 @@ pub fn rand_orienation() -> glam::DQuat {
 ///
 /// - `angle` - Angle guaranteed to be in domain [[-pi, pi]] [[radians]].
 pub fn wrap_to_pi(angle: f64) -> f64 {
-    return (angle).sin().atan2((angle).cos());
+    let mut x = angle % std::f64::consts::TAU;
+
+    if x <= -std::f64::consts::PI {
+        x += std::f64::consts::TAU;
+    } else if x > std::f64::consts::PI {
+        x -= std::f64::consts::TAU;
+    }
+
+    x
 }
 
 #[cfg(test)]
