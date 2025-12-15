@@ -1,4 +1,4 @@
 .env
 .github/
-Cargo.lock
+.venv/
 target/

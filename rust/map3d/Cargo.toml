@@ -4,15 +4,14 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-# use latest by default, but allows downstream packages to use a compatable version
-glam = "*"
-almost = "0.2.0"
-rand = "0.9"
-chrono = "0.4.38"
+glam = "~0"
+almost = "~0.2"
+rand = "~0.9"
+chrono = "~0.4"
 
 [dev-dependencies]
-rstest = "0.25"
-criterion = { version = "0.5", features = ["html_reports"] }
+rstest = "0.26"
+criterion = { version = "~0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "geobench"
