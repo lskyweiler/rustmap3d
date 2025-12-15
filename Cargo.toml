@@ -1,6 +1,6 @@
 [package]
 name = "rustmap3d"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,8 +9,11 @@ name = "rustmap3d"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.24", features = ["extension-module", "generate-import-lib"] }
-map3d = { path = "../map3d" }
+
+map3d = { path = "crates/map3d" }
+
+pyo3 = { version = "0.27", features = ["extension-module", "generate-import-lib"] }
+pyo3-stub-gen = "~0.17"
 glam = "*"
 
 [features]
