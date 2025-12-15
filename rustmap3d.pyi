@@ -168,7 +168,30 @@ def vincenty_direct(
     bearing_deg: builtins.float,
     atol: builtins.float,
     max_iters: builtins.int,
-) -> tuple[builtins.float, builtins.float]: ...
+) -> tuple[builtins.float, builtins.float]:
+    r"""
+    Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
+    solution to determine outputs using the WGS84 ellipsoidal Earth model.
+
+    See reference:
+    https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
+
+    # Arguments
+
+    * `lat_deg` - Latitude reference [[degrees]].
+    * `lon_deg` - Longitude reference [[degrees]].
+    * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
+    * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
+    * `abs_tol` - Absolute tolerance used for convergence.
+    * `max_iters` - Maximum possible number of iterations before early termination.
+
+    # Returns
+
+    A tuple `(lat_deg, lon_deg)` where:
+    * `lat_deg` - Latitude location [[degrees]].
+    * `lon_deg` - Longitude location [[degrees]].
+    """
+
 def vincenty_inverse(
     lat_a_deg: builtins.float,
     lon_a_deg: builtins.float,
@@ -176,4 +199,27 @@ def vincenty_inverse(
     lon_b_deg: builtins.float,
     atol: builtins.float,
     max_iters: builtins.int,
-) -> tuple[builtins.float, builtins.float, builtins.float]: ...
+) -> tuple[builtins.float, builtins.float, builtins.float]:
+    r"""
+    Calculates range and bearings between two latitude-longitude points. This function uses an iterative solution to
+    determine outputs using the WGS84 ellipsoidal Earth model.
+
+    See reference:
+    https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
+
+    # Arguments
+
+    * `lat_a_deg` - Latitude point A [[degrees]].
+    * `lon_a_deg` - Longitude point A [[degrees]].
+    * `lat_b_deg` - Latitude point A [[degrees]].
+    * `lon_b_deg` - Longitude point A [[degrees]].
+    * `atol` - Absolute tolerance used for convergence.
+    * `max_iters` - Maximum possible number of iterations before early termination.
+
+    # Returns
+
+    A tuple `(range_m, bearing_ab_deg, bearing_ba_deg)` where:
+    * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
+    * `bearing_ab_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
+    * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [[degrees]].
+    """
