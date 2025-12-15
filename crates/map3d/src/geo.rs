@@ -28,7 +28,7 @@ pub mod geo_const {
     pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
 }
 
-pub mod vincenty_const {
+mod vincenty_const {
     pub static INVERSE_SIN_SIGMA_TOL: f64 = 1.0e-10;
     pub static INVERSE_COS2A_TOL: f64 = 1.0e-10;
 }

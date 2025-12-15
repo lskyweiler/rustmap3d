@@ -23,7 +23,7 @@ def test_ecef2lla_rustmap3d(benchmark):
     )
 
 
-def test_ecef2lla_pymap3d(benchmark):
+def test_ecef2geodetic_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
         args=(pymap3d.ecef2geodetic, ecef_points),
@@ -41,7 +41,7 @@ def test_lla2ecef_rustmap3d(benchmark):
     )
 
 
-def test_lla2ecef_pymap3d(benchmark):
+def test_geodetic2ecef_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
         args=(pymap3d.geodetic2ecef, lla_points),
