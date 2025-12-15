@@ -17,8 +17,8 @@ members = ["crates/*"]
 edition = "2021"
 version = "0.2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
+# rlib is required to generate py-stubs
 crate-type = ["cdylib", "rlib"]
 doctest = false
 
@@ -30,7 +30,7 @@ pyo3 = { version = "~0.27", features = [
     "extension-module",
     "generate-import-lib",
 ] }
-glam = "~0"
+glam = "~0.30"
 
 # bin/stub_gen deps
 env_logger = "~0.11"
@@ -39,7 +39,7 @@ pyo3-stub-gen = { version = "~0.17", default-features = false }
 [workspace.dependencies]
 map3d = { path = "crates/map3d" }
 
-glam = "~0"
+glam = "~0.30"
 pyo3 = "~0.27"
 pyo3-stub-gen = { version = "~0.17", default-features = false }
 

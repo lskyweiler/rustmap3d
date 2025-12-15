@@ -19,20 +19,20 @@ ecef = rustmap3d.lla2ecef(lat, lon, alt)
 ...
 
 # local conversions
-ecef = enu2ecef(e, n, u, lat_ref, lon_ref)
-ned = ned2ecef(n, e, d, lat_ref, lon_ref)
+ecef = rustmap3d.enu2ecef(e, n, u, lat_ref, lon_ref)
+ned = rustmap3d.ned2ecef(n, e, d, lat_ref, lon_ref)
 # enu, ned, aer
 ...  
 
 # local rotations
-enu_quat = enu2ecef_quat(lat, lon)  # quaternion that rotates a local enu vector to ecef
-enu_dcm = enu2ecef_dcm(lat, lon) 
+enu_quat = rustmap3d.enu2ecef_quat(lat, lon)  # quaternion that rotates a local enu vector to ecef
+enu_dcm = rustmap3d.enu2ecef_dcm(lat, lon) 
 # enu, ned, aer
 ...  
 
 # distance functions
-lat, lon = vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg)
-range_m, bearing_ab, bearing_ba = vincenty_inverse(lat_a, lon_a, lat_b, lon_b)
+lat, lon = rustmap3d.vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg)
+range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b, lon_b)
 ```
 
 ## Comparison with similar packages

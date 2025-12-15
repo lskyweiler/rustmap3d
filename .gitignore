@@ -73,3 +73,5 @@ docs/_build/
 target/
 
 .benchmarks/
+
+.ruff_cache/
