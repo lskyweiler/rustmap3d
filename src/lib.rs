@@ -1,5 +1,6 @@
 use pymap3d::*;
 use pyo3::prelude::*;
+use pyo3_stub_gen::define_stub_info_gatherer;
 
 #[pymodule]
 fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -40,3 +41,5 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(vincenty_inverse, m)?)?;
     Ok(())
 }
+
+define_stub_info_gatherer!(stub_info);

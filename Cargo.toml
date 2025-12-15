@@ -30,17 +30,18 @@ pyo3 = { version = "~0.27", features = [
     "extension-module",
     "generate-import-lib",
 ] }
-pyo3-stub-gen = "~0.17"
 glam = "~0"
+
+# bin/stub_gen deps
+env_logger = "~0.11"
+pyo3-stub-gen = { version = "~0.17", default-features = false }
 
 [workspace.dependencies]
-glam = "~0"
-pyo3 = "~0.27"
 map3d = { path = "crates/map3d" }
 
-[[bin]]
-name = "stub_gen"
-required-features = ["stub_gen"]
+glam = "~0"
+pyo3 = "~0.27"
+pyo3-stub-gen = { version = "~0.17", default-features = false }
 
 [profile.release]
 # https://github.com/johnthagen/min-sized-rust

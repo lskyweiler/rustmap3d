@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Gen PyStubs",
+            "type": "shell",
+            "command": [
+                "cargo run stub_gen &&",
+                "uvx ruff format rustmap3d.pyi &&",
+                "uvx ruff format rustmap3d.pyi"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        }
+    ]
+}
