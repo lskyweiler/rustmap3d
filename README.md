@@ -38,15 +38,15 @@ range_m, bearing_ab, bearing_ba = vincenty_inverse(lat_a, lon_a, lat_b, lon_b)
 ## Comparison with similar packages
 
 - 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#Benchmarks))
-- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and matlab
+- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 - Exposes rotations (both quaternions and 3x3 matrices)
 
 ## Benchmarks
 
 Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
 
-- *50x* faster for lla2ecef
-- *400x* faster for ecef2lla
+- *~50x* faster for lla2ecef
+- *~400x* faster for ecef2lla
 
 <p align="center"><img src="docs/benchmarks.svg"></p>
 
