@@ -5,7 +5,7 @@ authors = [
     "Andrew Molnar <andrew.b.molnar@leidos.com>",
 ]
 edition = "2021"
-keywords = ["geodetic"]
+keywords = ["geodetic", "engineering", "scientific", "gis"]
 license-file = "LICENSE"
 readme = "README.md"
 version = "0.2.0"

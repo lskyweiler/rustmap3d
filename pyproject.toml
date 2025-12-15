@@ -19,12 +19,13 @@ dev = [
     "pre-commit",
     "pytest",
     "pytest-cov",
-    "pytest-benchmark",
+    "pytest-benchmark[histogram]",
     "pylint",
     "maturin",
     "pymap3d",  # for benchmarks
     "numpy",
     "matplotlib",
+    "numba",
     'maturin[patchelf] ; platform_system != "Windows"',
 ]
 
