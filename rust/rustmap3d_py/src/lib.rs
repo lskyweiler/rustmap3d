@@ -1,7 +1,8 @@
-use map3d;
-use map3d::{Vec3Tup, QuatTup, Mat3Tup};
-use pyo3::prelude::*;
 use glam;
+use map3d;
+use map3d::{Mat3Tup, QuatTup, Vec3Tup};
+use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 
 #[pyfunction]
 pub fn ecef2lla(x: f64, y: f64, z: f64) -> Vec3Tup {
@@ -187,6 +188,41 @@ pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
     return map3d::angle_between_vec3(&map3d::tuple_to_vec3(&a), &map3d::tuple_to_vec3(&b));
 }
 
+#[pyfunction]
+pub fn vincenty_direct(
+    lat_deg: f64,
+    lon_deg: f64,
+    range_m: f64,
+    bearing_deg: f64,
+    atol: f64,
+    max_iters: u16,
+) -> PyResult<(f64, f64)> {
+    let result = map3d::vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg, atol, max_iters);
+
+    match result {
+        Ok(val) => Ok(val),
+        Err(err) => Err(PyValueError::new_err(err.to_string())),
+    }
+}
+
+#[pyfunction]
+pub fn vincenty_inverse(
+    lat_a_deg: f64,
+    lon_a_deg: f64,
+    lat_b_deg: f64,
+    lon_b_deg: f64,
+    atol: f64,
+    max_iters: u16,
+) -> PyResult<(f64, f64, f64)> {
+    let result =
+        map3d::vincenty_inverse(lat_a_deg, lon_a_deg, lat_b_deg, lon_b_deg, atol, max_iters);
+
+    match result {
+        Ok(val) => Ok(val),
+        Err(err) => Err(PyValueError::new_err(err.to_string())),
+    }
+}
+
 #[pymodule]
 fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ecef2lla, m)?)?;
@@ -221,5 +257,8 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(ecef2bearing, m)?)?;
     m.add_function(wrap_pyfunction!(angle_between, m)?)?;
+
+    m.add_function(wrap_pyfunction!(vincenty_direct, m)?)?;
+    m.add_function(wrap_pyfunction!(vincenty_inverse, m)?)?;
     Ok(())
 }
