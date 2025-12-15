@@ -1,0 +1,9 @@
+[package]
+name = "pymap3d"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+glam.workspace = true
+pyo3.workspace = true
+map3d.workspace = true

@@ -1,6 +1,5 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./rust/map3d/Cargo.toml",
-        "./rust/rustmap3d_py/Cargo.toml"
-    ]
+        "./Cargo.toml"
+    ],
 }

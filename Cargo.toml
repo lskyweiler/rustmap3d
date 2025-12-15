@@ -1,20 +1,47 @@
 [package]
 name = "rustmap3d"
-version = "0.2.0"
+authors = [
+    "Lucas Weiler <lucas.l.weiler@leidos.com>",
+    "Andrew Molnar <andrew.b.molnar@leidos.com>",
+]
 edition = "2021"
+keywords = ["geodetic"]
+license-file = "LICENSE"
+readme = "README.md"
+version = "0.2.0"
+
+[workspace]
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2021"
+version = "0.2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "rustmap3d"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+doctest = false
 
 [dependencies]
+map3d = { path = "crates/map3d" }
+pymap3d = { path = "crates/pymap3d" }
 
+pyo3 = { version = "~0.27", features = [
+    "extension-module",
+    "generate-import-lib",
+] }
+pyo3-stub-gen = "~0.17"
+glam = "~0"
+
+[workspace.dependencies]
+glam = "~0"
+pyo3 = "~0.27"
 map3d = { path = "crates/map3d" }
 
-pyo3 = { version = "0.27", features = ["extension-module", "generate-import-lib"] }
-pyo3-stub-gen = "~0.17"
-glam = "*"
+[[bin]]
+name = "stub_gen"
+required-features = ["stub_gen"]
 
-[features]
-extension-module = ["pyo3/extension-module"]
+[profile.release]
+# https://github.com/johnthagen/min-sized-rust
+strip = true # Automatically strip symbols from the binary.

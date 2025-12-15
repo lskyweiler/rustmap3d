@@ -1,7 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use glam;
 use glam::Vec3Swizzles;
 use map3d;
+use std::hint::black_box;
 
 fn bench_geo(c: &mut Criterion) {
     c.bench_function(
@@ -101,7 +102,6 @@ fn bench_geo(c: &mut Criterion) {
             })
         },
     );
-
 }
 
 criterion_group!(benches, bench_geo);

@@ -1,13 +1,14 @@
 [package]
 name = "map3d"
-version = "0.2.0"
-edition = "2021"
+version.workspace =  true
+edition.workspace = true
 
 [dependencies]
-glam = "~0"
+glam.workspace = true
 almost = "~0.2"
 rand = "~0.9"
 chrono = "~0.4"
+approx = "~0.5"
 
 [dev-dependencies]
 rstest = "0.26"

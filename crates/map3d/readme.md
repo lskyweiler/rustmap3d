@@ -1,3 +1,3 @@
 # map3d
 
-Rust geodedic coordinate transformation library
+Rust geodetic coordinate transformation library
