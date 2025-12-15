@@ -119,7 +119,7 @@ pub fn ecef2lla_map3d(ecef: &glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(f64::to_degrees(lat), f64::to_degrees(lon), alt);
 }
 pub fn ecef2lla(ecef: &glam::DVec3) -> glam::DVec3 {
-    return ecef2lla_map3d(ecef);
+    return ecef2lla_ferarri(ecef);
 }
 
 pub fn lla2ecef(lla: &glam::DVec3) -> glam::DVec3 {
