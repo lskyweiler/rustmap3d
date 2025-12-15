@@ -13,13 +13,37 @@
 import rustmap3d
 
 
+# geodetic conversions
 lla = rustmap3d.ecef2lla(x, y, z)
 ecef = rustmap3d.lla2ecef(lat, lon, alt)
+...
+
+# local conversions
+ecef = enu2ecef(e, n, u, lat_ref, lon_ref)
+ned = ned2ecef(n, e, d, lat_ref, lon_ref)
+# enu, ned, aer
+...  
+
+# local rotations
+enu_quat = enu2ecef_quat(lat, lon)  # quaternion that rotates a local enu vector to ecef
+enu_dcm = enu2ecef_dcm(lat, lon) 
+# enu, ned, aer
+...  
+
+# distance functions
+lat, lon = vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg)
+range_m, bearing_ab, bearing_ba = vincenty_inverse(lat_a, lon_a, lat_b, lon_b)
 ```
+
+## Comparison with similar packages
+
+- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#Benchmarks))
+- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and matlab
+- Exposes rotations (both quaternions and 3x3 matrices)
 
 ## Benchmarks
 
-Compared to pure python equivalent code in [pymap3d](https://github.com/geospace-code/pymap3d)
+Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
 
 - *50x* faster for lla2ecef
 - *400x* faster for ecef2lla
