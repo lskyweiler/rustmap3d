@@ -233,10 +233,7 @@ pub fn ecef2heading(ecef_rel: Vec3Tup, ref_lat: f64, ref_lon: f64) -> f64 {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2bearing(obs_ecef: Vec3Tup, targ_ecef: Vec3Tup) -> f64 {
-    let bearing = map3d::ecef2bearing(
-        &tuple_to_vec3(&obs_ecef),
-        &tuple_to_vec3(&targ_ecef),
-    );
+    let bearing = map3d::ecef2bearing(&tuple_to_vec3(&obs_ecef), &tuple_to_vec3(&targ_ecef));
     return bearing;
 }
 
@@ -248,6 +245,26 @@ pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
 
 #[gen_stub_pyfunction]
 #[pyfunction]
+/// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
+/// solution to determine outputs using the WGS84 ellipsoidal Earth model.
+///
+/// See reference:
+/// https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
+/// * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
+/// * `abs_tol` - Absolute tolerance used for convergence.
+/// * `max_iters` - Maximum possible number of iterations before early termination.
+///
+/// # Returns
+///
+/// A tuple `(lat_deg, lon_deg)` where:
+/// * `lat_deg` - Latitude location [[degrees]].
+/// * `lon_deg` - Longitude location [[degrees]].
 pub fn vincenty_direct(
     lat_deg: f64,
     lon_deg: f64,
@@ -266,6 +283,27 @@ pub fn vincenty_direct(
 
 #[gen_stub_pyfunction]
 #[pyfunction]
+/// Calculates range and bearings between two latitude-longitude points. This function uses an iterative solution to
+/// determine outputs using the WGS84 ellipsoidal Earth model.
+///
+/// See reference:
+/// https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
+///
+/// # Arguments
+///
+/// * `lat_a_deg` - Latitude point A [[degrees]].
+/// * `lon_a_deg` - Longitude point A [[degrees]].
+/// * `lat_b_deg` - Latitude point A [[degrees]].
+/// * `lon_b_deg` - Longitude point A [[degrees]].
+/// * `atol` - Absolute tolerance used for convergence.
+/// * `max_iters` - Maximum possible number of iterations before early termination.
+///
+/// # Returns
+///
+/// A tuple `(range_m, bearing_ab_deg, bearing_ba_deg)` where:
+/// * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
+/// * `bearing_ab_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
+/// * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [[degrees]].
 pub fn vincenty_inverse(
     lat_a_deg: f64,
     lon_a_deg: f64,
