@@ -1,119 +1,52 @@
+# see dagger project for gitlab runner requirements: https://gitlab.sdo.psdo.leidos.com/alphamosaic/utilities/dagger/-/tree/main/cicd?ref_type=heads
+
 stages:
-  - build
   - test
-  - bench
+  - pre-release
   - publish
-  - test-deploy
+  - release
 
-variables:
-  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-  MATURIN_PACKAGE_REG_USERNAME: gitlab-ci-token
-  MATURIN_PACKAGE_REG_PASSWORD: ${CI_JOB_TOKEN}
-  MATURIN_PACKAGE_REG_INDEX: ${CI_API_V4_URL}/projects/4516/packages/pypi
-  PYPI_INDEX_URL: ${MATURIN_PACKAGE_REG_INDEX}/simple
+include:
+  - project: alphamosaic/utilities/dagger
+    ref: feat/pyo3
+    file:
+      - cicd/pyo3/test-py.yml
+      - cicd/pyo3/test-rs.yml
+      - cicd/release.yml
+      - cicd/python/publish.yml
 
-build:
-  stage: build
-  tags:
-    - shell
+publish-leidos-packages:
   script:
-    - docker build -t ${CONTAINER_TEST_IMAGE} --build-arg UID=$(id -u) .
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push ${CONTAINER_TEST_IMAGE}
+    - dagger call -m=${DAGGER_PATH}/pyo3@${DAGGER_PYO3_MOD_BRANCH} 
+          --src=./
+        build-and-publish-whls 
+          --pythons=3.10,3.11,3.12,3.13 
+          --targets=x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-pc-windows-gnu,aarch64-apple-darwin 
+          --publish_url=${AM_PYPI_REG_UPLOAD_URL}
+          --gitlab_token=${CI_JOB_TOKEN}
 
-test:
-  stage: test
-  image: $CONTAINER_TEST_IMAGE
-  tags:
-    - docker
+git-create-release-branch:
   script:
-    - cd rust/map3d
-    - cargo test --release
-
-bench:
-  stage: bench
-  image: $CONTAINER_TEST_IMAGE
-  tags:
-    - docker
-  script:
-    - cd rust/map3d
-    - cargo bench
-  artifacts:
-    when: on_success
-    expire_in: "30 days"
-    paths:
-      - rust/map3d/target/criterion/*
-
-publish-package:
-  stage: publish
-  image: $CONTAINER_TEST_IMAGE
-  tags:
-    - docker
-  only:
-    - tags
-  script:
-    - ./scripts/build-wheels.sh 
-    # upload wheels to gitlab registry
-    - uv run --with=maturin maturin upload 
-        --skip-existing 
-        --username ${MATURIN_PACKAGE_REG_USERNAME} 
-        --password ${MATURIN_PACKAGE_REG_PASSWORD} 
-        --repository-url ${MATURIN_PACKAGE_REG_INDEX}
-        rust/rustmap3d_py/target/wheels/*
-
-    - uv run --with=maturin maturin upload 
-        --skip-existing 
-        --username ${ACT3_USERNAME} 
-        --password ${ACT3_TOKEN} 
-        --repository-url ${ACT3_PACKAGE_REG}
-        --verbose
-        rust/rustmap3d_py/target/wheels/*
-
-test-deployed-py3.8:
-  stage: test-deploy
-  image: python:3.8-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
-test-deployed-py3.9:
-  stage: test-deploy
-  image: python:3.9-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
-test-deployed-py3.10:
-  stage: test-deploy
-  image: python:3.10-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
-test-deployed-py3.11:
-  stage: test-deploy
-  image: python:3.11-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
-test-deployed-py3.12:
-  stage: test-deploy
-  image: python:3.12-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
-test-deployed-py3.13:
-  stage: test-deploy
-  image: python:3.13-slim
-  tags:
-    - docker
-  script:
-    - pip install rustmap3d --index-url ${PYPI_INDEX_URL}
-    - python <<< "import rustmap3d; print(rustmap3d.lla2ecef(34.7360763315566, -86.68180974918423, 0))"
+    - dagger
+          -m=${DAGGER_PATH}/release@${DAGGER_RELEASE_MOD_BRANCH} 
+        call
+          -v --src=./ --base_image_name=rust:latest --version=$RELEASE_VERSION
+        gen-py-stubs
+        create-changelog
+          --changelog_file=${CHANGELOG_FILE}
+        create-version-file
+          --version_file=${VERSION_FILE}
+        bump-toml-version
+          --toml_file=Cargo.toml
+          --toml_key=package.version
+        bump-toml-version
+          --toml_file=Cargo.toml
+          --toml_key=workspace.package.version
+        uv-lock
+        ruff-format
+        ruff-check-fix
+        commit-to-release-branch
+          --gitlab-token="${GITLAB_RELEASE_BOT_TOKEN}"
+          --git-project-url="${CI_SERVER_URL:8}/$CI_PROJECT_PATH.git"
+        ctr 
+        stdout
