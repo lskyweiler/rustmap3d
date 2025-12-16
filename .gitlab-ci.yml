@@ -6,6 +6,10 @@ stages:
   - publish
   - release
 
+variables:
+  DAGGER_PYO3_MOD_BRANCH: feat/pyo3
+  DAGGER_RELEASE_MOD_BRANCH: feat/pyo3
+
 include:
   - project: alphamosaic/utilities/dagger
     ref: feat/pyo3
