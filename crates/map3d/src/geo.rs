@@ -2,12 +2,12 @@ use core::fmt;
 use std::f64::consts::PI;
 use std::f64::INFINITY;
 
+use crate::util;
 use almost;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam::{self, Vec3Swizzles};
 use rand;
-
-use crate::util;
+use rand_distr::{Distribution, Normal};
 
 pub mod geo_const {
     pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0; // Equatorial radius.
@@ -33,6 +33,16 @@ mod vincenty_const {
     pub static INVERSE_COS2A_TOL: f64 = 1.0e-10;
 }
 
+/// Converts ECEF to LLA using Ferrari's solution:
+/// https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#Ferrari's_solution
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
 pub fn ecef2lla_ferarri(ecef: &glam::DVec3) -> glam::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
@@ -75,6 +85,17 @@ pub fn ecef2lla_ferarri(ecef: &glam::DVec3) -> glam::DVec3 {
     let lon: f64 = f64::to_degrees(lon_rad);
     return glam::DVec3::new(lat, lon, alt);
 }
+
+/// Converts ECEF to LLA using formulation from `pymap3d`:
+/// https://github.com/geospace-code/pymap3d/blob/b4dcee4cd7a43641666cef840c97dd73d4e5ed61/src/pymap3d/ecef.py#L87
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
 pub fn ecef2lla_map3d(ecef: &glam::DVec3) -> glam::DVec3 {
     let r = f64::sqrt(ecef.x * ecef.x + ecef.y * ecef.y + ecef.z * ecef.z);
     let r2 = r * r;
@@ -118,10 +139,29 @@ pub fn ecef2lla_map3d(ecef: &glam::DVec3) -> glam::DVec3 {
     alt *= if inside { -1. } else { 1.0 };
     return glam::DVec3::new(f64::to_degrees(lat), f64::to_degrees(lon), alt);
 }
+
+/// Converts ECEF to LLA.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
 pub fn ecef2lla(ecef: &glam::DVec3) -> glam::DVec3 {
     return ecef2lla_ferarri(ecef);
 }
 
+/// Converts LLA to ECEF.
+///
+/// # Arguments
+///
+/// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn lla2ecef(lla: &glam::DVec3) -> glam::DVec3 {
     let lat = f64::to_radians(lla.x);
     let lon = f64::to_radians(lla.y);
@@ -155,6 +195,7 @@ pub fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64
         + sec as f64 / 86400.;
     return jd;
 }
+
 pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) -> f64 {
     let datetime_fmt = fmt.unwrap_or("%Y-%m-%dT%H:%M:%S".to_string());
     let utc = NaiveDateTime::parse_from_str(&utc_datetime_str, datetime_fmt.as_str()).unwrap();
@@ -167,21 +208,25 @@ pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) ->
         utc.second() as i64,
     );
 }
+
 pub fn linear_velocity_from_earth_rotation(earth_pos: &glam::DVec3) -> glam::DVec3 {
     let rot_axis = glam::DVec3::new(0., 0., geo_const::EARTH_ANGULAR_VEL_RADPS);
     return rot_axis.cross(*earth_pos);
 }
+
 pub fn ecef2eci(ecef: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * geo_const::EARTH_ANGULAR_VEL_RADPS;
 
     let eci = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*ecef);
     return eci;
 }
+
 pub fn eci2ecef(eci: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * -geo_const::EARTH_ANGULAR_VEL_RADPS;
     let ecef = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*eci);
     return ecef;
 }
+
 pub fn ecef2eci_j2000(
     ecef: &glam::DVec3,
     utc_time_str: String,
@@ -192,6 +237,7 @@ pub fn ecef2eci_j2000(
     let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
     return glam::DQuat::from_rotation_z(earth_rot_angle) * (*ecef);
 }
+
 pub fn eci2ecef_j2000(
     eci: &glam::DVec3,
     utc_time_str: String,
@@ -203,20 +249,52 @@ pub fn eci2ecef_j2000(
     return glam::DMat3::from_rotation_z(-earth_rot_angle) * (*eci);
 }
 
-pub fn enu2ecef_quat(lat: f64, lon: f64) -> glam::DQuat {
-    let lat_rad: f64 = f64::to_radians(lat);
-    let lon_rad: f64 = f64::to_radians(lon);
+/// Calculates the quaternion that yields an ENU to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ENU to ECEF quaternion.
+pub fn enu2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
+    let lat_rad: f64 = f64::to_radians(lat_deg);
+    let lon_rad: f64 = f64::to_radians(lon_deg);
 
     let yaw = glam::DQuat::from_rotation_z(std::f64::consts::FRAC_PI_2 + lon_rad);
     let roll = glam::DQuat::from_rotation_x(std::f64::consts::FRAC_PI_2 - lat_rad);
     return yaw * roll;
 }
-pub fn ecef2enu_quat(lat: f64, lon: f64) -> glam::DQuat {
-    let enu2ecef_rot = enu2ecef_quat(lat, lon);
+
+/// Calculates the quaternion that yields an ECEF to ENU transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ECEF to ENU quaternion.
+pub fn ecef2enu_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
+    let enu2ecef_rot = enu2ecef_quat(lat_deg, lon_deg);
     return enu2ecef_rot.conjugate();
 }
-pub fn ned2ecef_quat(lat: f64, lon: f64) -> glam::DQuat {
-    let enu2ecef_q = enu2ecef_quat(lat, lon);
+
+/// Calculates the quaternion that yields an NED to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `quat` - Normalized NED to ECEF quaternion.
+pub fn ned2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
+    let enu2ecef_q = enu2ecef_quat(lat_deg, lon_deg);
     let enu2ecef_mat = glam::DMat3::from_quat(enu2ecef_q);
 
     let east = enu2ecef_mat.x_axis;
@@ -228,28 +306,83 @@ pub fn ned2ecef_quat(lat: f64, lon: f64) -> glam::DQuat {
     let ned_mat = glam::DMat3::from_cols(north, east, down);
     return glam::DQuat::from_mat3(&ned_mat);
 }
-pub fn ecef2ned_quat(lat: f64, lon: f64) -> glam::DQuat {
-    let ned2ecef_rot = ned2ecef_quat(lat, lon);
+
+/// Calculates the quaternion that yields an ECEF to NED transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ECEF to NED quaternion.
+pub fn ecef2ned_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
+    let ned2ecef_rot = ned2ecef_quat(lat_deg, lon_deg);
     return ned2ecef_rot.conjugate();
 }
 
-pub fn enu2ecef_dcm(lat: f64, lon: f64) -> glam::DMat3 {
-    let q = enu2ecef_quat(lat, lon);
-    return glam::DMat3::from_quat(q);
-}
-pub fn ecef2enu_dcm(lat: f64, lon: f64) -> glam::DMat3 {
-    let q = ecef2enu_quat(lat, lon);
-    return glam::DMat3::from_quat(q);
-}
-pub fn ned2ecef_dcm(lat: f64, lon: f64) -> glam::DMat3 {
-    let q = ned2ecef_quat(lat, lon);
-    return glam::DMat3::from_quat(q);
-}
-pub fn ecef2ned_dcm(lat: f64, lon: f64) -> glam::DMat3 {
-    let q = ecef2ned_quat(lat, lon);
+/// Calculates the direction cosine matrix that yields an ENU to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `dcm` - ENU to ECEF direction cosine matrix.
+pub fn enu2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
+    let q = enu2ecef_quat(lat_deg, lon_deg);
     return glam::DMat3::from_quat(q);
 }
 
+/// Calculates the direction cosine matrix that yields an ECEF to ENU transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `dcm` - ECEF to ENU direction cosine matrix.
+pub fn ecef2enu_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
+    let q = ecef2enu_quat(lat_deg, lon_deg);
+    return glam::DMat3::from_quat(q);
+}
+
+/// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `dcm` - NED to ECEF direction cosine matrix.
+pub fn ned2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
+    let q = ned2ecef_quat(lat_deg, lon_deg);
+    return glam::DMat3::from_quat(q);
+}
+
+/// Calculates the direction cosine matrix that yields an ECEF to NED transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [[degrees]].
+/// * `lon_deg` - Longitude reference [[degrees]].
+///
+/// # Returns
+///
+/// * `dcm` - ECEF to NED direction cosine matrix.
+pub fn ecef2ned_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
+    let q = ecef2ned_quat(lat_deg, lon_deg);
+    return glam::DMat3::from_quat(q);
+}
+
+/// TODO: This one's on you @Lucas
 /// Construct a quaternion that orients one ecef towards another ecef point that is tangent to the earth
 /// Frame is initially aligned to the enu frame
 /// Altitude difference is linearly inerpolated in pitch
@@ -298,28 +431,91 @@ pub fn orient_ecef_quat_towards_lla(
     return ecef_quat;
 }
 
+/// Converts ECEF to ENU.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
 pub fn ecef2enu(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
     let rot = ecef2enu_quat(ref_lat_lon.x, ref_lat_lon.y);
     return rot * (*ecef);
 }
+
+/// Converts ENU to ECEF.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
+/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn enu2ecef(enu: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
     let rot = enu2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
     return rot * (*enu);
 }
+
+/// Converts ECEF to NED.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn ecef2ned(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
     let rot = ecef2ned_quat(ref_lat_lon.x, ref_lat_lon.y);
     return rot * (*ecef);
 }
+
+/// Converts NED to ECEF.
+///
+/// # Arguments
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
+/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn ned2ecef(ned: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
     let rot = ned2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
     return rot * (*ned);
 }
+
+/// Converts ENU to AER.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
 pub fn enu2aer(enu: &glam::DVec3) -> glam::DVec3 {
     let az = f64::atan2(enu.x, enu.y);
     let el = f64::atan2(enu.z, enu.xy().length());
     let aer = glam::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), enu.length());
     return aer;
 }
+
+/// Converts AER to ENU.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
 pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
     let r = aer.z;
     let az = f64::to_radians(aer.x);
@@ -330,84 +526,148 @@ pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
     let up = r * f64::sin(el);
     return glam::DVec3::new(east, north, up);
 }
+
+/// Converts ECEF to AER.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
 pub fn ecef2aer(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
     let enu = ecef2enu(ecef, ref_lat_lon);
     return enu2aer(&enu);
 }
+
+/// Converts AER to ECEF.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return enu2ecef(&enu, &ref_lla.xy()) + lla2ecef(ref_lla);
 }
+
+/// Converts NED to AER.
+///
+/// # Arguments
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
 pub fn ned2aer(ned: &glam::DVec3) -> glam::DVec3 {
     let az = f64::atan2(ned.y, ned.x);
     let el = f64::atan2(-ned.z, ned.xy().length());
     let aer = glam::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), ned.length());
     return aer;
 }
+
+/// Converts AER to NED.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn aer2ned(aer: &glam::DVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return glam::DVec3::new(enu.y, enu.x, -enu.z);
 }
 
+/// Calculates heading angle from ENU.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `heading_deg` - Heading angle relative to true north [[degrees]].
 pub fn enu2heading(enu: &glam::DVec3) -> f64 {
-    let angle_off_east = f64::atan2(enu.y, enu.x);
-    let mut heading = -angle_off_east + std::f64::consts::FRAC_PI_2;
-    heading = f64::to_degrees(heading);
-    return heading;
+    return f64::atan2(enu.x, enu.y).to_degrees();
 }
+
+// TODO: Discuss.
 pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, ref_lat_lon: &glam::DVec2) -> f64 {
     let ecef2enu = ecef2enu_dcm(ref_lat_lon.x, ref_lat_lon.y);
     let enu_dcm = ecef2enu * (*ecef_dcm);
     let forward = enu_dcm.x_axis;
     return enu2heading(&forward);
 }
+
+// TODO: Discuss.
 pub fn ecef_quat2heading(ecef_quat: &glam::DQuat, ref_lat_lon: &glam::DVec2) -> f64 {
     let ecef_dcm = glam::DMat3::from_quat(*ecef_quat);
     return ecef_dcm2heading(&ecef_dcm, ref_lat_lon);
 }
+
+// TODO: Should this exist now that we have vincenty? This is a weird... working in ECEF but for planer earth?
 pub fn ecef2heading(ecef_rel: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> f64 {
     let enu = ecef2enu(ecef_rel, ref_lat_lon);
     return enu2heading(&enu);
 }
+
+// TODO: Discuss.
 pub fn ecef2bearing(obs_ecef: &glam::DVec3, targ_ecef: &glam::DVec3) -> f64 {
     let obs_lla = ecef2lla(obs_ecef);
     let diff = (*targ_ecef) - (*obs_ecef);
     return ecef2heading(&diff, &obs_lla.xy());
 }
 
+/// Generates a uniform random point on the surface of a sphere.
+///
+/// # Arguments
+///
+/// * `radius` - Radius of sphere.
+///
+/// # Returns
+///
+/// * `vector` - Random point in R3.
+pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
+    let mut rng = rand::rng();
+    let normal = Normal::new(0.0, 1.0).unwrap();
+
+    return radius
+        * (glam::DVec3::new(
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+        )
+        .normalize());
+}
+
+/// Generates a uniform random ECEF point on the surface of a spherical Earth.
+///
+/// # Returns
+///
+/// * `ecef` - Random ECEF location.
 pub fn rand_ecef() -> glam::DVec3 {
-    let bounds: f64 = 1e7;
-    return rand_ecef_in_range(-bounds, bounds, -bounds, bounds, -bounds, bounds);
+    return rand_point_on_sphere(geo_const::EARTH_SEMI_MAJOR_AXIS);
 }
-pub fn rand_ecef_in_range(
-    x_min: f64,
-    x_max: f64,
-    y_min: f64,
-    y_max: f64,
-    z_min: f64,
-    z_max: f64,
-) -> glam::DVec3 {
-    return glam::DVec3::new(
-        util::lerp(x_min, x_max, rand::random()),
-        util::lerp(y_min, y_max, rand::random()),
-        util::lerp(z_min, z_max, rand::random()),
-    );
-}
+
+/// Generates a uniform random LLA point. Altitude is generated in the domain [[0.0, 10000.0]].
+///
+/// # Returns
+///
+/// * `lla` - Random LLA location.
 pub fn rand_lla() -> glam::DVec3 {
-    return rand_lla_in_range(-90., 90., -180., 180., 0., 10_000.);
-}
-pub fn rand_lla_in_range(
-    lat_min: f64,
-    lat_max: f64,
-    lon_min: f64,
-    lon_max: f64,
-    alt_min: f64,
-    alt_max: f64,
-) -> glam::DVec3 {
     return glam::DVec3::new(
-        util::lerp(lat_min, lat_max, rand::random()),
-        util::lerp(lon_min, lon_max, rand::random()),
-        util::lerp(alt_min, alt_max, rand::random()),
+        util::lerp(-90.0, 90.0, rand::random()),
+        util::lerp(-180.0, 180.0, rand::random()),
+        util::lerp(0.0, 10000.0, rand::random()),
     );
 }
 
@@ -415,6 +675,7 @@ pub fn rand_lla_in_range(
 pub struct IllFormedDMSError {
     pub bad_dms: String,
 }
+
 impl fmt::Display for IllFormedDMSError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -425,13 +686,26 @@ impl fmt::Display for IllFormedDMSError {
     }
 }
 
-/// Converts degrees minutes seconds to decimal degrees
-/// Format: Degrees:Minutes:Seconds.DecSecondsDirection where Direction is one of N,E,S,W
-///     Example:
-///         "25:22:44.738N" -> 25.379094
-///         "74:59:55.525W" -> -74.998757
-pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
-    let parts = degrees_minutes_seconds.split(":").collect::<Vec<&str>>();
+/// Converts degrees-minutes-seconds (DMS) to decimal degrees (DD).
+///
+/// # Arguments
+///
+/// * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
+///
+/// # Returns
+///
+/// * `dd` - Decimal degrees [degrees].
+///
+/// # Examples
+/// ```
+/// use map3d::dms2dd;
+/// use approx::relative_eq;
+///
+/// let dd = dms2dd("25:22:44.738N").unwrap();
+/// assert!(relative_eq!(dd, 25.37909389, max_relative = 1e-8, epsilon = 1e-9));
+/// ```
+pub fn dms2dd(dms: &str) -> Result<f64, IllFormedDMSError> {
+    let parts = dms.split(":").collect::<Vec<&str>>();
 
     if parts.len() == 3 {
         let sdeg = parts[0];
@@ -456,27 +730,46 @@ pub fn dms2dd(degrees_minutes_seconds: &str) -> Result<f64, IllFormedDMSError> {
         }
     }
     return Err(IllFormedDMSError {
-        bad_dms: degrees_minutes_seconds.to_string(),
+        bad_dms: dms.to_string(),
     });
 }
-pub fn dd2dms(degrees: f64, is_lat: bool) -> String {
+
+/// Converts decimal degrees (DD) to degrees-minutes-seconds (DMS).
+///
+/// # Arguments
+///
+/// * `dd` - Decimal degrees [degrees].
+///
+/// # Returns
+///
+/// * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
+///
+/// # Examples
+/// ```
+/// use map3d::dd2dms;
+/// use approx::relative_eq;
+///
+/// let dms = dd2dms(25.37909389, true);
+/// assert_eq!(dms, "25:22:44.738N");
+/// ```
+pub fn dd2dms(dd: f64, is_lat: bool) -> String {
     let dir: &str;
 
     if is_lat {
-        if degrees > 0. {
+        if dd > 0. {
             dir = "N";
         } else {
             dir = "S";
         }
     } else {
-        if degrees > 0. {
+        if dd > 0. {
             dir = "E";
         } else {
             dir = "W";
         }
     }
 
-    let deg = f64::abs(degrees) * 3600.;
+    let deg = f64::abs(dd) * 3600.;
     let (mnt, sec) = (deg / 60., deg % 60.);
     let (deg, min) = (mnt / 60., mnt % 60.);
     return format!("{:.0}:{:.0}:{:.3}{}", deg.floor(), min.floor(), sec, dir);

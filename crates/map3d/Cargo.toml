@@ -9,6 +9,7 @@ almost = "~0.2"
 rand = "~0.9"
 chrono = "~0.4"
 approx = "~0.5"
+rand_distr = "0.5.1"
 
 [dev-dependencies]
 rstest = "0.26"

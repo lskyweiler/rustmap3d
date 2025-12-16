@@ -1,5 +1,16 @@
 use glam;
 
+/// Linear interpolation between two values.
+///
+/// # Arguments
+///
+/// * `x` - Start value.
+/// * `y` - End value.
+/// * `a` - Amount / factor between `x` and `y`, usually between 0 and 1.
+///
+/// # Returns
+///
+/// - `value` - Value between `x` and `y` based on a factor `a`.
 pub fn lerp(x: f64, y: f64, a: f64) -> f64 {
     return (y - x) * a + x;
 }
