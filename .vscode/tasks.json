@@ -7,7 +7,7 @@
             "command": [
                 "cargo run stub_gen &&",
                 "uvx ruff format rustmap3d.pyi &&",
-                "uvx ruff format rustmap3d.pyi"
+                "uvx ruff check --select I --fix rustmap3d.pyi"
             ],
             "group": "build",
             "problemMatcher": [
