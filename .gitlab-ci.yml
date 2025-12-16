@@ -7,8 +7,10 @@ stages:
   - release
 
 variables:
+  # todo: remove me once we're back on main
   DAGGER_PYO3_MOD_BRANCH: feat/pyo3
   DAGGER_RELEASE_MOD_BRANCH: feat/pyo3
+  DAGGER_RUST_MOD_BRANCH: feat/pyo3
 
 include:
   - project: alphamosaic/utilities/dagger
