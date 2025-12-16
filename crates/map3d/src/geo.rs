@@ -382,67 +382,18 @@ pub fn ecef2ned_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
     return glam::DMat3::from_quat(q);
 }
 
-/// TODO: This one's on you @Lucas
-/// Construct a quaternion that orients one ecef towards another ecef point that is tangent to the earth
-/// Frame is initially aligned to the enu frame
-/// Altitude difference is linearly inerpolated in pitch
-///
-/// Visualize sliding a playing card along a sphere where the playing card is the ecef coordiante frame
-pub fn orient_ecef_quat_towards_lla(
-    obs_ecef: &glam::DVec3,
-    obs_ecef_quat: &glam::DQuat,
-    target_ecef: &glam::DVec3,
-) -> glam::DQuat {
-    let obs2targ_ecef = (*target_ecef) - (*obs_ecef);
-    if obs2targ_ecef.length() == 0. {
-        return obs_ecef_quat.clone();
-    }
-    let obs_lla = ecef2lla(&obs_ecef);
-
-    let ecef2enu_dcm_at_obs = ecef2enu_dcm(obs_lla.x, obs_lla.y);
-    let obs2targ_enu = ecef2enu_dcm_at_obs * obs2targ_ecef;
-    let obs2targ_enu_dir = obs2targ_enu.normalize();
-
-    let targ_lla = ecef2lla(&target_ecef);
-    let alt_diff: f64 = targ_lla.z - obs_lla.z;
-
-    let obs_enu_dcm = ecef2enu_dcm_at_obs * glam::DMat3::from_quat(*obs_ecef_quat);
-    let obs_enu_forward = obs_enu_dcm.x_axis;
-
-    // roll angle is based off east/north difference
-    let en_diff = obs2targ_enu_dir - obs_enu_forward;
-    let mut roll_angle: f64 = util::angle_between_vec2(
-        &obs2targ_enu.xy().normalize(),
-        &obs_enu_forward.xy().normalize(),
-    );
-    roll_angle = f64::clamp(roll_angle, 0., std::f64::consts::FRAC_PI_2);
-    roll_angle *= -f64::signum(en_diff.y);
-
-    let yaw_angle: f64 = f64::atan2(obs2targ_enu_dir.y, obs2targ_enu_dir.x);
-    let pitch_angle: f64 = f64::atan2(alt_diff, obs2targ_enu.xy().length());
-
-    // 321 Euler sequence
-    let enu_rot = glam::DMat3::from_euler(glam::EulerRot::ZYX, yaw_angle, -pitch_angle, roll_angle);
-
-    let enu2ecef_rot = enu2ecef_dcm(obs_lla.x, obs_lla.y);
-    let ecef_dcm = enu2ecef_rot * enu_rot;
-    let mut ecef_quat = glam::DQuat::from_mat3(&ecef_dcm);
-    ecef_quat = ecef_quat.normalize();
-    return ecef_quat;
-}
-
 /// Converts ECEF to ENU.
 ///
 /// # Arguments
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef2enu(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
-    let rot = ecef2enu_quat(ref_lat_lon.x, ref_lat_lon.y);
+pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
     return rot * (*ecef);
 }
 
@@ -451,13 +402,13 @@ pub fn ecef2enu(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+/// * * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn enu2ecef(enu: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
-    let rot = enu2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
+pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*enu);
 }
 
@@ -466,13 +417,13 @@ pub fn enu2ecef(enu: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef2ned(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
-    let rot = ecef2ned_quat(ref_lat_lon.x, ref_lat_lon.y);
+pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
     return rot * (*ecef);
 }
 
@@ -481,13 +432,13 @@ pub fn ecef2ned(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-/// * `ref_lat_lon` - Reference latitude and longitude [[degrees]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn ned2ecef(ned: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
-    let rot = ned2ecef_quat(ref_lat_lon.x, ref_lat_lon.y);
+pub fn ned2ecef(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*ned);
 }
 
@@ -537,8 +488,8 @@ pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef2aer(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
-    let enu = ecef2enu(ecef, ref_lat_lon);
+pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let enu = ecef2enu(ecef, lla_ref);
     return enu2aer(&enu);
 }
 
@@ -554,7 +505,7 @@ pub fn ecef2aer(ecef: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> glam::DVec3 {
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
-    return enu2ecef(&enu, &ref_lla.xy()) + lla2ecef(ref_lla);
+    return enu2ecef(&enu, &ref_lla) + lla2ecef(ref_lla);
 }
 
 /// Converts NED to AER.
@@ -601,22 +552,22 @@ pub fn enu2heading(enu: &glam::DVec3) -> f64 {
 }
 
 // TODO: Discuss.
-pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, ref_lat_lon: &glam::DVec2) -> f64 {
-    let ecef2enu = ecef2enu_dcm(ref_lat_lon.x, ref_lat_lon.y);
+pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, lla_ref: &glam::DVec3) -> f64 {
+    let ecef2enu = ecef2enu_dcm(lla_ref.x, lla_ref.y);
     let enu_dcm = ecef2enu * (*ecef_dcm);
     let forward = enu_dcm.x_axis;
     return enu2heading(&forward);
 }
 
 // TODO: Discuss.
-pub fn ecef_quat2heading(ecef_quat: &glam::DQuat, ref_lat_lon: &glam::DVec2) -> f64 {
+pub fn ecef_quat2heading(ecef_quat: &glam::DQuat, lla_ref: &glam::DVec3) -> f64 {
     let ecef_dcm = glam::DMat3::from_quat(*ecef_quat);
-    return ecef_dcm2heading(&ecef_dcm, ref_lat_lon);
+    return ecef_dcm2heading(&ecef_dcm, lla_ref);
 }
 
 // TODO: Should this exist now that we have vincenty? This is a weird... working in ECEF but for planer earth?
-pub fn ecef2heading(ecef_rel: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> f64 {
-    let enu = ecef2enu(ecef_rel, ref_lat_lon);
+pub fn ecef2heading(ecef_rel: &glam::DVec3, lla_ref: &glam::DVec3) -> f64 {
+    let enu = ecef2enu(ecef_rel, lla_ref);
     return enu2heading(&enu);
 }
 
@@ -624,7 +575,7 @@ pub fn ecef2heading(ecef_rel: &glam::DVec3, ref_lat_lon: &glam::DVec2) -> f64 {
 pub fn ecef2bearing(obs_ecef: &glam::DVec3, targ_ecef: &glam::DVec3) -> f64 {
     let obs_lla = ecef2lla(obs_ecef);
     let diff = (*targ_ecef) - (*obs_ecef);
-    return ecef2heading(&diff, &obs_lla.xy());
+    return ecef2heading(&diff, &obs_lla);
 }
 
 /// Generates a uniform random point on the surface of a sphere.
@@ -653,7 +604,7 @@ pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
 ///
 /// # Returns
 ///
-/// * `ecef` - Random ECEF location.
+/// * `ecef` - Random ECEF location [[meters]].
 pub fn rand_ecef() -> glam::DVec3 {
     return rand_point_on_sphere(geo_const::EARTH_SEMI_MAJOR_AXIS);
 }
@@ -662,7 +613,7 @@ pub fn rand_ecef() -> glam::DVec3 {
 ///
 /// # Returns
 ///
-/// * `lla` - Random LLA location.
+/// * `lla` - Random LLA location [[degrees-degrees-meters]].
 pub fn rand_lla() -> glam::DVec3 {
     return glam::DVec3::new(
         util::lerp(-90.0, 90.0, rand::random()),
@@ -1317,207 +1268,207 @@ mod geotests {
         return (llas, ecefs);
     }
     #[fixture]
-    fn ecef2enu_fixture() -> (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>) {
-        let ecef_ref_tuple: Vec<(glam::DVec3, glam::DVec2)> = vec![
+    fn ecef2enu_fixture() -> (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>) {
+        let ecef_ref_tuple: Vec<(glam::DVec3, glam::DVec3)> = vec![
             (
                 glam::DVec3::new(91619.6484735217, 6925836.249227896, 5957639.1833251435),
-                glam::DVec2::new(-50.173150092148774, -112.00193826311323),
+                glam::DVec3::new(-50.173150092148774, -112.00193826311323, 0.0),
             ),
             (
                 glam::DVec3::new(247424.65845609456, 6213457.926448222, -4561090.24503099),
-                glam::DVec2::new(82.57782955532258, 179.8856930744933),
+                glam::DVec3::new(82.57782955532258, 179.8856930744933, 0.0),
             ),
             (
                 glam::DVec3::new(4192418.204552155, 7351021.414750714, 1979901.0055067968),
-                glam::DVec2::new(62.457227071538824, 55.92173622713477),
+                glam::DVec3::new(62.457227071538824, 55.92173622713477, 0.0),
             ),
             (
                 glam::DVec3::new(-8588031.646098651, -7486734.193169072, -9230929.386199847),
-                glam::DVec2::new(28.342454025165626, -92.0830991512501),
+                glam::DVec3::new(28.342454025165626, -92.0830991512501, 0.0),
             ),
             (
                 glam::DVec3::new(1427216.04466255, 9403604.322131746, -963231.1375281066),
-                glam::DVec2::new(30.516610115227095, -89.90471953518953),
+                glam::DVec3::new(30.516610115227095, -89.90471953518953, 0.0),
             ),
             (
                 glam::DVec3::new(6642925.238247002, 5903029.863253074, -2232073.9836572986),
-                glam::DVec2::new(45.400629146794955, -67.73807362936134),
+                glam::DVec3::new(45.400629146794955, -67.73807362936134, 0.0),
             ),
             (
                 glam::DVec3::new(2591477.518994638, -5409635.6294355355, -8285118.102197416),
-                glam::DVec2::new(19.970663213164315, -93.2950875704390),
+                glam::DVec3::new(19.970663213164315, -93.2950875704390, 0.0),
             ),
             (
                 glam::DVec3::new(2528320.789589662, -3495684.1279134876, 8360309.7196244),
-                glam::DVec2::new(66.11400734475339, -95.08388981259206),
+                glam::DVec3::new(66.11400734475339, -95.08388981259206, 0.0),
             ),
             (
                 glam::DVec3::new(-9735848.884452593, -8556065.641175192, 8333421.846976527),
-                glam::DVec2::new(-14.691539720606187, -2.33006016905326),
+                glam::DVec3::new(-14.691539720606187, -2.33006016905326, 0.0),
             ),
             (
                 glam::DVec3::new(7426961.41892605, 1655943.456426185, 6591322.351593178),
-                glam::DVec2::new(-15.910515256034472, 165.4827913906837),
+                glam::DVec3::new(-15.910515256034472, 165.4827913906837, 0.0),
             ),
             (
                 glam::DVec3::new(-3196405.2009189655, -9604287.523781441, -1060713.7649627458),
-                glam::DVec2::new(-27.470280603087133, 102.2454141837),
+                glam::DVec3::new(-27.470280603087133, 102.2454141837, 0.0),
             ),
             (
                 glam::DVec3::new(7335138.4135223925, 2344465.657677945, 8588377.836181395),
-                glam::DVec2::new(-10.5382655567836, -167.02758187958835),
+                glam::DVec3::new(-10.5382655567836, -167.02758187958835, 0.0),
             ),
             (
                 glam::DVec3::new(7310959.32431601, 8350601.114886332, 6569499.540019801),
-                glam::DVec2::new(63.317884611786326, 23.40930303068805),
+                glam::DVec3::new(63.317884611786326, 23.40930303068805, 0.0),
             ),
             (
                 glam::DVec3::new(-8640546.064591233, -2663666.0467856065, 1614399.1752727698),
-                glam::DVec2::new(72.66364577543774, 163.0609809895735),
+                glam::DVec3::new(72.66364577543774, 163.0609809895735, 0.0),
             ),
             (
                 glam::DVec3::new(-8068883.573257133, -1893830.0686977436, 8266480.72264607),
-                glam::DVec2::new(-25.23522156265527, 125.3010823588916),
+                glam::DVec3::new(-25.23522156265527, 125.3010823588916, 0.0),
             ),
             (
                 glam::DVec3::new(-8234811.869950183, -3807444.077073443, 462885.92168885097),
-                glam::DVec2::new(-64.46261342414945, 130.7529101785710),
+                glam::DVec3::new(-64.46261342414945, 130.7529101785710, 0.0),
             ),
             (
                 glam::DVec3::new(5745089.68100643, 8186227.487702135, 1050884.6330531444),
-                glam::DVec2::new(-64.03982768384915, 2.6480032202244956),
+                glam::DVec3::new(-64.03982768384915, 2.6480032202244956, 0.0),
             ),
             (
                 glam::DVec3::new(2393154.1929320674, 2067816.501552973, 3732474.8825010224),
-                glam::DVec2::new(-60.74611032083097, 30.92056758445699),
+                glam::DVec3::new(-60.74611032083097, 30.92056758445699, 0.0),
             ),
             (
                 glam::DVec3::new(1951197.9768817485, -7575128.269719007, 9939982.202217888),
-                glam::DVec2::new(42.50213359486636, 113.81499658197713),
+                glam::DVec3::new(42.50213359486636, 113.81499658197713, 0.0),
             ),
             (
                 glam::DVec3::new(6216696.544619927, -2057542.5103991907, 1143021.5607241336),
-                glam::DVec2::new(-30.03750128679215, -110.032118791896),
+                glam::DVec3::new(-30.03750128679215, -110.032118791896, 0.0),
             ),
             (
                 glam::DVec3::new(8262888.4250550615, 3106595.2889045794, 9812866.097362377),
-                glam::DVec2::new(15.123933131017566, 164.52989386282826),
+                glam::DVec3::new(15.123933131017566, 164.52989386282826, 0.0),
             ),
             (
                 glam::DVec3::new(7218924.780765143, -447912.04118075967, 5171595.8773390055),
-                glam::DVec2::new(81.52927937810878, -105.2611885755099),
+                glam::DVec3::new(81.52927937810878, -105.2611885755099, 0.0),
             ),
             (
                 glam::DVec3::new(-912999.7792285755, 2374762.7068727836, -4955536.282540757),
-                glam::DVec2::new(10.831088217119586, 151.2254067023637),
+                glam::DVec3::new(10.831088217119586, 151.2254067023637, 0.0),
             ),
             (
                 glam::DVec3::new(3623182.097599946, -124808.5784964189, 6830241.830351334),
-                glam::DVec2::new(71.11579335672388, -144.99222808538826),
+                glam::DVec3::new(71.11579335672388, -144.99222808538826, 0.0),
             ),
             (
                 glam::DVec3::new(2208932.904275298, -3444783.5638758554, -7103490.483277793),
-                glam::DVec2::new(22.462213216531538, -26.6324481797208),
+                glam::DVec3::new(22.462213216531538, -26.6324481797208, 0.0),
             ),
             (
                 glam::DVec3::new(698713.3718823884, -8409581.988125127, -3903578.000227963),
-                glam::DVec2::new(-87.47177257040715, -13.04761510545472),
+                glam::DVec3::new(-87.47177257040715, -13.04761510545472, 0.0),
             ),
             (
                 glam::DVec3::new(-9556270.567275014, -7440669.805674921, 2815381.5153284855),
-                glam::DVec2::new(7.966991562503196, 100.79184677036972),
+                glam::DVec3::new(7.966991562503196, 100.79184677036972, 0.0),
             ),
             (
                 glam::DVec3::new(499026.44389439, -1925421.3250966482, 7925563.273168109),
-                glam::DVec2::new(-71.1002119000218, -138.06002686196018),
+                glam::DVec3::new(-71.1002119000218, -138.06002686196018, 0.0),
             ),
             (
                 glam::DVec3::new(7238450.744717773, -4383306.046812624, -8262036.304761575),
-                glam::DVec2::new(-13.118964393782036, 74.96561856267363),
+                glam::DVec3::new(-13.118964393782036, 74.96561856267363, 0.0),
             ),
             (
                 glam::DVec3::new(-326376.61228840984, 7739298.466333255, -5871984.449330825),
-                glam::DVec2::new(-72.49265123799492, 91.02269534514028),
+                glam::DVec3::new(-72.49265123799492, 91.02269534514028, 0.0),
             ),
             (
                 glam::DVec3::new(-1226800.3167807497, 7604616.1196159385, 244802.38239366747),
-                glam::DVec2::new(45.976409115548705, -86.172644141553),
+                glam::DVec3::new(45.976409115548705, -86.172644141553, 0.0),
             ),
             (
                 glam::DVec3::new(-6183006.182703774, 1260934.9898499493, 5405250.482727632),
-                glam::DVec2::new(-46.5078875763827, 96.5794699892873),
+                glam::DVec3::new(-46.5078875763827, 96.5794699892873, 0.0),
             ),
             (
                 glam::DVec3::new(4892851.839336393, -4366090.555875951, -284396.9303730335),
-                glam::DVec2::new(-81.70294712853254, -160.1769692625534),
+                glam::DVec3::new(-81.70294712853254, -160.1769692625534, 0.0),
             ),
             (
                 glam::DVec3::new(9237967.029159822, 5403631.481081279, -3005393.284370361),
-                glam::DVec2::new(-79.40102319570062, 38.14134828047784),
+                glam::DVec3::new(-79.40102319570062, 38.14134828047784, 0.0),
             ),
             (
                 glam::DVec3::new(-6538766.213631488, -4940418.412632655, 2501053.290733097),
-                glam::DVec2::new(13.527045111462556, 102.20616898781418),
+                glam::DVec3::new(13.527045111462556, 102.20616898781418, 0.0),
             ),
             (
                 glam::DVec3::new(-8784252.36675533, -8232153.597217414, 4884503.641264852),
-                glam::DVec2::new(30.28635667737656, -169.57611510228907),
+                glam::DVec3::new(30.28635667737656, -169.57611510228907, 0.0),
             ),
             (
                 glam::DVec3::new(-4943652.169548029, -3855871.065791603, -4748617.896841602),
-                glam::DVec2::new(74.73754290271745, 152.61923201200796),
+                glam::DVec3::new(74.73754290271745, 152.61923201200796, 0.0),
             ),
             (
                 glam::DVec3::new(2469337.744048135, -9190045.568734694, 4837736.320298016),
-                glam::DVec2::new(-12.948807601309923, 46.97162855809245),
+                glam::DVec3::new(-12.948807601309923, 46.97162855809245, 0.0),
             ),
             (
                 glam::DVec3::new(-1433624.4808392152, -182826.48301463015, -5022036.343881993),
-                glam::DVec2::new(-45.74760712894212, 152.37356328703),
+                glam::DVec3::new(-45.74760712894212, 152.37356328703, 0.0),
             ),
             (
                 glam::DVec3::new(5344321.103997834, 2878251.6468978976, -2881088.089473922),
-                glam::DVec2::new(30.33833424064295, -69.68258737927425),
+                glam::DVec3::new(30.33833424064295, -69.68258737927425, 0.0),
             ),
             (
                 glam::DVec3::new(6606169.345653623, 322403.8278391063, 1042680.5917547438),
-                glam::DVec2::new(62.631186380765996, -139.94615572408208),
+                glam::DVec3::new(62.631186380765996, -139.94615572408208, 0.0),
             ),
             (
                 glam::DVec3::new(667958.4714587647, 8478848.064964425, 1694820.8740469385),
-                glam::DVec2::new(-78.2754170386466, -114.12583810194599),
+                glam::DVec3::new(-78.2754170386466, -114.12583810194599, 0.0),
             ),
             (
                 glam::DVec3::new(8174259.422747154, 2536147.3532497776, -9862214.372994114),
-                glam::DVec2::new(71.51999174030132, -146.96589979434754),
+                glam::DVec3::new(71.51999174030132, -146.96589979434754, 0.0),
             ),
             (
                 glam::DVec3::new(-3472815.7693284587, 4576504.523164628, 5061670.1162975095),
-                glam::DVec2::new(-2.043219531494401, 8.809342235384065),
+                glam::DVec3::new(-2.043219531494401, 8.809342235384065, 0.0),
             ),
             (
                 glam::DVec3::new(4164265.524093671, -8876967.849787056, 5611143.587449348),
-                glam::DVec2::new(-77.72886207380276, -58.502589304409916),
+                glam::DVec3::new(-77.72886207380276, -58.502589304409916, 0.0),
             ),
             (
                 glam::DVec3::new(9676345.130538844, -6880885.856225148, 2825292.9134078994),
-                glam::DVec2::new(18.694870013985096, 74.11457134859293),
+                glam::DVec3::new(18.694870013985096, 74.11457134859293, 0.0),
             ),
             (
                 glam::DVec3::new(8345975.870587062, 5602669.236328628, 6440366.360817695),
-                glam::DVec2::new(-20.537448114795794, 80.45056404450543),
+                glam::DVec3::new(-20.537448114795794, 80.45056404450543, 0.0),
             ),
             (
                 glam::DVec3::new(76565.8634340372, -5176255.943787364, 8534384.933999725),
-                glam::DVec2::new(4.390777736040391, -163.5117863846071),
+                glam::DVec3::new(4.390777736040391, -163.5117863846071, 0.0),
             ),
             (
                 glam::DVec3::new(-8621776.079462763, 8582232.035568487, -7881480.052577838),
-                glam::DVec2::new(70.39862590743721, -50.56334026059545),
+                glam::DVec3::new(70.39862590743721, -50.56334026059545, 0.0),
             ),
             (
                 glam::DVec3::new(-4399316.195656607, -6898512.909927797, 4952200.285973493),
-                glam::DVec2::new(13.452784771177136, -80.37984986897065),
+                glam::DVec3::new(13.452784771177136, -80.37984986897065, 0.0),
             ),
         ];
         let enu: Vec<glam::DVec3> = vec![
@@ -1575,207 +1526,207 @@ mod geotests {
         return (ecef_ref_tuple, enu);
     }
     #[fixture]
-    fn ecef2ned_fixture() -> (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>) {
-        let ecef_ref_tuple: Vec<(glam::DVec3, glam::DVec2)> = vec![
+    fn ecef2ned_fixture() -> (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>) {
+        let ecef_ref_tuple: Vec<(glam::DVec3, glam::DVec3)> = vec![
             (
                 glam::DVec3::new(6888437.030500963, 5159088.058806049, -1588568.383383099),
-                glam::DVec2::new(-43.39498494726661, 4.058899692699072),
+                glam::DVec3::new(-43.39498494726661, 4.058899692699072, 0.0),
             ),
             (
                 glam::DVec3::new(5675971.780695453, -3933745.478421451, -468060.9169528838),
-                glam::DVec2::new(15.008767101905619, 146.92063867032067),
+                glam::DVec3::new(15.008767101905619, 146.92063867032067, 0.0),
             ),
             (
                 glam::DVec3::new(-4363243.112005923, 5116084.0831444785, 2367379.933506632),
-                glam::DVec2::new(-44.90885855476071, 147.50865214856645),
+                glam::DVec3::new(-44.90885855476071, 147.50865214856645, 0.0),
             ),
             (
                 glam::DVec3::new(6204344.719931791, 8043319.008791654, -3797048.613613347),
-                glam::DVec2::new(41.36971468682316, 143.58178366847767),
+                glam::DVec3::new(41.36971468682316, 143.58178366847767, 0.0),
             ),
             (
                 glam::DVec3::new(-557145.6909457333, -7985975.838632684, -1316563.2909243256),
-                glam::DVec2::new(19.959655219884283, 148.68397916564334),
+                glam::DVec3::new(19.959655219884283, 148.68397916564334, 0.0),
             ),
             (
                 glam::DVec3::new(-459804.4689456597, 7306198.5554328, -4790153.792160811),
-                glam::DVec2::new(54.905008862344026, 17.53174938081216),
+                glam::DVec3::new(54.905008862344026, 17.53174938081216, 0.0),
             ),
             (
                 glam::DVec3::new(4394093.728079082, -2023529.1555146254, 6496899.54296466),
-                glam::DVec2::new(30.26757622173315, -179.5885850468058),
+                glam::DVec3::new(30.26757622173315, -179.5885850468058, 0.0),
             ),
             (
                 glam::DVec3::new(7352055.509855617, -5121782.462257361, -3495912.7450521984),
-                glam::DVec2::new(66.68482177955784, -111.21584705913939),
+                glam::DVec3::new(66.68482177955784, -111.21584705913939, 0.0),
             ),
             (
                 glam::DVec3::new(-5227681.427695597, 9350805.005802866, 6063589.3855974),
-                glam::DVec2::new(-9.365477141597339, -151.03950532108723),
+                glam::DVec3::new(-9.365477141597339, -151.03950532108723, 0.0),
             ),
             (
                 glam::DVec3::new(158812.85041147843, 8656676.484538134, -7818843.081377927),
-                glam::DVec2::new(9.228104296299222, 74.36210755208026),
+                glam::DVec3::new(9.228104296299222, 74.36210755208026, 0.0),
             ),
             (
                 glam::DVec3::new(6289337.265826721, 805672.1394064799, 9276770.919476017),
-                glam::DVec2::new(18.573413033048936, 31.542143103157088),
+                glam::DVec3::new(18.573413033048936, 31.542143103157088, 0.0),
             ),
             (
                 glam::DVec3::new(1925737.2316621258, -2301977.0805467907, 1513020.2832977697),
-                glam::DVec2::new(-37.74068956750355, -111.81912172043178),
+                glam::DVec3::new(-37.74068956750355, -111.81912172043178, 0.0),
             ),
             (
                 glam::DVec3::new(2255463.5973721338, 3133187.779792577, -469380.1598123852),
-                glam::DVec2::new(-73.83161498479313, 92.73741190791725),
+                glam::DVec3::new(-73.83161498479313, 92.73741190791725, 0.0),
             ),
             (
                 glam::DVec3::new(8467620.318925612, 6849204.462803648, 7963462.42715758),
-                glam::DVec2::new(76.15483916763182, 14.615972981299592),
+                glam::DVec3::new(76.15483916763182, 14.615972981299592, 0.0),
             ),
             (
                 glam::DVec3::new(4105667.997088125, -4487317.573757457, 6232574.17015757),
-                glam::DVec2::new(62.907473733546084, 142.21402827360305),
+                glam::DVec3::new(62.907473733546084, 142.21402827360305, 0.0),
             ),
             (
                 glam::DVec3::new(8995297.46464241, 1593900.2149121184, -988737.8673768956),
-                glam::DVec2::new(28.84416815203001, 178.65282216728616),
+                glam::DVec3::new(28.84416815203001, 178.65282216728616, 0.0),
             ),
             (
                 glam::DVec3::new(5866501.682604484, -8352540.236067053, 2255662.100814244),
-                glam::DVec2::new(-2.440043645549977, 46.85304254813022),
+                glam::DVec3::new(-2.440043645549977, 46.85304254813022, 0.0),
             ),
             (
                 glam::DVec3::new(-5139287.558762874, 4629784.415816955, -7657314.13582964),
-                glam::DVec2::new(-50.317103363790864, 106.04986981580731),
+                glam::DVec3::new(-50.317103363790864, 106.04986981580731, 0.0),
             ),
             (
                 glam::DVec3::new(6318261.930673189, -7987849.595678076, -7072830.221753922),
-                glam::DVec2::new(35.58071523442298, -163.71573556837956),
+                glam::DVec3::new(35.58071523442298, -163.71573556837956, 0.0),
             ),
             (
                 glam::DVec3::new(8200320.293980793, 683959.3652144801, 3611782.65124513),
-                glam::DVec2::new(-85.19457696080306, 48.59996756812498),
+                glam::DVec3::new(-85.19457696080306, 48.59996756812498, 0.0),
             ),
             (
                 glam::DVec3::new(1519058.9606308155, -2175811.8135434627, -2597201.19329625),
-                glam::DVec2::new(86.49299711650835, -166.89886645986513),
+                glam::DVec3::new(86.49299711650835, -166.89886645986513, 0.0),
             ),
             (
                 glam::DVec3::new(9220625.604792222, -6300561.172051234, -7522096.711511366),
-                glam::DVec2::new(-52.096228220403646, 108.26877252750512),
+                glam::DVec3::new(-52.096228220403646, 108.26877252750512, 0.0),
             ),
             (
                 glam::DVec3::new(-9544348.486626834, -1487623.3606636561, -7969995.612516604),
-                glam::DVec2::new(-43.21441983729025, -100.50146232612576),
+                glam::DVec3::new(-43.21441983729025, -100.50146232612576, 0.0),
             ),
             (
                 glam::DVec3::new(-2994120.6520693544, -6393641.969406243, 72730.10419774428),
-                glam::DVec2::new(-82.91183272475539, -143.668353171972),
+                glam::DVec3::new(-82.91183272475539, -143.668353171972, 0.0),
             ),
             (
                 glam::DVec3::new(-6012884.190658741, -2828893.973767963, 4631966.124507211),
-                glam::DVec2::new(60.89878173481494, 150.6535423183193),
+                glam::DVec3::new(60.89878173481494, 150.6535423183193, 0.0),
             ),
             (
                 glam::DVec3::new(3452811.2714610514, 9330978.060863663, -8838981.123470027),
-                glam::DVec2::new(31.71632117388809, 124.35285373258189),
+                glam::DVec3::new(31.71632117388809, 124.35285373258189, 0.0),
             ),
             (
                 glam::DVec3::new(-4986253.214297766, 1935827.8693882204, -1153719.326018421),
-                glam::DVec2::new(-58.5324927987406, -10.21485056533632),
+                glam::DVec3::new(-58.5324927987406, -10.21485056533632, 0.0),
             ),
             (
                 glam::DVec3::new(1382254.7904856037, 172002.60125266388, -3771079.9799958635),
-                glam::DVec2::new(-25.712697133752684, 121.55802277283243),
+                glam::DVec3::new(-25.712697133752684, 121.55802277283243, 0.0),
             ),
             (
                 glam::DVec3::new(1212004.377070479, -9751273.623413712, 4831487.548213271),
-                glam::DVec2::new(-29.535020194777093, -163.54926231537002),
+                glam::DVec3::new(-29.535020194777093, -163.54926231537002, 0.0),
             ),
             (
                 glam::DVec3::new(-5197391.84347292, 9062586.796555977, -2955488.769689851),
-                glam::DVec2::new(-38.181975325847986, -50.68756898865132),
+                glam::DVec3::new(-38.181975325847986, -50.68756898865132, 0.0),
             ),
             (
                 glam::DVec3::new(2674957.0449850517, 2421536.9123733453, 4312387.006029125),
-                glam::DVec2::new(-20.156897643748977, -30.80952422019098),
+                glam::DVec3::new(-20.156897643748977, -30.80952422019098, 0.0),
             ),
             (
                 glam::DVec3::new(-9969515.562865596, -6153809.175106484, -3311966.1867499687),
-                glam::DVec2::new(-46.90512716652745, 49.463784406548086),
+                glam::DVec3::new(-46.90512716652745, 49.463784406548086, 0.0),
             ),
             (
                 glam::DVec3::new(7508467.8342603445, 1363028.4182038382, -1711872.0663271137),
-                glam::DVec2::new(-17.591926478565682, 72.65866461612316),
+                glam::DVec3::new(-17.591926478565682, 72.65866461612316, 0.0),
             ),
             (
                 glam::DVec3::new(3243917.7794763483, -9064406.280864034, -1092956.2056234032),
-                glam::DVec2::new(-43.339153779499895, -123.2328340359681),
+                glam::DVec3::new(-43.339153779499895, -123.2328340359681, 0.0),
             ),
             (
                 glam::DVec3::new(-254687.97861935943, 1228098.5122885387, 5109695.345173651),
-                glam::DVec2::new(69.09752776476617, -1.9502386648967445),
+                glam::DVec3::new(69.09752776476617, -1.9502386648967445, 0.0),
             ),
             (
                 glam::DVec3::new(-662155.2929495294, 6180917.147207247, 7500326.629605424),
-                glam::DVec2::new(56.234687825476634, -112.31953414170192),
+                glam::DVec3::new(56.234687825476634, -112.31953414170192, 0.0),
             ),
             (
                 glam::DVec3::new(2661775.1983660073, -8330658.996485413, 4511087.109226249),
-                glam::DVec2::new(87.62786643692306, -35.345944003484306),
+                glam::DVec3::new(87.62786643692306, -35.345944003484306, 0.0),
             ),
             (
                 glam::DVec3::new(-3676457.2555731535, -5729506.758706078, 4346482.866220744),
-                glam::DVec2::new(-89.5756383505163, 116.18330779130967),
+                glam::DVec3::new(-89.5756383505163, 116.18330779130967, 0.0),
             ),
             (
                 glam::DVec3::new(-8044313.163986813, -7621922.104305084, 2985308.497923072),
-                glam::DVec2::new(67.25768830206161, -79.20621240232589),
+                glam::DVec3::new(67.25768830206161, -79.20621240232589, 0.0),
             ),
             (
                 glam::DVec3::new(-7996386.218725819, 7078762.191946764, -2066076.453381911),
-                glam::DVec2::new(-75.35782498171784, -81.10301636906564),
+                glam::DVec3::new(-75.35782498171784, -81.10301636906564, 0.0),
             ),
             (
                 glam::DVec3::new(5846830.623713044, 7227198.072744723, -7331588.91594902),
-                glam::DVec2::new(3.755795114555795, 54.281965733905416),
+                glam::DVec3::new(3.755795114555795, 54.281965733905416, 0.0),
             ),
             (
                 glam::DVec3::new(7437276.714211722, -4431803.69567279, -9628513.449088097),
-                glam::DVec2::new(-82.68061073845303, 65.15883724004757),
+                glam::DVec3::new(-82.68061073845303, 65.15883724004757, 0.0),
             ),
             (
                 glam::DVec3::new(8930051.083399918, 8768775.994698372, 8197023.54810205),
-                glam::DVec2::new(-82.43918424587858, 89.6885364207107),
+                glam::DVec3::new(-82.43918424587858, 89.6885364207107, 0.0),
             ),
             (
                 glam::DVec3::new(3107237.2934945915, 4247153.050324835, 8054203.0123866135),
-                glam::DVec2::new(25.225415962780346, -45.91826532998783),
+                glam::DVec3::new(25.225415962780346, -45.91826532998783, 0.0),
             ),
             (
                 glam::DVec3::new(-5843117.926183505, 1742510.0939028692, -9822058.359018423),
-                glam::DVec2::new(-62.81582870448219, -59.9729803092481),
+                glam::DVec3::new(-62.81582870448219, -59.9729803092481, 0.0),
             ),
             (
                 glam::DVec3::new(4369988.455430791, -3234880.5994664277, 2410762.1663310328),
-                glam::DVec2::new(-82.58346908888234, -121.01020355679265),
+                glam::DVec3::new(-82.58346908888234, -121.01020355679265, 0.0),
             ),
             (
                 glam::DVec3::new(-4209382.927282661, -2104160.3402341865, 969685.9314502683),
-                glam::DVec2::new(-37.18673973767942, -7.896719105632457),
+                glam::DVec3::new(-37.18673973767942, -7.896719105632457, 0.0),
             ),
             (
                 glam::DVec3::new(-9034872.754234113, -6408263.019168887, 461004.63400196284),
-                glam::DVec2::new(-77.24468086301746, -34.859107279766334),
+                glam::DVec3::new(-77.24468086301746, -34.859107279766334, 0.0),
             ),
             (
                 glam::DVec3::new(-1705567.8205711525, -8011993.235225978, 8173151.087935612),
-                glam::DVec2::new(-4.6791627952866435, 122.70539974596176),
+                glam::DVec3::new(-4.6791627952866435, 122.70539974596176, 0.0),
             ),
             (
                 glam::DVec3::new(-3126968.1268446445, -418269.6169602778, 3991905.823012369),
-                glam::DVec2::new(-13.22364176207492, -71.31487816103186),
+                glam::DVec3::new(-13.22364176207492, -71.31487816103186, 0.0),
             ),
         ];
         let ned: Vec<glam::DVec3> = vec![
@@ -1883,7 +1834,7 @@ mod geotests {
     }
 
     #[rstest]
-    fn test_ecef2enu(ecef2enu_fixture: (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>)) {
+    fn test_ecef2enu(ecef2enu_fixture: (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>)) {
         let ecef_ref_tuples = ecef2enu_fixture.0;
         let enu = ecef2enu_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
@@ -1893,7 +1844,7 @@ mod geotests {
         }
     }
     #[rstest]
-    fn test_enu2ecef(ecef2enu_fixture: (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>)) {
+    fn test_enu2ecef(ecef2enu_fixture: (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>)) {
         let ecef_ref_tuples = ecef2enu_fixture.0;
         let enu = ecef2enu_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
@@ -1910,7 +1861,7 @@ mod geotests {
         assert_vecs_close(&ned, &glam::DVec3::new(1., -1., -0.5), 1e-6);
     }
     #[rstest]
-    fn test_ecef2ned(ecef2ned_fixture: (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>)) {
+    fn test_ecef2ned(ecef2ned_fixture: (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>)) {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
@@ -1920,7 +1871,7 @@ mod geotests {
         }
     }
     #[rstest]
-    fn test_ned2ecef(ecef2ned_fixture: (Vec<(glam::DVec3, glam::DVec2)>, Vec<glam::DVec3>)) {
+    fn test_ned2ecef(ecef2ned_fixture: (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>)) {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
@@ -1957,61 +1908,6 @@ mod geotests {
             let expected_heading = 135.;
             assert!(almost::equal_with(actual_heading, expected_heading, 1e-10));
         }
-    }
-
-    #[rstest]
-    fn test_orient_ecef() {
-        let obs_ecef = glam::DVec3::new(450230.78125, -5146161.5, 3728609.5);
-        let obs_ecef_quat = glam::DQuat::from_xyzw(
-            0.48038446141526137,
-            0.32025630761017426,
-            0.16012815380508713,
-            0.8006407690254357,
-        );
-        let target_ecef = glam::DVec3::new(356314.625, -5095536.5, 3823411.25);
-        let oriented = orient_ecef_quat_towards_lla(&obs_ecef, &obs_ecef_quat, &target_ecef);
-        let actual = glam::DQuat::from_xyzw(
-            0.06621115448490575,
-            0.8652683273179942,
-            -0.282301881259633,
-            -0.40894064679286724,
-        );
-        assert!(almost::equal_with(actual.x, oriented.x, 1e-6));
-        assert!(almost::equal_with(actual.y, oriented.y, 1e-6));
-        assert!(almost::equal_with(actual.z, oriented.z, 1e-6));
-        assert!(almost::equal_with(actual.w, oriented.w, 1e-6));
-    }
-    #[rstest]
-    fn test_orient_ecef_no_nan() {
-        let mut oriented = orient_ecef_quat_towards_lla(
-            &glam::DVec3::new(6305378.849302336, 388308.7942886081, 875852.4072903388),
-            &glam::DQuat::from_xyzw(
-                -0.5502415067503782,
-                0.47887021402861657,
-                -0.4489595996023603,
-                0.5160938677122108,
-            ),
-            &glam::DVec3::new(6306774.13352542, 365852.079373571, 875850.3946216722),
-        );
-        assert!(!f64::is_nan(oriented.x));
-        assert!(!f64::is_nan(oriented.y));
-        assert!(!f64::is_nan(oriented.z));
-        assert!(!f64::is_nan(oriented.w));
-
-        oriented = orient_ecef_quat_towards_lla(
-            &glam::DVec3::new(6121830.402233266, 167012.75190830903, 1776355.8276747267),
-            &glam::DQuat::from_xyzw(
-                0.5742464303807674,
-                -0.430360480648345,
-                0.4178937059909104,
-                -0.5571317118817186,
-            ),
-            &glam::DVec3::new(6121975.8644942725, 162014.83423220483, 1776352.5269659779),
-        );
-        assert!(!f64::is_nan(oriented.x));
-        assert!(!f64::is_nan(oriented.y));
-        assert!(!f64::is_nan(oriented.z));
-        assert!(!f64::is_nan(oriented.w));
     }
 
     #[test]

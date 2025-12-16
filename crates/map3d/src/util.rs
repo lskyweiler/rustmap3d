@@ -36,7 +36,12 @@ pub fn angle_between_vec3(a: &glam::DVec3, b: &glam::DVec3) -> f64 {
     return f64::acos(dot);
 }
 
-pub fn rand_orienation() -> glam::DQuat {
+/// Generates a random normalized quaternion.
+///
+/// # Returns
+///
+/// * `quat` - Random normalized quaternion.
+pub fn rand_orientation() -> glam::DQuat {
     return glam::DQuat::from_xyzw(
         rand::random(),
         rand::random(),

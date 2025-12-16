@@ -9,16 +9,19 @@ pub type Mat3Tup = (f64, f64, f64, f64, f64, f64, f64, f64, f64);
 pub fn vec3_to_tuple(vec3: &glam::DVec3) -> Vec3Tup {
     return (vec3.x, vec3.y, vec3.z);
 }
+
 pub fn tuple_to_vec3(tup: &Vec3Tup) -> glam::DVec3 {
     return glam::DVec3::new(tup.0, tup.1, tup.2);
 }
+
 pub fn quat_to_tuple(q: &glam::DQuat) -> QuatTup {
     return (q.w, q.x, q.y, q.z);
 }
+
 pub fn tuple_to_quat(q: &QuatTup) -> glam::DQuat {
-    // pyglm serializes as w, x, y, z
     return glam::DQuat::from_xyzw(q.1, q.2, q.3, q.0);
 }
+
 pub fn mat3_to_tuple(mat3: &glam::DMat3) -> Mat3Tup {
     return (
         mat3.x_axis.x,
@@ -33,173 +36,369 @@ pub fn mat3_to_tuple(mat3: &glam::DMat3) -> Mat3Tup {
     );
 }
 
+/// Converts ECEF to LLA.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+///
+/// # Returns
+///
+/// * `lla` - Vector represented in LLA coordinates [degrees-degrees-meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2lla(x: f64, y: f64, z: f64) -> Vec3Tup {
-    let lla = map3d::ecef2lla_map3d(&glam::DVec3::new(x, y, z));
+pub fn ecef2lla(ecef: Vec3Tup) -> Vec3Tup {
+    let lla = map3d::ecef2lla(&tuple_to_vec3(&ecef));
     return vec3_to_tuple(&lla);
 }
+
+/// Converts LLA to ECEF.
+///
+/// # Arguments
+///
+/// * `lla` - Vector represented in LLA coordinates [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn lla2ecef(lat: f64, lon: f64, alt: f64) -> Vec3Tup {
-    let ecef = map3d::lla2ecef(&glam::DVec3::new(lat, lon, alt));
+pub fn lla2ecef(lla: Vec3Tup) -> Vec3Tup {
+    let ecef = map3d::lla2ecef(&tuple_to_vec3(&lla));
     return vec3_to_tuple(&ecef);
 }
+
+/// Converts ECEF to ENU.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+/// * `lla_ref` - Reference latitude-longitude-altitude [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2enu(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
-    let enu = map3d::ecef2enu(
-        &tuple_to_vec3(&(x, y, z)),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
+pub fn ecef2enu(ecef: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let enu = map3d::ecef2enu(&tuple_to_vec3(&ecef), &tuple_to_vec3(&lla_ref));
     return vec3_to_tuple(&enu);
 }
+
+/// Converts ENU to ECEF.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
+/// * `lla_ref` - Reference latitude-longitude-altitude [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn enu2ecef(e: f64, n: f64, u: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
-    let ecef = map3d::enu2ecef(
-        &tuple_to_vec3(&(e, n, u)),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
+pub fn enu2ecef(enu: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let ecef = map3d::enu2ecef(&tuple_to_vec3(&enu), &tuple_to_vec3(&lla_ref));
     return vec3_to_tuple(&ecef);
 }
+
+/// Converts ECEF to NED.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+/// * `lla_ref` - Reference latitude-longitude-altitude [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2ned(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
-    let ned = map3d::ecef2ned(
-        &tuple_to_vec3(&(x, y, z)),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
-    return vec3_to_tuple(&ned);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn ned2ecef(n: f64, e: f64, d: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
-    let ecef = map3d::ned2ecef(
-        &tuple_to_vec3(&(n, e, d)),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
-    return vec3_to_tuple(&ecef);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn ecef2aer(x: f64, y: f64, z: f64, ref_lat: f64, ref_lon: f64) -> Vec3Tup {
-    let aer = map3d::ecef2aer(
-        &tuple_to_vec3(&(x, y, z)),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
-    return vec3_to_tuple(&aer);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn aer2ecef(a: f64, e: f64, r: f64, ref_lat: f64, ref_lon: f64, alt: f64) -> Vec3Tup {
-    let ecef = map3d::aer2ecef(
-        &tuple_to_vec3(&(a, e, r)),
-        &glam::DVec3::new(ref_lat, ref_lon, alt),
-    );
-    return vec3_to_tuple(&ecef);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn enu2aer(e: f64, n: f64, u: f64) -> Vec3Tup {
-    let aer = map3d::enu2aer(&tuple_to_vec3(&(e, n, u)));
-    return vec3_to_tuple(&aer);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn aer2enu(a: f64, e: f64, r: f64) -> Vec3Tup {
-    let enu = map3d::aer2enu(&tuple_to_vec3(&(a, e, r)));
-    return vec3_to_tuple(&enu);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn ned2aer(n: f64, e: f64, d: f64) -> Vec3Tup {
-    let aer = map3d::ned2aer(&tuple_to_vec3(&(n, e, d)));
-    return vec3_to_tuple(&aer);
-}
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn aer2ned(a: f64, e: f64, r: f64) -> Vec3Tup {
-    let ned = map3d::aer2enu(&tuple_to_vec3(&(a, e, r)));
+pub fn ecef2ned(ecef: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let ned = map3d::ecef2ned(&tuple_to_vec3(&ecef), &tuple_to_vec3(&lla_ref));
     return vec3_to_tuple(&ned);
 }
 
+/// Converts NED to ECEF.
+///
+/// # Arguments
+///
+/// * `ned` - Vector represented in NED coordinates [meters].
+/// * `lla_ref` - Reference latitude-longitude-altitude [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn ned2ecef(ned: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let ecef = map3d::ned2ecef(&tuple_to_vec3(&ned), &tuple_to_vec3(&lla_ref));
+    return vec3_to_tuple(&ecef);
+}
+
+/// Converts ECEF to AER.
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+/// * `ref_lla` - Reference latitude-longitude-altitude [radians-radians-meters].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn ecef2aer(ecef: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let aer = map3d::ecef2aer(&tuple_to_vec3(&ecef), &tuple_to_vec3(&lla_ref));
+    return vec3_to_tuple(&aer);
+}
+
+/// Converts AER to ECEF.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+/// * `ref_lla` - Reference latitude-longitude-altitude [radians-radians-meters].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn aer2ecef(aer: Vec3Tup, lla_ref: Vec3Tup) -> Vec3Tup {
+    let ecef = map3d::aer2ecef(&tuple_to_vec3(&aer), &tuple_to_vec3(&lla_ref));
+    return vec3_to_tuple(&ecef);
+}
+
+/// Converts ENU to AER.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn enu2aer(enu: Vec3Tup) -> Vec3Tup {
+    let aer = map3d::enu2aer(&tuple_to_vec3(&enu));
+    return vec3_to_tuple(&aer);
+}
+
+/// Converts AER to ENU.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn aer2enu(aer: Vec3Tup) -> Vec3Tup {
+    let enu = map3d::aer2enu(&tuple_to_vec3(&aer));
+    return vec3_to_tuple(&enu);
+}
+
+/// Converts NED to AER.
+///
+/// # Arguments
+///
+/// * `ned` - Vector represented in NED coordinates [meters].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn ned2aer(ned: Vec3Tup) -> Vec3Tup {
+    let aer = map3d::ned2aer(&tuple_to_vec3(&ned));
+    return vec3_to_tuple(&aer);
+}
+
+/// Converts AER to NED.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn aer2ned(aer: Vec3Tup) -> Vec3Tup {
+    let ned = map3d::aer2enu(&tuple_to_vec3(&aer));
+    return vec3_to_tuple(&ned);
+}
+
+/// Generates a uniform random LLA point. Altitude is generated in the domain [0.0, 10000.0].
+///
+/// # Returns
+///
+/// * `lla` - Random LLA location [degrees-degrees-meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn rand_lla() -> Vec3Tup {
     let lla = map3d::rand_lla();
     return vec3_to_tuple(&lla);
 }
+
+/// Generates a uniform random ECEF point on the surface of a spherical Earth.
+///
+/// # Returns
+///
+/// * `ecef` - Random ECEF location [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn rand_ecef() -> Vec3Tup {
     let ecef = map3d::rand_ecef();
     return vec3_to_tuple(&ecef);
 }
+
+/// Generates a random normalized quaternion.
+///
+/// # Returns
+///
+/// * `quat` - Random normalized quaternion.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn rand_orientation() -> QuatTup {
-    let quat = map3d::rand_orienation();
+    let quat = map3d::rand_orientation();
     return quat_to_tuple(&quat);
 }
 
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn orient_ecef_quat_towards_lla(
-    obs_ecef: Vec3Tup,
-    obs_ecef_quat: QuatTup,
-    target_ecef: Vec3Tup,
-) -> QuatTup {
-    let ecef_quat = map3d::orient_ecef_quat_towards_lla(
-        &tuple_to_vec3(&obs_ecef),
-        &tuple_to_quat(&obs_ecef_quat),
-        &tuple_to_vec3(&target_ecef),
-    );
-    return quat_to_tuple(&ecef_quat);
-}
-
+/// Calculates the quaternion that yields an ECEF to ENU transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ECEF to ENU quaternion.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_quat(lat: f64, lon: f64) -> QuatTup {
     let quat = map3d::ecef2enu_quat(lat, lon);
     return quat_to_tuple(&quat);
 }
+
+/// Calculates the quaternion that yields an ENU to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ENU to ECEF quaternion.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_quat(lat: f64, lon: f64) -> QuatTup {
     let quat = map3d::enu2ecef_quat(lat, lon);
     return quat_to_tuple(&quat);
 }
+
+/// Calculates the quaternion that yields an ECEF to NED transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `quat` - Normalized ECEF to NED quaternion.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_quat(lat: f64, lon: f64) -> QuatTup {
     let quat = map3d::ecef2ned_quat(lat, lon);
     return quat_to_tuple(&quat);
 }
+
+/// Calculates the quaternion that yields an NED to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `quat` - Normalized NED to ECEF quaternion.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_quat(lat: f64, lon: f64) -> QuatTup {
     let quat = map3d::ned2ecef_quat(lat, lon);
     return quat_to_tuple(&quat);
 }
+
+/// Calculates the direction cosine matrix that yields an ECEF to ENU transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `dcm` - ECEF to ENU direction cosine matrix.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_dcm(lat: f64, lon: f64) -> Mat3Tup {
     let dcm = map3d::ecef2enu_dcm(lat, lon);
     return mat3_to_tuple(&dcm);
 }
+
+/// Calculates the direction cosine matrix that yields an ENU to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `dcm` - ENU to ECEF direction cosine matrix.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_dcm(lat: f64, lon: f64) -> Mat3Tup {
     let dcm = map3d::enu2ecef_dcm(lat, lon);
     return mat3_to_tuple(&dcm);
 }
+
+/// Calculates the direction cosine matrix that yields an ECEF to NED transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `dcm` - ECEF to NED direction cosine matrix.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_dcm(lat: f64, lon: f64) -> Mat3Tup {
     let dcm = map3d::ecef2ned_dcm(lat, lon);
     return mat3_to_tuple(&dcm);
 }
+
+/// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
+///
+/// # Arguments
+///
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+///
+/// # Returns
+///
+/// * `dcm` - NED to ECEF direction cosine matrix.
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_dcm(lat: f64, lon: f64) -> Mat3Tup {
@@ -207,29 +406,35 @@ pub fn ned2ecef_dcm(lat: f64, lon: f64) -> Mat3Tup {
     return mat3_to_tuple(&dcm);
 }
 
+/// Calculates heading angle from ENU.
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
+///
+/// # Returns
+///
+/// * `heading_deg` - Heading angle relative to true north [degrees].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn enu2heading(east: f64, north: f64, up: f64) -> f64 {
-    return map3d::enu2heading(&tuple_to_vec3(&(east, north, up)));
+pub fn enu2heading(enu: Vec3Tup) -> f64 {
+    return map3d::enu2heading(&tuple_to_vec3(&enu));
 }
+
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef_quat2heading(ecef_quat: QuatTup, ref_lat: f64, ref_lon: f64) -> f64 {
-    let heading = map3d::ecef_quat2heading(
-        &tuple_to_quat(&ecef_quat),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
+pub fn ecef_quat2heading(ecef_quat: QuatTup, lla_ref: Vec3Tup) -> f64 {
+    let heading = map3d::ecef_quat2heading(&tuple_to_quat(&ecef_quat), &tuple_to_vec3(&lla_ref));
     return heading;
 }
+
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2heading(ecef_rel: Vec3Tup, ref_lat: f64, ref_lon: f64) -> f64 {
-    let heading = map3d::ecef2heading(
-        &tuple_to_vec3(&ecef_rel),
-        &glam::DVec2::new(ref_lat, ref_lon),
-    );
+pub fn ecef2heading(ecef_rel: Vec3Tup, lla_ref: Vec3Tup) -> f64 {
+    let heading = map3d::ecef2heading(&tuple_to_vec3(&ecef_rel), &tuple_to_vec3(&lla_ref));
     return heading;
 }
+
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2bearing(obs_ecef: Vec3Tup, targ_ecef: Vec3Tup) -> f64 {
@@ -243,8 +448,6 @@ pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
     return map3d::angle_between_vec3(&tuple_to_vec3(&a), &tuple_to_vec3(&b));
 }
 
-#[gen_stub_pyfunction]
-#[pyfunction]
 /// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
 /// solution to determine outputs using the WGS84 ellipsoidal Earth model.
 ///
@@ -253,18 +456,20 @@ pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
-/// * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
-/// * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
+/// * `lat_deg` - Latitude reference [degrees].
+/// * `lon_deg` - Longitude reference [degrees].
+/// * `range_m` - Range (i.e., distance) from point A to point B [meters].
+/// * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
 /// * `abs_tol` - Absolute tolerance used for convergence.
 /// * `max_iters` - Maximum possible number of iterations before early termination.
 ///
 /// # Returns
 ///
 /// A tuple `(lat_deg, lon_deg)` where:
-/// * `lat_deg` - Latitude location [[degrees]].
-/// * `lon_deg` - Longitude location [[degrees]].
+/// * `lat_deg` - Latitude location [degrees].
+/// * `lon_deg` - Longitude location [degrees].
+#[gen_stub_pyfunction]
+#[pyfunction]
 pub fn vincenty_direct(
     lat_deg: f64,
     lon_deg: f64,
@@ -281,8 +486,6 @@ pub fn vincenty_direct(
     }
 }
 
-#[gen_stub_pyfunction]
-#[pyfunction]
 /// Calculates range and bearings between two latitude-longitude points. This function uses an iterative solution to
 /// determine outputs using the WGS84 ellipsoidal Earth model.
 ///
@@ -291,19 +494,21 @@ pub fn vincenty_direct(
 ///
 /// # Arguments
 ///
-/// * `lat_a_deg` - Latitude point A [[degrees]].
-/// * `lon_a_deg` - Longitude point A [[degrees]].
-/// * `lat_b_deg` - Latitude point A [[degrees]].
-/// * `lon_b_deg` - Longitude point A [[degrees]].
+/// * `lat_a_deg` - Latitude point A [degrees].
+/// * `lon_a_deg` - Longitude point A [degrees].
+/// * `lat_b_deg` - Latitude point A [degrees].
+/// * `lon_b_deg` - Longitude point A [degrees].
 /// * `atol` - Absolute tolerance used for convergence.
 /// * `max_iters` - Maximum possible number of iterations before early termination.
 ///
 /// # Returns
 ///
 /// A tuple `(range_m, bearing_ab_deg, bearing_ba_deg)` where:
-/// * `range_m` - Range (i.e., distance) from point A to point B [[meters]].
-/// * `bearing_ab_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [[degrees]].
-/// * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [[degrees]].
+/// * `range_m` - Range (i.e., distance) from point A to point B [meters].
+/// * `bearing_ab_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
+/// * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [degrees].
+#[gen_stub_pyfunction]
+#[pyfunction]
 pub fn vincenty_inverse(
     lat_a_deg: f64,
     lon_a_deg: f64,

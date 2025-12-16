@@ -1,6 +1,4 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use glam;
-use glam::Vec3Swizzles;
 use map3d;
 use std::hint::black_box;
 
@@ -56,7 +54,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::ecef2enu(&point, &ref_point.xy());
+                map3d::ecef2enu(&point, &ref_point);
             })
         },
     );
@@ -66,7 +64,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::enu2ecef(&point, &ref_point.xy());
+                map3d::enu2ecef(&point, &ref_point);
             })
         },
     );
@@ -76,7 +74,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::ecef2aer(&point, &ref_point.xy());
+                map3d::ecef2aer(&point, &ref_point);
             })
         },
     );
@@ -87,18 +85,6 @@ fn bench_geo(c: &mut Criterion) {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
                 map3d::aer2ecef(&point, &ref_point);
-            })
-        },
-    );
-
-    c.bench_function(
-        "ecef orient to lla",
-        |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
-            b.iter(|| {
-                let obs_ecef = map3d::rand_ecef();
-                let obs_quat = map3d::rand_orienation();
-                let targ_ecef = map3d::rand_ecef();
-                map3d::orient_ecef_quat_towards_lla(&obs_ecef, &obs_quat, &targ_ecef);
             })
         },
     );
