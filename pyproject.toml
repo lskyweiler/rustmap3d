@@ -10,6 +10,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
+authors = [
+    { name = "weiler", email = "lucas.weiler@dynetics.com" },
+    { name = "molnar", email = "andrew.b.molnar@leidos.com" },
+]
 dynamic = ["version"]
 license = { file = "LICENSE" }
 
@@ -22,7 +26,8 @@ dev = [
     "pytest-benchmark[histogram]",
     "pylint",
     "maturin",
-    "pymap3d",  # for benchmarks
+    # for benchmarks
+    "pymap3d",
     "numpy",
     "matplotlib",
     "numba",
@@ -31,3 +36,10 @@ dev = [
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[tool.ruff]
+extend-exclude = [".venv", "target", "crates/simple"]
+
+[tool.pylint.main]
+ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target"]
+ignore-pattern = ["^test_*", "rustmap3d.pyi"]

@@ -1,6 +1,7 @@
 # see dagger project for gitlab runner requirements: https://gitlab.sdo.psdo.leidos.com/alphamosaic/utilities/dagger/-/tree/main/cicd?ref_type=heads
 
 stages:
+  - code
   - test
   - pre-release
   - publish
@@ -16,6 +17,7 @@ include:
   - project: alphamosaic/utilities/dagger
     ref: feat/pyo3
     file:
+      - cicd/python/code.yml
       - cicd/pyo3/test-py.yml
       - cicd/pyo3/test-rs.yml
       - cicd/release.yml
