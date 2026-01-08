@@ -1,4 +1,5 @@
 use glam;
+use rand_distr::{Distribution, Normal};
 
 /// Linear interpolation between two values.
 ///
@@ -25,11 +26,13 @@ pub fn quat_up(q: &glam::DQuat) -> glam::DVec3 {
     return glam::DMat3::from_quat(*q).z_axis;
 }
 
+/// Safely compute the angle between two 2d vectors
 pub fn angle_between_vec2(a: &glam::DVec2, b: &glam::DVec2) -> f64 {
     let mut dot: f64 = a.dot(*b);
     dot = f64::clamp(dot, -1., 1.);
     return f64::acos(dot);
 }
+/// Safely compute the angle between two 3d vectors
 pub fn angle_between_vec3(a: &glam::DVec3, b: &glam::DVec3) -> f64 {
     let mut dot: f64 = a.dot(*b);
     dot = f64::clamp(dot, -1., 1.);
@@ -70,6 +73,34 @@ pub fn wrap_to_pi(angle: f64) -> f64 {
     }
 
     x
+}
+
+/// Generates a uniform random point on the surface of a sphere.
+///
+/// # Arguments
+///
+/// * `radius` - Radius of sphere.
+///
+/// # Returns
+///
+/// * `vector` - Random point in R3.
+pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
+    let mut rng = rand::rng();
+    let normal = Normal::new(0.0, 1.0).unwrap();
+
+    return radius
+        * (glam::DVec3::new(
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+            normal.sample(&mut rng),
+        )
+        .normalize());
+}
+
+pub fn assert_vecs_close(a: &glam::DVec3, b: &glam::DVec3, tol: f64) {
+    assert!(almost::equal_with(a.x, b.x, tol));
+    assert!(almost::equal_with(a.y, b.y, tol));
+    assert!(almost::equal_with(a.z, b.z, tol));
 }
 
 #[cfg(test)]

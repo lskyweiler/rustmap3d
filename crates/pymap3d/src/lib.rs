@@ -288,7 +288,7 @@ pub fn rand_ecef() -> Vec3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn rand_orientation() -> QuatTup {
-    let quat = map3d::rand_orientation();
+    let quat = map3d::util::rand_orientation();
     return quat_to_tuple(&quat);
 }
 
@@ -453,7 +453,7 @@ pub fn ecef_quat2heading(ecef_quat: QuatTup, lla_ref: Vec3Tup) -> f64 {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
-    return map3d::angle_between_vec3(&tuple_to_vec3(&a), &tuple_to_vec3(&b));
+    return map3d::util::angle_between_vec3(&tuple_to_vec3(&a), &tuple_to_vec3(&b));
 }
 
 /// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
