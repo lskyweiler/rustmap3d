@@ -1,0 +1,48 @@
+[package]
+name = "rustmap3d"
+authors = [
+    "Lucas Weiler <lucas.l.weiler@leidos.com>",
+    "Andrew Molnar <andrew.b.molnar@leidos.com>",
+]
+edition = "2021"
+keywords = ["geodetic", "engineering", "scientific", "gis"]
+license-file = "LICENSE"
+readme = "README.md"
+version = "0.2.0"
+
+[workspace]
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2021"
+version = "0.2.0"
+
+[lib]
+# rlib is required to generate py-stubs
+crate-type = ["cdylib", "rlib"]
+doctest = false
+
+[dependencies]
+map3d = { path = "crates/map3d" }
+pymap3d = { path = "crates/pymap3d" }
+
+pyo3 = { version = "~0.27", features = [
+    "extension-module",
+    "generate-import-lib",
+] }
+glam = "~0.30"
+
+# bin/stub_gen deps
+env_logger = "~0.11"
+pyo3-stub-gen = { version = "~0.17", default-features = false }
+
+[workspace.dependencies]
+map3d = { path = "crates/map3d" }
+
+glam = "~0.30"
+pyo3 = "~0.27"
+pyo3-stub-gen = { version = "~0.17", default-features = false }
+
+[profile.release]
+# https://github.com/johnthagen/min-sized-rust
+strip = true # Automatically strip symbols from the binary.
