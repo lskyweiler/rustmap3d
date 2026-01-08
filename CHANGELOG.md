@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.0] - 2025-12-15
+## [0.2.0] - 2026-01-08
 
 ### 🚀 Features
 
@@ -11,11 +11,38 @@ All notable changes to this project will be documented in this file.
 - Add wrap_to_pi function
 - Add vincenty inverse function
 - Add python bindings for vincenty direct and inverse
+- Added stub gen support
+- Updated benches
+- *(breaking)* Updated all python function apis to not use tuples, matching pymap3d
+- Added non uvw transforms for aer, ned, enu
+
+### 🐛 Bug Fixes
+
+- Fixed dagger module pointer
+- Updated rust dag function pointer
+- Added code checking jobs
+- *(api)* Explicitly renamed all relative transformation functions to ecef_uvw to show non absolute positions
+- More explicit python interface variable names and docstrings
 
 ### 🚜 Refactor
 
 - Reorganized repo to be in line with rust-py projects
 - More code organization
+- Removed old build scripts
+- Separated single file into smaller files
+
+### 📚 Documentation
+
+- More updates to readme
+- Added matlab link
+- Fixed missing namespace from readme python example
+- Add doc string to pymap3d for vicenty functions
+- Add function doc string to map3d functions
+- Add doc strings to python functions
+- Added more docstrings
+- Minor python docstring changes
+- Minor toml fix
+- Minor readme badge fix
 
 ### ⚡ Performance
 
@@ -25,11 +52,17 @@ All notable changes to this project will be documented in this file.
 
 - Add tests for vincenty direct
 - Change vicenty direct test to use relative eq check
+- Adding single python-based test for now to be kosher with pytest
 
 ### ⚙️ Miscellaneous Tasks
 
 - Added missing meta files
 - Added missing stub_gen file
+- Removed cargo toml
+- Updated version file and ruff fixed
+- *(ci)* Added dagger-based ci
+- *(ci)* Moved ci jobs out of here into dagger repo
+- *(ci)* Removed ci in favor of external dagger project
 
 ## [0.1.4] - 2025-03-21
 
