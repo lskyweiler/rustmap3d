@@ -37,8 +37,23 @@ pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(east, north, up);
 }
 
-/// Converts ECEF uvw to AER.
+/// Converts Absolute ECEF to AER.
 /// This is a vector that is not in relation to an ECEF location
+///
+/// # Arguments
+///
+/// * `ecef` - Absolute ECEF position [m, m, m]
+/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+///
+/// # Returns
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let enu = enu::ecef2enu(ecef, lla_ref);
+    return enu2aer(&enu);
+}
+/// Converts ECEF uvw to AER.
+/// This is a vector that is not an absolute ECEF location
 ///
 /// # Arguments
 ///
@@ -66,6 +81,20 @@ pub fn ecef_uvw2aer(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec
 pub fn aer2ecef_uvw(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return enu::enu2ecef_uvw(&enu, &ref_lla);
+}
+/// Converts AER to Absolute ECEF.
+///
+/// # Arguments
+///
+/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
+    let enu = aer2enu(aer);
+    return enu::enu2ecef(&enu, &ref_lla);
 }
 
 /// Converts NED to AER.

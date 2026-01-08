@@ -1,8 +1,22 @@
-use crate::enu;
+use crate::{enu, lla};
 use glam;
 
 /// Converts ECEF uvw Vector to NED.
 /// This is a vector that is not in relation to an ECEF location
+///
+/// # Arguments
+///
+/// * `ecef_uvw` - Vector represented in ECEF coordinates [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
+pub fn ecef_uvw2ned(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
+    return rot * (*ecef_uvw);
+}
+/// Converts Absolute ECEF to NED.
 ///
 /// # Arguments
 ///
@@ -12,9 +26,10 @@ use glam;
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef_uvw2ned(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
     let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
-    return rot * (*ecef_uvw);
+    return rot * ecef_uvw;
 }
 
 /// Converts NED to ECEF uvw
@@ -31,6 +46,22 @@ pub fn ned2ecef_uvw(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*ned);
 }
+/// Converts NED to Absolute ECEF
+///
+/// # Arguments
+///
+/// * `ned` - Vector represented in NED coordinates [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ecef` - Absolute ECEF vector
+pub fn ned2ecef(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
+    let ecef_uvw = rot * (*ned);
+    return ecef_uvw + lla::lla2ecef(lla_ref);
+}
+
 /// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
 ///
 /// # Arguments

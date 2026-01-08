@@ -1,3 +1,4 @@
+use crate::lla;
 use glam;
 
 /// Calculates the quaternion that yields an ENU to ECEF transformation at this LLA.
@@ -68,18 +69,33 @@ pub fn ecef2enu_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
 ///
 /// # Arguments
 ///
-/// * `ecef_uvw2enu` - Vector represented in ECEF frame [[meters]].
+/// * `ecef_uvw` - Vector represented in ECEF frame [[meters]].
 /// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef_uvw2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef_uvw2enu(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
-    return rot * (*ecef);
+    return rot * (*ecef_uvw);
+}
+/// Converts Absolute ECEF to ENU
+///
+/// # Arguments
+///
+/// * `ecef` - Absolute ECEF location [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
+pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
+    let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
+    return rot * ecef_uvw;
 }
 
-/// Converts ENU uvw to ECEF.
+/// Converts ENU to ECEF uvw.
 /// This is a vector that is not in relation to an ECEF location
 ///
 /// # Arguments
@@ -93,6 +109,22 @@ pub fn ecef_uvw2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 pub fn enu2ecef_uvw(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*enu);
+}
+/// Converts ENU to Absolute ECEF.
+/// This is a vector that is not in relation to an ECEF location
+///
+/// # Arguments
+///
+/// * `enu` - Vector represented in ENU coordinates [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF frame. Not an absolute position [[meters]].
+pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
+    let ecef_uvw = rot * (*enu);
+    return ecef_uvw + lla::lla2ecef(lla_ref);
 }
 
 /// Calculates heading angle from ENU.
@@ -113,7 +145,7 @@ mod test_enu {
     use super::*;
     use crate::util::assert_vecs_close;
     use rstest::*;
-    
+
     #[fixture]
     fn ecef2enu_fixture() -> (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>) {
         let ecef_ref_tuple: Vec<(glam::DVec3, glam::DVec3)> = vec![

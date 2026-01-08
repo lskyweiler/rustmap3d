@@ -13,14 +13,16 @@
 import rustmap3d
 
 
-# geodetic conversions
+# wgs84 geodetic conversions
 lla = rustmap3d.ecef2lla(x, y, z)
 ecef = rustmap3d.lla2ecef(lat, lon, alt)
 ...
 
 # local conversions
+ecef_uvw = rustmap3d.enu2ecef_uvw(e, n, u, lat_ref, lon_ref)
 ecef = rustmap3d.enu2ecef(e, n, u, lat_ref, lon_ref)
-ned = rustmap3d.ned2ecef(n, e, d, lat_ref, lon_ref)
+ecef_uvw = rustmap3d.ned2ecef_uvw(n, e, d, lat_ref, lon_ref)
+ecef = rustmap3d.ned2ecef(n, e, d, lat_ref, lon_ref)
 # enu, ned, aer
 ...  
 
@@ -38,6 +40,7 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 ## Comparison with similar packages
 
 - 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#Benchmarks))
+- Zero dependencies
 - Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 - Exposes rotations (both quaternions and 3x3 matrices)
 
