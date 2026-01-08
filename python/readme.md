@@ -1,1 +1,0 @@
-python package for rustmap3d pyo3 bindings

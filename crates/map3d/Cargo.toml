@@ -1,0 +1,20 @@
+[package]
+name = "map3d"
+version.workspace =  true
+edition.workspace = true
+
+[dependencies]
+glam.workspace = true
+almost = "~0.2"
+rand = "~0.9"
+chrono = "~0.4"
+approx = "~0.5"
+rand_distr = "0.5.1"
+
+[dev-dependencies]
+rstest = "0.26"
+criterion = { version = "~0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "geobench"
+harness = false

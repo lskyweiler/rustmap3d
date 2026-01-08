@@ -1,5 +1,0 @@
-pytest
-pymap3d
-maturin
-numpy
-numba
