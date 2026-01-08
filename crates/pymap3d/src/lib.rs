@@ -430,20 +430,6 @@ pub fn ecef_quat2heading(ecef_quat: QuatTup, lla_ref: Vec3Tup) -> f64 {
 
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2heading(ecef_rel: Vec3Tup, lla_ref: Vec3Tup) -> f64 {
-    let heading = map3d::ecef2heading(&tuple_to_vec3(&ecef_rel), &tuple_to_vec3(&lla_ref));
-    return heading;
-}
-
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn ecef2bearing(obs_ecef: Vec3Tup, targ_ecef: Vec3Tup) -> f64 {
-    let bearing = map3d::ecef2bearing(&tuple_to_vec3(&obs_ecef), &tuple_to_vec3(&targ_ecef));
-    return bearing;
-}
-
-#[gen_stub_pyfunction]
-#[pyfunction]
 pub fn angle_between(a: Vec3Tup, b: Vec3Tup) -> f64 {
     return map3d::angle_between_vec3(&tuple_to_vec3(&a), &tuple_to_vec3(&b));
 }

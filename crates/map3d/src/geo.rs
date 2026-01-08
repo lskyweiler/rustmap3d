@@ -209,11 +209,14 @@ pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) ->
     );
 }
 
+/// Computes the linear velocity a body would feel on earth in reference to the stars
 pub fn linear_velocity_from_earth_rotation(earth_pos: &glam::DVec3) -> glam::DVec3 {
     let rot_axis = glam::DVec3::new(0., 0., geo_const::EARTH_ANGULAR_VEL_RADPS);
     return rot_axis.cross(*earth_pos);
 }
 
+/// Converts ecef to eci assuming ecef and eci were aligned time_since_eci_lock seconds ago
+/// This uses a simple constant rotation assumption for earth
 pub fn ecef2eci(ecef: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * geo_const::EARTH_ANGULAR_VEL_RADPS;
 
@@ -551,7 +554,15 @@ pub fn enu2heading(enu: &glam::DVec3) -> f64 {
     return f64::atan2(enu.x, enu.y).to_degrees();
 }
 
-// TODO: Discuss.
+/// Computes the clockwise angle off north that a local body frame's X axis is pointing at a location on earth given a local2ecef dcm
+/// 
+/// # Arguments
+/// 
+/// * `ecef_dcm` - Local body frame expressed as a dcm
+/// 
+/// # Returns
+/// 
+/// *  `heading` - Clockwise angle off true north [[degrees]] of the body's x axis
 pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, lla_ref: &glam::DVec3) -> f64 {
     let ecef2enu = ecef2enu_dcm(lla_ref.x, lla_ref.y);
     let enu_dcm = ecef2enu * (*ecef_dcm);
@@ -559,23 +570,18 @@ pub fn ecef_dcm2heading(ecef_dcm: &glam::DMat3, lla_ref: &glam::DVec3) -> f64 {
     return enu2heading(&forward);
 }
 
-// TODO: Discuss.
+/// Computes the clockwise angle off north that a local body frame's X axis is pointing at a location on earth given a local2ecef quaternion
+/// 
+/// # Arguments
+/// 
+/// * `ecef_quat` - Local body frame expressed as a quaternion
+/// 
+/// # Returns
+/// 
+/// *  `heading` - Clockwise angle off true north [[degrees]] of the body's x axis
 pub fn ecef_quat2heading(ecef_quat: &glam::DQuat, lla_ref: &glam::DVec3) -> f64 {
     let ecef_dcm = glam::DMat3::from_quat(*ecef_quat);
     return ecef_dcm2heading(&ecef_dcm, lla_ref);
-}
-
-// TODO: Should this exist now that we have vincenty? This is a weird... working in ECEF but for planer earth?
-pub fn ecef2heading(ecef_rel: &glam::DVec3, lla_ref: &glam::DVec3) -> f64 {
-    let enu = ecef2enu(ecef_rel, lla_ref);
-    return enu2heading(&enu);
-}
-
-// TODO: Discuss.
-pub fn ecef2bearing(obs_ecef: &glam::DVec3, targ_ecef: &glam::DVec3) -> f64 {
-    let obs_lla = ecef2lla(obs_ecef);
-    let diff = (*targ_ecef) - (*obs_ecef);
-    return ecef2heading(&diff, &obs_lla);
 }
 
 /// Generates a uniform random point on the surface of a sphere.
@@ -690,6 +696,7 @@ pub fn dms2dd(dms: &str) -> Result<f64, IllFormedDMSError> {
 /// # Arguments
 ///
 /// * `dd` - Decimal degrees [degrees].
+/// * `is_lat` - Flat to denote if this decimal value describes a latitude [bool]
 ///
 /// # Returns
 ///
@@ -726,6 +733,17 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
     return format!("{:.0}:{:.0}:{:.3}{}", deg.floor(), min.floor(), sec, dir);
 }
 
+/// Convenience function to convert lat/lon to a tuple of (lat dms, lon dms)
+/// 
+/// # Arguments
+///
+/// * `lat` - Latitude in decimal degrees
+/// * `lon` - Longitude in decimal degrees
+///
+/// # Returns
+///
+/// * `(lat dms, lon dms)` - Tuple of lat/lon as degrees:minutes:seconds [Tuple[String, String]]
+/// ```
 pub fn ll2dms(lat: f64, lon: f64) -> (String, String) {
     return (dd2dms(lat, true), dd2dms(lon, false));
 }

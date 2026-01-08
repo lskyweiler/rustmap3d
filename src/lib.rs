@@ -32,7 +32,6 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ecef2ned_dcm, m)?)?;
     m.add_function(wrap_pyfunction!(ned2ecef_dcm, m)?)?;
 
-    m.add_function(wrap_pyfunction!(ecef2bearing, m)?)?;
     m.add_function(wrap_pyfunction!(angle_between, m)?)?;
 
     m.add_function(wrap_pyfunction!(vincenty_direct, m)?)?;
