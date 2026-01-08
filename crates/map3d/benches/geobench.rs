@@ -54,7 +54,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::ecef2enu(&point, &ref_point);
+                map3d::ecef_uvw2enu(&point, &ref_point);
             })
         },
     );
@@ -64,7 +64,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::enu2ecef(&point, &ref_point);
+                map3d::enu2ecef_uvw(&point, &ref_point);
             })
         },
     );
@@ -74,7 +74,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::ecef2aer(&point, &ref_point);
+                map3d::ecef_uvw2aer(&point, &ref_point);
             })
         },
     );
@@ -84,7 +84,7 @@ fn bench_geo(c: &mut Criterion) {
             b.iter(|| {
                 let ref_point = map3d::rand_lla();
                 let point = map3d::rand_ecef();
-                map3d::aer2ecef(&point, &ref_point);
+                map3d::aer2ecef_uvw(&point, &ref_point);
             })
         },
     );

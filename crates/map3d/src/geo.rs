@@ -385,22 +385,23 @@ pub fn ecef2ned_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
     return glam::DMat3::from_quat(q);
 }
 
-/// Converts ECEF to ENU.
+/// Converts ECEF uvw to ENU
 ///
 /// # Arguments
 ///
-/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ecef_uvw2enu` - Vector represented in ECEF frame [[meters]].
 /// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef_uvw2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
     return rot * (*ecef);
 }
 
-/// Converts ENU to ECEF.
+/// Converts ENU uvw to ECEF.
+/// This is a vector that is not in relation to an ECEF location
 ///
 /// # Arguments
 ///
@@ -409,14 +410,15 @@ pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 ///
 /// # Returns
 ///
-/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+/// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
+pub fn enu2ecef_uvw(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*enu);
 }
 
-/// Converts ECEF to NED.
-///
+/// Converts ECEF uvw Vector to NED.
+/// This is a vector that is not in relation to an ECEF location
+/// 
 /// # Arguments
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
@@ -425,12 +427,12 @@ pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef_uvw2ned(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
-    return rot * (*ecef);
+    return rot * (*ecef_uvw);
 }
 
-/// Converts NED to ECEF.
+/// Converts NED to ECEF uvw
 ///
 /// # Arguments
 ///
@@ -439,8 +441,8 @@ pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 ///
 /// # Returns
 ///
-/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn ned2ecef(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+/// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
+pub fn ned2ecef_uvw(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
     let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
     return rot * (*ned);
 }
@@ -481,22 +483,23 @@ pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(east, north, up);
 }
 
-/// Converts ECEF to AER.
+/// Converts ECEF uvw to AER.
+/// This is a vector that is not in relation to an ECEF location
 ///
 /// # Arguments
 ///
-/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ecef_uvw` - Vector represented in ECEF frame [[meters]].
 /// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
 ///
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let enu = ecef2enu(ecef, lla_ref);
+pub fn ecef_uvw2aer(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+    let enu = ecef_uvw2enu(ecef_uvw, lla_ref);
     return enu2aer(&enu);
 }
 
-/// Converts AER to ECEF.
+/// Converts AER to ECEF uvw.
 ///
 /// # Arguments
 ///
@@ -506,9 +509,9 @@ pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
+pub fn aer2ecef_uvw(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
-    return enu2ecef(&enu, &ref_lla) + lla2ecef(ref_lla);
+    return enu2ecef_uvw(&enu, &ref_lla);
 }
 
 /// Converts NED to AER.
@@ -1856,7 +1859,7 @@ mod geotests {
         let ecef_ref_tuples = ecef2enu_fixture.0;
         let enu = ecef2enu_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_enu = ecef2enu(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
+            let actual_enu = ecef_uvw2enu(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
             let expected_enu = enu.get(i).unwrap();
             assert_vecs_close(&actual_enu, expected_enu, 1e-6);
         }
@@ -1866,7 +1869,7 @@ mod geotests {
         let ecef_ref_tuples = ecef2enu_fixture.0;
         let enu = ecef2enu_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_ecef = enu2ecef(&enu.get(i).unwrap(), &ecef_ref_tuple.1);
+            let actual_ecef = enu2ecef_uvw(&enu.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
             assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
         }
@@ -1883,7 +1886,7 @@ mod geotests {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_ned = ecef2ned(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
+            let actual_ned = ecef_uvw2ned(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
             let expected_ned = neds.get(i).unwrap();
             assert_vecs_close(&actual_ned, expected_ned, 1e-6);
         }
@@ -1893,7 +1896,7 @@ mod geotests {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_ecef = ned2ecef(&neds.get(i).unwrap(), &ecef_ref_tuple.1);
+            let actual_ecef = ned2ecef_uvw(&neds.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
             assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
         }
