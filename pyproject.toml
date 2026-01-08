@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 authors = [
-    { name = "weiler", email = "lucas.weiler@dynetics.com" },
+    { name = "weiler", email = "lucas.l.weiler@leidos.com" },
     { name = "molnar", email = "andrew.b.molnar@leidos.com" },
 ]
 dynamic = ["version"]
@@ -38,7 +38,7 @@ dev = [
 features = ["pyo3/extension-module"]
 
 [tool.ruff]
-extend-exclude = [".venv", "target", "crates/simple"]
+extend-exclude = [".venv", "target"]
 
 [tool.pylint.main]
 ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target"]
