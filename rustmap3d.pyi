@@ -11,7 +11,7 @@ def aer2ecef(
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts AER to an ECEF location
+    Converts AER from a given lat/lon to a new ECEF location
 
     # Arguments
 
@@ -34,7 +34,7 @@ def aer2ecef_uvw(
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts AER to ECEF uvw
+    Converts a vector direction and distance given in AER to ECEF uvw
 
     # Arguments
 
@@ -53,7 +53,7 @@ def aer2enu(
     a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts AER to ENU.
+    Converts AER vector direction and magnitude to ENU.
 
     # Arguments
 
@@ -70,7 +70,7 @@ def aer2ned(
     a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts AER to NED.
+    Converts AER vector direction and magnitude to NED.
 
     # Arguments
 
@@ -329,9 +329,9 @@ def ecef_quat2heading(
     # Arguments
 
     * `w` - Scalar part of quaternion [float]
-    * `x_m` - x part of quaternion [float]
-    * `y_m` - y part of quaternion [float]
-    * `z_m` - z part of quaternion [float]
+    * `x` - x part of quaternion [float]
+    * `y` - y part of quaternion [float]
+    * `z` - z part of quaternion [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 

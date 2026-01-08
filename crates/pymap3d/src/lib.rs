@@ -293,7 +293,7 @@ pub fn ecef2aer(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
     return vec3_to_tuple(&aer);
 }
 
-/// Converts AER to ECEF uvw
+/// Converts a vector direction and distance given in AER to ECEF uvw
 ///
 /// # Arguments
 ///
@@ -315,7 +315,7 @@ pub fn aer2ecef_uvw(a_d: f64, e_d: f64, r_m: f64, lat_ref_d: f64, lon_ref_d: f64
     );
     return vec3_to_tuple(&ecef_uvw);
 }
-/// Converts AER to an ECEF location
+/// Converts AER from a given lat/lon to a new ECEF location
 ///
 /// # Arguments
 ///
@@ -356,7 +356,7 @@ pub fn enu2aer(e_m: f64, n_m: f64, u_m: f64) -> Vec3Tup {
     return vec3_to_tuple(&aer);
 }
 
-/// Converts AER to ENU.
+/// Converts AER vector direction and magnitude to ENU.
 ///
 /// # Arguments
 ///
@@ -392,7 +392,7 @@ pub fn ned2aer(n_m: f64, e_m: f64, d_m: f64) -> Vec3Tup {
     return vec3_to_tuple(&aer);
 }
 
-/// Converts AER to NED.
+/// Converts AER vector direction and magnitude to NED.
 ///
 /// # Arguments
 ///
@@ -604,9 +604,9 @@ pub fn enu2heading(e_m: f64, n_m: f64, u_m: f64) -> f64 {
 /// # Arguments
 ///
 /// * `w` - Scalar part of quaternion [float]
-/// * `x_m` - x part of quaternion [float]
-/// * `y_m` - y part of quaternion [float]
-/// * `z_m` - z part of quaternion [float]
+/// * `x` - x part of quaternion [float]
+/// * `y` - y part of quaternion [float]
+/// * `z` - z part of quaternion [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 ///
