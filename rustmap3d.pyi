@@ -4,9 +4,9 @@
 import builtins
 
 def aer2ecef(
-    a: builtins.float,
-    e: builtins.float,
-    r: builtins.float,
+    a_d: builtins.float,
+    e_d: builtins.float,
+    r_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -15,11 +15,11 @@ def aer2ecef(
 
     # Arguments
 
-    * `a` - Azimuth in degrees [f64]
-    * `e` - Elevation in degrees [f64]
-    * `r` - Range in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `a_d` - Azimuth in degrees [float]
+    * `e_d` - Elevation in degrees [float]
+    * `r_m` - Range in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -27,9 +27,9 @@ def aer2ecef(
     """
 
 def aer2ecef_uvw(
-    a: builtins.float,
-    e: builtins.float,
-    r: builtins.float,
+    a_d: builtins.float,
+    e_d: builtins.float,
+    r_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -38,11 +38,11 @@ def aer2ecef_uvw(
 
     # Arguments
 
-    * `a` - Azimuth in degrees [f64]
-    * `e` - Elevation in degrees [f64]
-    * `r` - Range in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `a_d` - Azimuth in degrees [float]
+    * `e_d` - Elevation in degrees [float]
+    * `r_m` - Range in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -50,16 +50,16 @@ def aer2ecef_uvw(
     """
 
 def aer2enu(
-    a: builtins.float, e: builtins.float, r: builtins.float
+    a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER to ENU.
 
     # Arguments
 
-    * `a` - Azimuth in degrees [f64]
-    * `e` - Elevation in degrees [f64]
-    * `r` - Range in meters [f64]
+    * `a_d` - Azimuth in degrees [float]
+    * `e_d` - Elevation in degrees [float]
+    * `r_m` - Range in meters [float]
 
     # Returns
 
@@ -67,16 +67,16 @@ def aer2enu(
     """
 
 def aer2ned(
-    a: builtins.float, e: builtins.float, r: builtins.float
+    a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER to NED.
 
     # Arguments
 
-    * `a` - Azimuth in degrees [f64]
-    * `e` - Elevation in degrees [f64]
-    * `r` - Range in meters [f64]
+    * `a_d` - Azimuth in degrees [float]
+    * `e_d` - Elevation in degrees [float]
+    * `r_m` - Range in meters [float]
 
     # Returns
 
@@ -96,35 +96,72 @@ def angle_between(
 
     # Arguments
 
-    * `ax` - a vector x
-    * `ay` - a vector y
-    * `az` - a vector z
-    * `bx` - b vector x
-    * `by` - b vector y
-    * `bz` - b vector z
+    * `ax` - a vector x [float]
+    * `ay` - a vector y [float]
+    * `az` - a vector z [float]
+    * `bx` - b vector x [float]
+    * `by` - b vector y [float]
+    * `bz` - b vector z [float]
 
     # Returns
 
     * `angle` - angle between the two vectors in radians
     """
 
+def dd2dms(dd: builtins.float, is_lat: builtins.bool) -> builtins.str:
+    r"""
+    Converts decimal degrees (DD) to degrees-minutes-seconds (DMS).
+
+    # Arguments
+
+    * `dd` - Decimal degrees [degrees].
+    * `is_lat` - Flag to denote if this decimal value describes a latitude [bool]
+
+    # Returns
+
+    * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
+
+    # Examples
+    ```
+    dms = map3d.dd2dms(25.37909389, true) #> "25:22:44.738N"
+    ```
+    """
+
+def dms2dd(dms: builtins.str) -> builtins.float:
+    r"""
+    Converts degrees-minutes-seconds (DMS) to decimal degrees (DD).
+
+    # Arguments
+
+    * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
+
+    # Returns
+
+    * `dd` - Decimal degrees [degrees].
+
+    # Examples
+    ```
+    dd = map3d.dms2dd("25:22:44.738N")  #> 25.37909389
+    ```
+    """
+
 def ecef2aer(
-    x: builtins.float,
-    y: builtins.float,
-    z: builtins.float,
+    x_m: builtins.float,
+    y_m: builtins.float,
+    z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts an absolute ECEF to AER.
+    Converts an absolute ECEF to AER (az el range).
 
     # Arguments
 
-    * `x` - ECEF x in meters [f64]
-    * `y` - ECEF y in meters [f64]
-    * `z` - ECEF z in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `x_m` - ECEF x in meters [float]
+    * `y_m` - ECEF y in meters [float]
+    * `z_m` - ECEF z in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -132,9 +169,9 @@ def ecef2aer(
     """
 
 def ecef2enu(
-    x: builtins.float,
-    y: builtins.float,
-    z: builtins.float,
+    x_m: builtins.float,
+    y_m: builtins.float,
+    z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -143,11 +180,11 @@ def ecef2enu(
 
     # Arguments
 
-    * `x` - ECEF x in meters [f64]
-    * `y` - ECEF y in meters [f64]
-    * `z` - ECEF z in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `x_m` - ECEF x in meters [float]
+    * `y_m` - ECEF y in meters [float]
+    * `z_m` - ECEF z in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -172,8 +209,8 @@ def ecef2enu_dcm(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -188,8 +225,8 @@ def ecef2enu_quat(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -197,16 +234,16 @@ def ecef2enu_quat(
     """
 
 def ecef2lla(
-    x: builtins.float, y: builtins.float, z: builtins.float
+    x_m: builtins.float, y_m: builtins.float, z_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ECEF to WGS84 LLA
 
     # Arguments
 
-    * `x` - ECEF x in meters [f64]
-    * `y` - ECEF y in meters [f64]
-    * `z` - ECEF z in meters [f64]
+    * `x_m` - ECEF x in meters [float]
+    * `y_m` - ECEF y in meters [float]
+    * `z_m` - ECEF z in meters [float]
 
     # Returns
 
@@ -214,9 +251,9 @@ def ecef2lla(
     """
 
 def ecef2ned(
-    x: builtins.float,
-    y: builtins.float,
-    z: builtins.float,
+    x_m: builtins.float,
+    y_m: builtins.float,
+    z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -225,11 +262,11 @@ def ecef2ned(
 
     # Arguments
 
-    * `u` - ECEF u in meters [f64]
-    * `v` - ECEF v in meters [f64]
-    * `w` - ECEF w in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `u_m` - ECEF u in meters [float]
+    * `v_m` - ECEF v in meters [float]
+    * `w_m` - ECEF w in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -254,8 +291,8 @@ def ecef2ned_dcm(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -270,8 +307,8 @@ def ecef2ned_quat(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -291,12 +328,12 @@ def ecef_quat2heading(
 
     # Arguments
 
-    * `w` - Scalar part of quaternion
-    * `x` - x part of quaternion
-    * `y` - y part of quaternion
-    * `z` - z part of quaternion
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `w` - Scalar part of quaternion [float]
+    * `x_m` - x part of quaternion [float]
+    * `y_m` - y part of quaternion [float]
+    * `z_m` - z part of quaternion [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -304,22 +341,22 @@ def ecef_quat2heading(
     """
 
 def ecef_uvw2aer(
-    u: builtins.float,
-    v: builtins.float,
-    w: builtins.float,
+    u_m: builtins.float,
+    v_m: builtins.float,
+    w_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
-    Converts ECEF uvw to AER.
+    Converts ECEF uvw to AER (az el range).
 
     # Arguments
 
-    * `u` - ECEF u in meters [f64]
-    * `v` - ECEF v in meters [f64]
-    * `w` - ECEF w in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `u_m` - ECEF u in meters [float]
+    * `v_m` - ECEF v in meters [float]
+    * `w_m` - ECEF w in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -327,9 +364,9 @@ def ecef_uvw2aer(
     """
 
 def ecef_uvw2enu(
-    u: builtins.float,
-    v: builtins.float,
-    w: builtins.float,
+    u_m: builtins.float,
+    v_m: builtins.float,
+    w_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -338,11 +375,11 @@ def ecef_uvw2enu(
 
     # Arguments
 
-    * `u` - ECEF u in meters [f64]
-    * `v` - ECEF v in meters [f64]
-    * `w` - ECEF w in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `u_m` - ECEF u in meters [float]
+    * `v_m` - ECEF v in meters [float]
+    * `w_m` - ECEF w in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -350,9 +387,9 @@ def ecef_uvw2enu(
     """
 
 def ecef_uvw2ned(
-    u: builtins.float,
-    v: builtins.float,
-    w: builtins.float,
+    u_m: builtins.float,
+    v_m: builtins.float,
+    w_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -361,11 +398,11 @@ def ecef_uvw2ned(
 
     # Arguments
 
-    * `u` - ECEF u in meters [f64]
-    * `v` - ECEF v in meters [f64]
-    * `w` - ECEF w in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `u_m` - ECEF u in meters [float]
+    * `v_m` - ECEF v in meters [float]
+    * `w_m` - ECEF w in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -373,16 +410,16 @@ def ecef_uvw2ned(
     """
 
 def enu2aer(
-    e: builtins.float, n: builtins.float, u: builtins.float
+    e_m: builtins.float, n_m: builtins.float, u_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to AER.
 
     # Arguments
 
-    * `e` - East in meters [f64]
-    * `n` - North in meters [f64]
-    * `u` - Up in meters [f64]
+    * `e_m` - East in meters [float]
+    * `n_m` - North in meters [float]
+    * `u_m` - Up in meters [float]
 
     # Returns
 
@@ -390,9 +427,9 @@ def enu2aer(
     """
 
 def enu2ecef(
-    e: builtins.float,
-    n: builtins.float,
-    u: builtins.float,
+    e_m: builtins.float,
+    n_m: builtins.float,
+    u_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -401,11 +438,11 @@ def enu2ecef(
 
     # Arguments
 
-    * `e` - East in meters [f64]
-    * `n` - North in meters [f64]
-    * `u` - Up in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `e_m` - East in meters [float]
+    * `n_m` - North in meters [float]
+    * `u_m` - Up in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -430,8 +467,8 @@ def enu2ecef_dcm(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -446,8 +483,8 @@ def enu2ecef_quat(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -455,9 +492,9 @@ def enu2ecef_quat(
     """
 
 def enu2ecef_uvw(
-    e: builtins.float,
-    n: builtins.float,
-    u: builtins.float,
+    e_m: builtins.float,
+    n_m: builtins.float,
+    u_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -466,11 +503,11 @@ def enu2ecef_uvw(
 
     # Arguments
 
-    * `e` - East in meters [f64]
-    * `n` - North in meters [f64]
-    * `u` - Up in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `e_m` - East in meters [float]
+    * `n_m` - North in meters [float]
+    * `u_m` - Up in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -478,20 +515,37 @@ def enu2ecef_uvw(
     """
 
 def enu2heading(
-    e: builtins.float, n: builtins.float, u: builtins.float
+    e_m: builtins.float, n_m: builtins.float, u_m: builtins.float
 ) -> builtins.float:
     r"""
     Calculates heading angle from ENU.
 
     # Arguments
 
-    * `e` - East in meters [f64]
-    * `n` - North in meters [f64]
-    * `u` - Up in meters [f64]
+    * `e_m` - East in meters [float]
+    * `n_m` - North in meters [float]
+    * `u_m` - Up in meters [float]
 
     # Returns
 
     * `heading_deg` - Heading angle relative to true north [degrees].
+    """
+
+def ll2dms(
+    lat_d: builtins.float, lon_d: builtins.float
+) -> tuple[builtins.str, builtins.str]:
+    r"""
+    Convenience function to convert lat/lon to a tuple of (lat dms, lon dms)
+
+    # Arguments
+
+    * `lat` - Latitude in decimal degrees
+    * `lon` - Longitude in decimal degrees
+
+    # Returns
+
+    * `(lat dms, lon dms)` - Tuple of lat/lon as degrees:minutes:seconds [Tuple[String, String]]
+    ```
     """
 
 def lla2ecef(
@@ -502,9 +556,9 @@ def lla2ecef(
 
     # Arguments
 
-    * `lat_d` - WGS84 Lat in degrees
-    * `lon_d` - WGS84 Lon in degrees
-    * `alt_m` - WGS84 MSL alt in meters
+    * `lat_d` - WGS84 Lat in degrees [float]
+    * `lon_d` - WGS84 Lon in degrees [float]
+    * `alt_m` - WGS84 MSL alt in meters [float]
 
     # Returns
 
@@ -512,16 +566,16 @@ def lla2ecef(
     """
 
 def ned2aer(
-    n: builtins.float, e: builtins.float, d: builtins.float
+    n_m: builtins.float, e_m: builtins.float, d_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts NED to AER.
 
     # Arguments
 
-    * `n` - North in meters [f64]
-    * `e` - East in meters [f64]
-    * `d` - Down in meters [f64]
+    * `n_m` - North in meters [float]
+    * `e_m` - East in meters [float]
+    * `d_m` - Down in meters [float]
 
     # Returns
 
@@ -529,9 +583,9 @@ def ned2aer(
     """
 
 def ned2ecef(
-    n: builtins.float,
-    e: builtins.float,
-    d: builtins.float,
+    n_m: builtins.float,
+    e_m: builtins.float,
+    d_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -540,11 +594,11 @@ def ned2ecef(
 
     # Arguments
 
-    * `n` - North in meters [f64]
-    * `e` - East in meters [f64]
-    * `d` - Down in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `n_m` - North in meters [float]
+    * `e_m` - East in meters [float]
+    * `d_m` - Down in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -569,8 +623,8 @@ def ned2ecef_dcm(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -585,8 +639,8 @@ def ned2ecef_quat(
 
     # Arguments
 
-    * `lat_d` - Latitude reference [degrees].
-    * `lon_d` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
 
     # Returns
 
@@ -594,9 +648,9 @@ def ned2ecef_quat(
     """
 
 def ned2ecef_uvw(
-    n: builtins.float,
-    e: builtins.float,
-    d: builtins.float,
+    n_m: builtins.float,
+    e_m: builtins.float,
+    d_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -605,11 +659,11 @@ def ned2ecef_uvw(
 
     # Arguments
 
-    * `n` - North in meters [f64]
-    * `e` - East in meters [f64]
-    * `d` - Down in meters [f64]
-    * `lat_ref_d` - Reference WGS84 Lat in degrees
-    * `lon_ref_d` - Reference WGS84 Lon in degrees
+    * `n_m` - North in meters [float]
+    * `e_m` - East in meters [float]
+    * `d_m` - Down in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
     # Returns
 
@@ -649,7 +703,7 @@ def vincenty_direct(
     lat_d: builtins.float,
     long_d: builtins.float,
     range_m: builtins.float,
-    bearing_deg: builtins.float,
+    bearing_d: builtins.float,
     atol: builtins.float,
     max_iters: builtins.int,
 ) -> tuple[builtins.float, builtins.float]:
@@ -662,10 +716,10 @@ def vincenty_direct(
 
     # Arguments
 
-    * `lat_deg` - Latitude reference [degrees].
-    * `lon_deg` - Longitude reference [degrees].
+    * `lat_d` - Latitude reference in degrees [float].
+    * `lon_d` - Longitude reference in degrees [float].
     * `range_m` - Range (i.e., distance) from point A to point B [meters].
-    * `bearing_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
+    * `bearing_d` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
     * `abs_tol` - Absolute tolerance used for convergence.
     * `max_iters` - Maximum possible number of iterations before early termination.
 

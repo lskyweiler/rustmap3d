@@ -267,7 +267,7 @@ pub fn dms2dd(dms: &str) -> Result<f64, IllFormedDMSError> {
 /// # Arguments
 ///
 /// * `dd` - Decimal degrees [degrees].
-/// * `is_lat` - Flat to denote if this decimal value describes a latitude [bool]
+/// * `is_lat` - Flag to denote if this decimal value describes a latitude [bool]
 ///
 /// # Returns
 ///

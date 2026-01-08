@@ -1,7 +1,7 @@
 # rustmap3d
 
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/lskyweiler/rustmap3d#license)
 ![Python](https://img.shields.io/badge/Python_3.8_|_3.9_|_3.10_|_3.11_|_3.12_|_3.13-blue?logo=python&logoColor=fff)
-![Rust](https://img.shields.io/badge/Rust-%23000000.svg?&logo=rust&logoColor=white&color=000)
 [![PyPI](https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=fff)](https://gitlab.sdo.psdo.leidos.com/alphamosaic/registry/-/packages)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -27,9 +27,14 @@ ecef = rustmap3d.ned2ecef(n, e, d, lat_ref, lon_ref)
 ...  
 
 # local rotations
-enu_quat = rustmap3d.enu2ecef_quat(lat, lon)  # quaternion that rotates a local enu vector to ecef
+enu_quat = rustmap3d.enu2ecef_quat(lat, lon)
 enu_dcm = rustmap3d.enu2ecef_dcm(lat, lon) 
-# enu, ned, aer
+# enu, ned
+
+# Conversions
+dd = rustmap3d.dms2dd("25:22:44.738N")  #> 25.37909389
+dms = rustmap3d.dd2dms(25.37909389, is_lat=true) #> "25:22:44.738N"
+lat, lon = rustmap3d.ll2dms(25.37909389, -138.7895679)  #> "25:22:44.738N", "138:47:22.444W"
 ...  
 
 # distance functions
@@ -39,7 +44,7 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 
 ## Comparison with similar packages
 
-- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#Benchmarks))
+- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
 - Zero dependencies
 - Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 - Exposes rotations (both quaternions and 3x3 matrices)
