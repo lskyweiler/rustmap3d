@@ -9,6 +9,19 @@
 
 **Simple, fast, and ergonomic geodetic coordinate conversions**
 
+---
+### Installation
+```bash
+# add to an existing project
+uv add rustmap3d
+# pip install it directly
+uv pip install rustmap3d
+
+# pip install without uv
+pip install rustmap3d
+```
+---
+### Examples
 ```python
 import rustmap3d
 
@@ -52,6 +65,7 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 ## Benchmarks
 
 Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
+> Note: This is comparing single calls of python floats, not vectorized numpy performance. Vectorized batched conversions will be implemented in the future
 
 - *~50x* faster for lla2ecef
 - *~400x* faster for ecef2lla
