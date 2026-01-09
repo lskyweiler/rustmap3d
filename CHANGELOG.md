@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-01-09
+
+### 📚 Documentation
+
+- Minor readme and toml updates
+
 ## [0.2.0] - 2026-01-08
 
 ### 🚀 Features
@@ -63,6 +69,7 @@ All notable changes to this project will be documented in this file.
 - *(ci)* Added dagger-based ci
 - *(ci)* Moved ci jobs out of here into dagger repo
 - *(ci)* Removed ci in favor of external dagger project
+- *(release)* Prep for release v0.2.0
 
 ## [0.1.4] - 2025-03-21
 
