@@ -17,6 +17,7 @@ authors = [
 ]
 dynamic = ["version"]
 license = { file = "LICENSE" }
+readme = "README.md"
 
 [project.urls]
 "Homepage" = "https://github.com/lskyweiler/rustmap3d"
