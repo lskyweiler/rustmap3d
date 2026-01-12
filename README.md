@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/lskyweiler/rustmap3d#license)
 ![Python](https://img.shields.io/badge/Python_3.8_|_3.9_|_3.10_|_3.11_|_3.12_|_3.13-blue?logo=python&logoColor=fff)
 [![PyPI](https://img.shields.io/badge/PyPI-3775A9?logo=pypi&logoColor=fff)](https://pypi.org/project/rustmap3d/)
+[![crates.io](https://img.shields.io/crates/v/map3d.svg)](https://crates.io/crates/map3d)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 <p align="center"><img src="docs/rustmap3d.logo.svg" width="300px" height="300px"/></p>
