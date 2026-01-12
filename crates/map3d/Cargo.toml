@@ -1,6 +1,12 @@
 [package]
 name = "map3d"
-version.workspace =  true
+description = "Geodetic coordinate conversion library"
+keywords = ["geodetic", "engineering", "scientific", "gis"]
+license-file = "../../LICENSE"
+homepage = "https://github.com/lskyweiler/rustmap3d"
+repository = "https://github.com/lskyweiler/rustmap3d"
+readme = "README.md"
+version.workspace = true
 edition.workspace = true
 
 [dependencies]

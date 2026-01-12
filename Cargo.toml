@@ -5,8 +5,11 @@ authors = [
     "Andrew Molnar <andrew.b.molnar@leidos.com>",
 ]
 edition = "2021"
+description = "Python geodetic coordinate conversion library written in rust"
 keywords = ["geodetic", "engineering", "scientific", "gis"]
 license-file = "LICENSE"
+homepage = "https://github.com/lskyweiler/rustmap3d"
+repository = "https://github.com/lskyweiler/rustmap3d"
 readme = "README.md"
 version = "0.2.3"
 
