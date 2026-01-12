@@ -262,9 +262,9 @@ def ecef2ned(
 
     # Arguments
 
-    * `u_m` - ECEF u in meters [float]
-    * `v_m` - ECEF v in meters [float]
-    * `w_m` - ECEF w in meters [float]
+    * `x_m` - ECEF x in meters [float]
+    * `y_m` - ECEF y in meters [float]
+    * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 
@@ -531,6 +531,29 @@ def enu2heading(
     * `heading_deg` - Heading angle relative to true north [degrees].
     """
 
+def enu2lla(
+    e_m: builtins.float,
+    n_m: builtins.float,
+    u_m: builtins.float,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> tuple[builtins.float, builtins.float, builtins.float]:
+    r"""
+    Converts ENU to an absolute LLA position
+
+    # Arguments
+
+    * `e_m` - East in meters [float]
+    * `n_m` - North in meters [float]
+    * `u_m` - Up in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * `lla` - Absolute LLA position [deg-deg-m]
+    """
+
 def ll2dms(
     lat_d: builtins.float, lon_d: builtins.float
 ) -> tuple[builtins.str, builtins.str]:
@@ -563,6 +586,52 @@ def lla2ecef(
     # Returns
 
     * `ecef` - Vector represented in ECEF coordinates [meters].
+    """
+
+def lla2enu(
+    lat_d: builtins.float,
+    lon_d: builtins.float,
+    alt_m: builtins.float,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> tuple[builtins.float, builtins.float, builtins.float]:
+    r"""
+    Converts an absolute LLA position to an ENU vector relative to a lla reference
+
+    # Arguments
+
+    * `lat_d` - WGS84 Lat in degrees [float]
+    * `lon_d` - WGS84 Lon in degrees [float]
+    * `alt_m` - WGS84 MSL alt in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * `enu` - Vector represented in ENU coordinates [meters].
+    """
+
+def lla2ned(
+    lat_d: builtins.float,
+    lon_d: builtins.float,
+    alt_m: builtins.float,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> tuple[builtins.float, builtins.float, builtins.float]:
+    r"""
+    Converts an absolute LLA location to a NED vector relative to a lla reference point
+
+    # Arguments
+
+    * `lat_d` - WGS84 Lat in degrees [float]
+    * `lon_d` - WGS84 Lon in degrees [float]
+    * `alt_m` - WGS84 MSL alt in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * `ned` - Vector represented in NED coordinates [meters].
     """
 
 def ned2aer(
@@ -670,6 +739,29 @@ def ned2ecef_uvw(
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
+def ned2lla(
+    n_m: builtins.float,
+    e_m: builtins.float,
+    d_m: builtins.float,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> tuple[builtins.float, builtins.float, builtins.float]:
+    r"""
+    Converts a NED vector to an absolute lat lon alt
+
+    # Arguments
+
+    * `n_m` - North in meters [float]
+    * `e_m` - East in meters [float]
+    * `d_m` - Down in meters [float]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * `lla` - Absolute lat lon alt [deg-deg-m]
+    """
+
 def rand_ecef() -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Generates a uniform random ECEF point on the surface of a spherical Earth.
@@ -701,11 +793,11 @@ def rand_orientation() -> tuple[
 
 def vincenty_direct(
     lat_d: builtins.float,
-    long_d: builtins.float,
+    lon_d: builtins.float,
     range_m: builtins.float,
     bearing_d: builtins.float,
-    atol: builtins.float,
-    max_iters: builtins.int,
+    atol: builtins.float = ...,
+    max_iters: builtins.int = ...,
 ) -> tuple[builtins.float, builtins.float]:
     r"""
     Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
@@ -735,8 +827,8 @@ def vincenty_inverse(
     lon_a_deg: builtins.float,
     lat_b_deg: builtins.float,
     lon_b_deg: builtins.float,
-    atol: builtins.float,
-    max_iters: builtins.int,
+    atol: builtins.float = ...,
+    max_iters: builtins.int = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates range and bearings between two latitude-longitude points. This function uses an iterative solution to

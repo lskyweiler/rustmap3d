@@ -113,6 +113,26 @@ pub fn ecef2enu(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
     );
     return vec3_to_tuple(&enu);
 }
+/// Converts an absolute LLA position to an ENU vector relative to a lla reference
+///
+/// # Arguments
+///
+/// * `lat_d` - WGS84 Lat in degrees [float]
+/// * `lon_d` - WGS84 Lon in degrees [float]
+/// * `alt_m` - WGS84 MSL alt in meters [float]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * `enu` - Vector represented in ENU coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn lla2enu(lat_d: f64, lon_d: f64, alt_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+    let ecef = map3d::lla2ecef(&glam::dvec3(lat_d, lon_d, alt_m));
+    let enu = map3d::ecef2enu(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, 0.));
+    return vec3_to_tuple(&enu);
+}
 
 /// Converts ENU to ECEF uvw vector
 ///
@@ -158,6 +178,29 @@ pub fn enu2ecef(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
     );
     return vec3_to_tuple(&ecef);
 }
+/// Converts ENU to an absolute LLA position
+///
+/// # Arguments
+///
+/// * `e_m` - East in meters [float]
+/// * `n_m` - North in meters [float]
+/// * `u_m` - Up in meters [float]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * `lla` - Absolute LLA position [deg-deg-m]
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn enu2lla(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+    let ecef = map3d::enu2ecef(
+        &glam::dvec3(e_m, n_m, u_m),
+        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+    );
+    let lla = map3d::ecef2lla(&ecef);
+    return vec3_to_tuple(&lla);
+}
 
 /// Converts ECEF UVW Vector to NED.
 ///
@@ -185,9 +228,9 @@ pub fn ecef_uvw2ned(u_m: f64, v_m: f64, w_m: f64, lat_ref_d: f64, lon_ref_d: f64
 ///
 /// # Arguments
 ///
-/// * `u_m` - ECEF u in meters [float]
-/// * `v_m` - ECEF v in meters [float]
-/// * `w_m` - ECEF w in meters [float]
+/// * `x_m` - ECEF x in meters [float]
+/// * `y_m` - ECEF y in meters [float]
+/// * `z_m` - ECEF z in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 ///
@@ -201,6 +244,26 @@ pub fn ecef2ned(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
         &glam::dvec3(x_m, y_m, z_m),
         &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
     );
+    return vec3_to_tuple(&ned);
+}
+/// Converts an absolute LLA location to a NED vector relative to a lla reference point
+///
+/// # Arguments
+///
+/// * `lat_d` - WGS84 Lat in degrees [float]
+/// * `lon_d` - WGS84 Lon in degrees [float]
+/// * `alt_m` - WGS84 MSL alt in meters [float]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * `ned` - Vector represented in NED coordinates [meters].
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn lla2ned(lat_d: f64, lon_d: f64, alt_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+    let ecef = map3d::lla2ecef(&glam::dvec3(lat_d, lon_d, alt_m));
+    let ned = map3d::ecef2ned(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, 0.));
     return vec3_to_tuple(&ned);
 }
 /// Converts NED to ECEF uvw
@@ -246,6 +309,29 @@ pub fn ned2ecef(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
         &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
     );
     return vec3_to_tuple(&ecef);
+}
+/// Converts a NED vector to an absolute lat lon alt
+///
+/// # Arguments
+///
+/// * `n_m` - North in meters [float]
+/// * `e_m` - East in meters [float]
+/// * `d_m` - Down in meters [float]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * `lla` - Absolute lat lon alt [deg-deg-m]
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn ned2lla(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+    let ecef = map3d::ned2ecef(
+        &glam::dvec3(n_m, e_m, d_m),
+        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+    );
+    let lla = map3d::ecef2lla(&ecef);
+    return vec3_to_tuple(&lla);
 }
 
 /// Converts ECEF uvw to AER (az el range).
@@ -665,15 +751,16 @@ pub fn angle_between(ax: f64, ay: f64, az: f64, bx: f64, by: f64, bz: f64) -> f6
 /// * `lon_deg` - Longitude location [degrees].
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (lat_d, lon_d, range_m, bearing_d, atol=1.0E-13, max_iters=1000))]
 pub fn vincenty_direct(
     lat_d: f64,
-    long_d: f64,
+    lon_d: f64,
     range_m: f64,
     bearing_d: f64,
     atol: f64,
     max_iters: u16,
 ) -> PyResult<(f64, f64)> {
-    let result = map3d::vincenty_direct(lat_d, long_d, range_m, bearing_d, atol, max_iters);
+    let result = map3d::vincenty_direct(lat_d, lon_d, range_m, bearing_d, atol, max_iters);
 
     match result {
         Ok(val) => Ok(val),
@@ -704,6 +791,7 @@ pub fn vincenty_direct(
 /// * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [degrees].
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (lat_a_deg, lon_a_deg, lat_b_deg, lon_b_deg, atol=1.0E-13, max_iters=1000))]
 pub fn vincenty_inverse(
     lat_a_deg: f64,
     lon_a_deg: f64,
