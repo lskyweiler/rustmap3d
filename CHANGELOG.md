@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-01-12
+
+### 🚀 Features
+
+- Added lla to/from relative coords and default parameters for vincenty functions
+
+## [0.2.2] - 2026-01-09
+
+### 📚 Documentation
+
+- Added readme to toml
+
 ## [0.2.1] - 2026-01-09
 
 ### 📚 Documentation
 
 - Minor readme and toml updates
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.2.1
 
 ## [0.2.0] - 2026-01-08
 
