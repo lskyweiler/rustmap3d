@@ -8,14 +8,14 @@ edition = "2021"
 keywords = ["geodetic", "engineering", "scientific", "gis"]
 license-file = "LICENSE"
 readme = "README.md"
-version = "0.2.1"
+version = "0.2.3"
 
 [workspace]
 members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-version = "0.2.1"
+version = "0.2.3"
 
 [lib]
 # rlib is required to generate py-stubs
