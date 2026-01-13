@@ -50,7 +50,7 @@ pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ecef` - Absolute ECEF position [m, m, m]
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
 ///
 /// # Returns
 ///
@@ -94,7 +94,7 @@ pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 /// # Arguments
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
 ///
 /// # Returns
 ///
