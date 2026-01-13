@@ -15,3 +15,4 @@ pub use lla::*;
 pub use ned::*;
 pub use vincenty::*;
 pub use ecef::*;
+pub use traits::*;
