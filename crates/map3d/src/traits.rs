@@ -51,6 +51,16 @@ impl IntoLatLonTuple for (f64, f64, f64) {
         (self.0, self.1)
     }
 }
+impl IntoLatLonTuple for &(f64, f64) {
+    fn into_lat_lon_tuple(&self) -> (f64, f64) {
+        (self.0, self.1)
+    }
+}
+impl IntoLatLonTuple for &(f64, f64, f64) {
+    fn into_lat_lon_tuple(&self) -> (f64, f64) {
+        (self.0, self.1)
+    }
+}
 
 impl IntoLatLonTriple for &glam::DVec3 {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
@@ -63,6 +73,11 @@ impl IntoLatLonTriple for glam::DVec3 {
     }
 }
 impl IntoLatLonTriple for (f64, f64, f64) {
+    fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
+        (self.0, self.1, self.2)
+    }
+}
+impl IntoLatLonTriple for &(f64, f64, f64) {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
         (self.0, self.1, self.2)
     }
