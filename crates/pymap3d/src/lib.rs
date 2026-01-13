@@ -545,7 +545,7 @@ pub fn rand_orientation() -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ecef2enu_quat(lat_d, lon_d);
+    let quat = map3d::ecef2enu_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -562,7 +562,7 @@ pub fn ecef2enu_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::enu2ecef_quat(lat_d, lon_d);
+    let quat = map3d::enu2ecef_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -579,7 +579,7 @@ pub fn enu2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ecef2ned_quat(lat_d, lon_d);
+    let quat = map3d::ecef2ned_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -596,7 +596,7 @@ pub fn ecef2ned_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ned2ecef_quat(lat_d, lon_d);
+    let quat = map3d::ned2ecef_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -613,7 +613,7 @@ pub fn ned2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ecef2enu_dcm(lat_d, lon_d);
+    let dcm = map3d::ecef2enu_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -630,7 +630,7 @@ pub fn ecef2enu_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::enu2ecef_dcm(lat_d, lon_d);
+    let dcm = map3d::enu2ecef_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -647,7 +647,7 @@ pub fn enu2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ecef2ned_dcm(lat_d, lon_d);
+    let dcm = map3d::ecef2ned_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -664,7 +664,7 @@ pub fn ecef2ned_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ned2ecef_dcm(lat_d, lon_d);
+    let dcm = map3d::ned2ecef_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -866,5 +866,5 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ll2dms(lat_d: f64, lon_d: f64) -> (String, String) {
-    return map3d::ll2dms(lat_d, lon_d);
+    return map3d::ll2dms((lat_d, lon_d));
 }

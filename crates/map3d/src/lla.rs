@@ -1,7 +1,11 @@
-use crate::util;
+use crate::{
+    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+    util,
+};
 use almost;
 use core::fmt;
 
+/// WGS84 Earth constants
 pub mod wgs84_const {
     pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0; // Equatorial radius.
     pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
@@ -31,7 +35,9 @@ pub mod wgs84_const {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla_ferarri(ecef: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2lla_ferarri(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3_ref();
+
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
     let range_: f64 = f64::sqrt(range_squared);
@@ -84,7 +90,9 @@ pub fn ecef2lla_ferarri(ecef: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla_map3d(ecef: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2lla_map3d(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3_ref();
+
     let r = f64::sqrt(ecef.x * ecef.x + ecef.y * ecef.y + ecef.z * ecef.z);
     let r2 = r * r;
     let u = f64::sqrt(
@@ -142,7 +150,7 @@ pub fn ecef2lla_map3d(ecef: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla(ecef: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2lla(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
     return ecef2lla_ferarri(ecef);
 }
 
@@ -155,18 +163,20 @@ pub fn ecef2lla(ecef: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn lla2ecef(lla: &glam::DVec3) -> glam::DVec3 {
-    let lat = f64::to_radians(lla.x);
-    let lon = f64::to_radians(lla.y);
-    let alt = lla.z;
+pub fn lla2ecef(lla: impl IntoLatLonTriple) -> glam::DVec3 {
+    let lla = lla.into_lat_lon_triple();
+
+    let lat = f64::to_radians(lla.0);
+    let lon = f64::to_radians(lla.1);
+    let alt = lla.2;
 
     let alt_correction = wgs84_const::EARTH_SEMI_MAJOR_AXIS_2
         / f64::hypot(
             wgs84_const::EARTH_SEMI_MAJOR_AXIS * f64::cos(lat),
             wgs84_const::EARTH_SEMI_MINOR_AXIS * f64::sin(lat),
         );
-    let x = (alt_correction + lla.z) * f64::cos(lat) * f64::cos(lon);
-    let y = (alt_correction + lla.z) * f64::cos(lat) * f64::sin(lon);
+    let x = (alt_correction + lla.2) * f64::cos(lat) * f64::cos(lon);
+    let y = (alt_correction + lla.2) * f64::cos(lat) * f64::sin(lon);
     let z = (alt_correction
         * f64::powf(
             wgs84_const::EARTH_SEMI_MINOR_AXIS / wgs84_const::EARTH_SEMI_MAJOR_AXIS,
@@ -196,6 +206,25 @@ pub fn rand_lla() -> glam::DVec3 {
         util::lerp(-90.0, 90.0, rand::random()),
         util::lerp(-180.0, 180.0, rand::random()),
         util::lerp(0.0, 10000.0, rand::random()),
+    );
+}
+/// Generates a uniform random LLA point in a given lat/lon/alt bounding box
+///
+/// # Returns
+///
+/// * `lla` - Random LLA location [[degrees-degrees-meters]].
+pub fn rand_lla_in_range(
+    min_lat_d: f64,
+    max_lat_d: f64,
+    min_lon_d: f64,
+    max_lon_d: f64,
+    min_alt_m: f64,
+    max_alt_m: f64,
+) -> glam::DVec3 {
+    return glam::DVec3::new(
+        util::lerp(min_lat_d, max_lat_d, rand::random()),
+        util::lerp(min_lon_d, max_lon_d, rand::random()),
+        util::lerp(min_alt_m, max_alt_m, rand::random()),
     );
 }
 
@@ -308,22 +337,22 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
 ///
 /// # Arguments
 ///
-/// * `lat` - Latitude in decimal degrees
-/// * `lon` - Longitude in decimal degrees
+/// * `ll_deg` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `(lat dms, lon dms)` - Tuple of lat/lon as degrees:minutes:seconds [Tuple[String, String]]
 /// ```
-pub fn ll2dms(lat: f64, lon: f64) -> (String, String) {
-    return (dd2dms(lat, true), dd2dms(lon, false));
+pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
+    let ll_deg = ll_deg.into_lat_lon_tuple();
+    return (dd2dms(ll_deg.0, true), dd2dms(ll_deg.0, false));
 }
 
 #[cfg(test)]
 mod test_lla {
     use super::*;
-    use rstest::*;
     use crate::util::assert_vecs_close;
+    use rstest::*;
 
     #[fixture]
     fn ecef_fixture() -> (Vec<glam::DVec3>, Vec<glam::DVec3>) {

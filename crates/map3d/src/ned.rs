@@ -1,4 +1,7 @@
-use crate::{enu, lla};
+use crate::{
+    enu, lla,
+    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+};
 use glam;
 
 /// Converts ECEF uvw Vector to NED.
@@ -7,13 +10,16 @@ use glam;
 /// # Arguments
 ///
 /// * `ecef_uvw` - Vector represented in ECEF coordinates [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef_uvw2ned(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
+pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ecef_uvw = ecef_uvw.into_dvec3_ref();
+    let lla_ref = lla_ref.into_lat_lon_tuple();
+
+    let rot = ecef2ned_quat(lla_ref);
     return rot * (*ecef_uvw);
 }
 /// Converts Absolute ECEF to NED.
@@ -26,9 +32,12 @@ pub fn ecef_uvw2ned(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2ned(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3_ref();
+    let lla_ref = lla_ref.into_lat_lon_triple();
+
     let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
-    let rot = ecef2ned_quat(lla_ref.x, lla_ref.y);
+    let rot = ecef2ned_quat(lla_ref);
     return rot * ecef_uvw;
 }
 
@@ -37,13 +46,15 @@ pub fn ecef2ned(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn ned2ecef_uvw(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
+pub fn ned2ecef_uvw(ned: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ned = ned.into_dvec3_ref();
+
+    let rot = ned2ecef_quat(ll_ref);
     return rot * (*ned);
 }
 /// Converts NED to Absolute ECEF
@@ -56,8 +67,11 @@ pub fn ned2ecef_uvw(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ecef` - Absolute ECEF vector
-pub fn ned2ecef(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = ned2ecef_quat(lla_ref.x, lla_ref.y);
+pub fn ned2ecef(ned: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ned = ned.into_dvec3_ref();
+    let lla_ref = lla_ref.into_lat_lon_triple();
+
+    let rot = ned2ecef_quat(lla_ref);
     let ecef_uvw = rot * (*ned);
     return ecef_uvw + lla::lla2ecef(lla_ref);
 }
@@ -66,14 +80,13 @@ pub fn ned2ecef(ned: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `dcm` - NED to ECEF direction cosine matrix.
-pub fn ned2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
-    let q = ned2ecef_quat(lat_deg, lon_deg);
+pub fn ned2ecef_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
+    let q = ned2ecef_quat(ll_deg);
     return glam::DMat3::from_quat(q);
 }
 
@@ -81,28 +94,26 @@ pub fn ned2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `dcm` - ECEF to NED direction cosine matrix.
-pub fn ecef2ned_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
-    let q = ecef2ned_quat(lat_deg, lon_deg);
+pub fn ecef2ned_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
+    let q = ecef2ned_quat(ll_deg);
     return glam::DMat3::from_quat(q);
 }
 /// Calculates the quaternion that yields an NED to ECEF transformation at this LLA.
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `quat` - Normalized NED to ECEF quaternion.
-pub fn ned2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
-    let enu2ecef_q = enu::enu2ecef_quat(lat_deg, lon_deg);
+pub fn ned2ecef_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
+    let enu2ecef_q = enu::enu2ecef_quat(ll_deg);
     let enu2ecef_mat = glam::DMat3::from_quat(enu2ecef_q);
 
     let east = enu2ecef_mat.x_axis;
@@ -119,14 +130,13 @@ pub fn ned2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `quat` - Normalized ECEF to NED quaternion.
-pub fn ecef2ned_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
-    let ned2ecef_rot = ned2ecef_quat(lat_deg, lon_deg);
+pub fn ecef2ned_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
+    let ned2ecef_rot = ned2ecef_quat(ll_deg);
     return ned2ecef_rot.conjugate();
 }
 
@@ -397,7 +407,7 @@ mod test_ned {
 
     #[rstest]
     fn test_ecef2ned_dcm() {
-        let actual = ecef2ned_dcm(0., 0.);
+        let actual = ecef2ned_dcm((0., 0.));
         let ned = actual * glam::DVec3::new(0.5, -1., 1.);
         assert_vecs_close(&ned, &glam::DVec3::new(1., -1., -0.5), 1e-6);
     }
@@ -416,7 +426,7 @@ mod test_ned {
         let ecef_ref_tuples = ecef2ned_fixture.0;
         let neds = ecef2ned_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_ecef = ned2ecef_uvw(&neds.get(i).unwrap(), &ecef_ref_tuple.1);
+            let actual_ecef = ned2ecef_uvw(neds.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
             assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
         }

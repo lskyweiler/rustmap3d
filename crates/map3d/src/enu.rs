@@ -1,19 +1,23 @@
-use crate::lla;
+use crate::{
+    lla,
+    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+};
 use glam;
 
 /// Calculates the quaternion that yields an ENU to ECEF transformation at this LLA.
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `quat` - Normalized ENU to ECEF quaternion.
-pub fn enu2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
-    let lat_rad: f64 = f64::to_radians(lat_deg);
-    let lon_rad: f64 = f64::to_radians(lon_deg);
+pub fn enu2ecef_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
+    let ll_deg = ll_deg.into_lat_lon_tuple();
+
+    let lat_rad: f64 = f64::to_radians(ll_deg.0);
+    let lon_rad: f64 = f64::to_radians(ll_deg.1);
 
     let yaw = glam::DQuat::from_rotation_z(std::f64::consts::FRAC_PI_2 + lon_rad);
     let roll = glam::DQuat::from_rotation_x(std::f64::consts::FRAC_PI_2 - lat_rad);
@@ -24,14 +28,13 @@ pub fn enu2ecef_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `quat` - Normalized ECEF to ENU quaternion.
-pub fn ecef2enu_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
-    let enu2ecef_rot = enu2ecef_quat(lat_deg, lon_deg);
+pub fn ecef2enu_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
+    let enu2ecef_rot = enu2ecef_quat(ll_deg);
     return enu2ecef_rot.conjugate();
 }
 
@@ -39,14 +42,13 @@ pub fn ecef2enu_quat(lat_deg: f64, lon_deg: f64) -> glam::DQuat {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `dcm` - ENU to ECEF direction cosine matrix.
-pub fn enu2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
-    let q = enu2ecef_quat(lat_deg, lon_deg);
+pub fn enu2ecef_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
+    let q = enu2ecef_quat(ll_deg);
     return glam::DMat3::from_quat(q);
 }
 
@@ -54,14 +56,13 @@ pub fn enu2ecef_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
 ///
 /// # Arguments
 ///
-/// * `lat_deg` - Latitude reference [[degrees]].
-/// * `lon_deg` - Longitude reference [[degrees]].
+/// * `ll_deg` - Lat lon tuple [degrees-degrees]
 ///
 /// # Returns
 ///
 /// * `dcm` - ECEF to ENU direction cosine matrix.
-pub fn ecef2enu_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
-    let q = ecef2enu_quat(lat_deg, lon_deg);
+pub fn ecef2enu_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
+    let q = ecef2enu_quat(ll_deg);
     return glam::DMat3::from_quat(q);
 }
 
@@ -70,13 +71,15 @@ pub fn ecef2enu_dcm(lat_deg: f64, lon_deg: f64) -> glam::DMat3 {
 /// # Arguments
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef_uvw2enu(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
+pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ecef_uvw = ecef_uvw.into_dvec3_ref();
+
+    let rot = ecef2enu_quat(ll_ref);
     return rot * (*ecef_uvw);
 }
 /// Converts Absolute ECEF to ENU
@@ -89,9 +92,12 @@ pub fn ecef_uvw2enu(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2enu(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3_ref();
+    let lla_ref = lla_ref.into_lat_lon_triple();
+
     let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
-    let rot = ecef2enu_quat(lla_ref.x, lla_ref.y);
+    let rot = ecef2enu_quat(lla_ref);
     return rot * ecef_uvw;
 }
 
@@ -101,13 +107,15 @@ pub fn ecef2enu(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-/// * * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * * `ll_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn enu2ecef_uvw(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
+pub fn enu2ecef_uvw(enu: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let enu = enu.into_dvec3_ref();
+
+    let rot = enu2ecef_quat(ll_ref);
     return rot * (*enu);
 }
 /// Converts ENU to Absolute ECEF.
@@ -121,8 +129,11 @@ pub fn enu2ecef_uvw(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let rot = enu2ecef_quat(lla_ref.x, lla_ref.y);
+pub fn enu2ecef(enu: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let enu = enu.into_dvec3_ref();
+    let lla_ref = lla_ref.into_lat_lon_triple();
+
+    let rot = enu2ecef_quat(lla_ref);
     let ecef_uvw = rot * (*enu);
     return ecef_uvw + lla::lla2ecef(lla_ref);
 }
@@ -136,7 +147,9 @@ pub fn enu2ecef(enu: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `heading_deg` - Heading angle relative to true north [[degrees]].
-pub fn enu2heading(enu: &glam::DVec3) -> f64 {
+pub fn enu2heading(enu: impl IntoDVec3Ref) -> f64 {
+    let enu = enu.into_dvec3_ref();
+
     return f64::atan2(enu.x, enu.y).to_degrees();
 }
 
@@ -420,7 +433,7 @@ mod test_enu {
         let ecef_ref_tuples = ecef2enu_fixture.0;
         let enu = ecef2enu_fixture.1;
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
-            let actual_ecef = enu2ecef_uvw(&enu.get(i).unwrap(), &ecef_ref_tuple.1);
+            let actual_ecef = enu2ecef_uvw(enu.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
             assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
         }

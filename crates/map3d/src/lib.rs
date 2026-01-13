@@ -6,6 +6,7 @@ mod ned;
 pub mod util;
 mod vincenty;
 mod ecef;
+mod traits;
 
 pub use aer::*;
 pub use eci::*;
