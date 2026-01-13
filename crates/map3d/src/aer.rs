@@ -1,6 +1,6 @@
 use crate::{
     enu,
-    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
 };
 use glam::{self, Vec3Swizzles};
 
@@ -13,8 +13,8 @@ use glam::{self, Vec3Swizzles};
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn enu2aer(enu: impl IntoDVec3Ref) -> glam::DVec3 {
-    let enu = enu.into_dvec3_ref();
+pub fn enu2aer(enu: impl IntoDVec3) -> glam::DVec3 {
+    let enu = enu.into_dvec3();
 
     let az = f64::atan2(enu.x, enu.y);
     let el = f64::atan2(enu.z, enu.xy().length());
@@ -31,8 +31,8 @@ pub fn enu2aer(enu: impl IntoDVec3Ref) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn aer2enu(aer: impl IntoDVec3Ref) -> glam::DVec3 {
-    let aer = aer.into_dvec3_ref();
+pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
+    let aer = aer.into_dvec3();
 
     let r = aer.z;
     let az = f64::to_radians(aer.x);
@@ -55,7 +55,7 @@ pub fn aer2enu(aer: impl IntoDVec3Ref) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef2aer(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+pub fn ecef2aer(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = enu::ecef2enu(ecef, lla_ref);
     return enu2aer(&enu);
 }
@@ -70,7 +70,7 @@ pub fn ecef2aer(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
     let enu = enu::ecef_uvw2enu(ecef_uvw, ll_ref);
     return enu2aer(&enu);
 }
@@ -85,7 +85,7 @@ pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn aer2ecef_uvw(aer: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return enu::enu2ecef_uvw(&enu, ll_ref);
 }
@@ -99,7 +99,7 @@ pub fn aer2ecef_uvw(aer: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> gla
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn aer2ecef(aer: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+pub fn aer2ecef(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return enu::enu2ecef(&enu, lla_ref);
 }
@@ -113,8 +113,8 @@ pub fn aer2ecef(aer: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam:
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ned2aer(ned: impl IntoDVec3Ref) -> glam::DVec3 {
-    let ned = ned.into_dvec3_ref();
+pub fn ned2aer(ned: impl IntoDVec3) -> glam::DVec3 {
+    let ned = ned.into_dvec3();
 
     let az = f64::atan2(ned.y, ned.x);
     let el = f64::atan2(-ned.z, ned.xy().length());
@@ -131,7 +131,7 @@ pub fn ned2aer(ned: impl IntoDVec3Ref) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn aer2ned(aer: impl IntoDVec3Ref) -> glam::DVec3 {
+pub fn aer2ned(aer: impl IntoDVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return glam::DVec3::new(enu.y, enu.x, -enu.z);
 }

@@ -1,5 +1,5 @@
 use crate::{
-    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
     util,
 };
 use almost;
@@ -35,8 +35,8 @@ pub mod wgs84_const {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla_ferarri(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3_ref();
+pub fn ecef2lla_ferarri(ecef: impl IntoDVec3) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3();
 
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
@@ -90,8 +90,8 @@ pub fn ecef2lla_ferarri(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla_map3d(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3_ref();
+pub fn ecef2lla_map3d(ecef: impl IntoDVec3) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3();
 
     let r = f64::sqrt(ecef.x * ecef.x + ecef.y * ecef.y + ecef.z * ecef.z);
     let r2 = r * r;
@@ -150,7 +150,7 @@ pub fn ecef2lla_map3d(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `lla` - Vector represented in LLA coordinates [[degrees-degrees-meters]].
-pub fn ecef2lla(ecef: impl IntoDVec3Ref) -> glam::DVec3 {
+pub fn ecef2lla(ecef: impl IntoDVec3) -> glam::DVec3 {
     return ecef2lla_ferarri(ecef);
 }
 

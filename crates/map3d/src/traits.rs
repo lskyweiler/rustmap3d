@@ -1,7 +1,7 @@
 use glam;
 
-pub trait IntoDVec3Ref {
-    fn into_dvec3_ref(&self) -> &glam::DVec3;
+pub trait IntoDVec3 {
+    fn into_dvec3(&self) -> glam::DVec3;
 }
 pub trait IntoLatLonTuple {
     fn into_lat_lon_tuple(&self) -> (f64, f64);
@@ -10,9 +10,14 @@ pub trait IntoLatLonTriple {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64);
 }
 
-impl IntoDVec3Ref for &glam::DVec3 {
-    fn into_dvec3_ref(&self) -> &glam::DVec3 {
-        self
+impl IntoDVec3 for &glam::DVec3 {
+    fn into_dvec3(&self) -> glam::DVec3 {
+        (*self).clone()
+    }
+}
+impl IntoDVec3 for glam::DVec3 {
+    fn into_dvec3(&self) -> glam::DVec3 {
+        self.clone()
     }
 }
 

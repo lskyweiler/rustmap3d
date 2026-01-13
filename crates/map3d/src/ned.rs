@@ -1,6 +1,6 @@
 use crate::{
     enu, lla,
-    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
 };
 use glam;
 
@@ -15,12 +15,12 @@ use glam;
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ecef_uvw = ecef_uvw.into_dvec3_ref();
+pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3, lla_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ecef_uvw = ecef_uvw.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_tuple();
 
     let rot = ecef2ned_quat(lla_ref);
-    return rot * (*ecef_uvw);
+    return rot * ecef_uvw;
 }
 /// Converts Absolute ECEF to NED.
 ///
@@ -32,8 +32,8 @@ pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTuple) 
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn ecef2ned(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3_ref();
+pub fn ecef2ned(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
@@ -51,11 +51,11 @@ pub fn ecef2ned(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam
 /// # Returns
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn ned2ecef_uvw(ned: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ned = ned.into_dvec3_ref();
+pub fn ned2ecef_uvw(ned: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ned = ned.into_dvec3();
 
     let rot = ned2ecef_quat(ll_ref);
-    return rot * (*ned);
+    return rot * ned;
 }
 /// Converts NED to Absolute ECEF
 ///
@@ -67,12 +67,12 @@ pub fn ned2ecef_uvw(ned: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> gla
 /// # Returns
 ///
 /// * `ecef` - Absolute ECEF vector
-pub fn ned2ecef(ned: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ned = ned.into_dvec3_ref();
+pub fn ned2ecef(ned: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ned = ned.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let rot = ned2ecef_quat(lla_ref);
-    let ecef_uvw = rot * (*ned);
+    let ecef_uvw = rot * ned;
     return ecef_uvw + lla::lla2ecef(lla_ref);
 }
 

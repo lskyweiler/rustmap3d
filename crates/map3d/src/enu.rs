@@ -1,6 +1,6 @@
 use crate::{
     lla,
-    traits::{IntoDVec3Ref, IntoLatLonTriple, IntoLatLonTuple},
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
 };
 use glam;
 
@@ -76,11 +76,11 @@ pub fn ecef2enu_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ecef_uvw = ecef_uvw.into_dvec3_ref();
+pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let ecef_uvw = ecef_uvw.into_dvec3();
 
     let rot = ecef2enu_quat(ll_ref);
-    return rot * (*ecef_uvw);
+    return rot * ecef_uvw;
 }
 /// Converts Absolute ECEF to ENU
 ///
@@ -92,8 +92,8 @@ pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn ecef2enu(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3_ref();
+pub fn ecef2enu(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let ecef = ecef.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
@@ -112,11 +112,11 @@ pub fn ecef2enu(ecef: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam
 /// # Returns
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn enu2ecef_uvw(enu: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let enu = enu.into_dvec3_ref();
+pub fn enu2ecef_uvw(enu: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let enu = enu.into_dvec3();
 
     let rot = enu2ecef_quat(ll_ref);
-    return rot * (*enu);
+    return rot * enu;
 }
 /// Converts ENU to Absolute ECEF.
 /// This is a vector that is not in relation to an ECEF location
@@ -129,12 +129,12 @@ pub fn enu2ecef_uvw(enu: impl IntoDVec3Ref, ll_ref: impl IntoLatLonTuple) -> gla
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF frame. Not an absolute position [[meters]].
-pub fn enu2ecef(enu: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let enu = enu.into_dvec3_ref();
+pub fn enu2ecef(enu: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
+    let enu = enu.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let rot = enu2ecef_quat(lla_ref);
-    let ecef_uvw = rot * (*enu);
+    let ecef_uvw = rot * enu;
     return ecef_uvw + lla::lla2ecef(lla_ref);
 }
 
@@ -147,8 +147,8 @@ pub fn enu2ecef(enu: impl IntoDVec3Ref, lla_ref: impl IntoLatLonTriple) -> glam:
 /// # Returns
 ///
 /// * `heading_deg` - Heading angle relative to true north [[degrees]].
-pub fn enu2heading(enu: impl IntoDVec3Ref) -> f64 {
-    let enu = enu.into_dvec3_ref();
+pub fn enu2heading(enu: impl IntoDVec3) -> f64 {
+    let enu = enu.into_dvec3();
 
     return f64::atan2(enu.x, enu.y).to_degrees();
 }
