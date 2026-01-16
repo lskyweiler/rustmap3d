@@ -1,5 +1,5 @@
 use crate::{
-    enu,
+    transforms::enu,
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
 };
 use glam::{self, Vec3Swizzles};
@@ -139,7 +139,7 @@ pub fn aer2ned(aer: impl IntoDVec3) -> glam::DVec3 {
 #[cfg(test)]
 mod test_aer {
     use super::*;
-    use crate::util::assert_vecs_close;
+    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[rstest]

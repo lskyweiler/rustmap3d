@@ -1,20 +1,17 @@
-// todo: reorganize into transforms/
-mod aer;
-mod eci;
-mod enu;
-mod lla;
-mod ned;
-pub mod util;
-mod vincenty;
-mod ecef;
-mod traits;
+/*!
+map3d is a simple geodetic coordinate conversion library
+*/
 
-// todo: put in prelude
-pub use aer::*;
-pub use eci::*;
-pub use enu::*;
-pub use lla::*;
-pub use ned::*;
-pub use vincenty::*;
-pub use ecef::*;
+mod constants;
+pub use constants::*;
+
+mod traits;
 pub use traits::*;
+
+mod transforms;
+pub use transforms::*;
+
+mod vincenty;
+pub use vincenty::*;
+
+pub mod utils;

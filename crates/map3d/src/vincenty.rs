@@ -1,4 +1,4 @@
-use crate::{lla::wgs84_const, util};
+use crate::{constants::wgs84, utils};
 use core::fmt;
 use std::f64::{consts::PI, INFINITY};
 
@@ -96,12 +96,12 @@ pub fn vincenty_direct(
     let lon_rad = lon_deg.to_radians();
     let bearing_rad = bearing_deg.to_radians();
 
-    let u1 = ((1.0 - wgs84_const::EARTH_FLATTENING_FACTOR) * lat_rad.tan()).atan();
+    let u1 = ((1.0 - wgs84::EARTH_FLATTENING_FACTOR) * lat_rad.tan()).atan();
     let s1 = u1.tan().atan2(bearing_rad.cos());
     let sina = u1.cos() * bearing_rad.sin();
     let cos2a = 1.0 - sina.powi(2);
-    let u2 = cos2a * (wgs84_const::EARTH_SEMI_MAJOR_AXIS_2 - wgs84_const::EARTH_SEMI_MINOR_AXIS_2)
-        / wgs84_const::EARTH_SEMI_MINOR_AXIS_2;
+    let u2 = cos2a * (wgs84::EARTH_SEMI_MAJOR_AXIS_2 - wgs84::EARTH_SEMI_MINOR_AXIS_2)
+        / wgs84::EARTH_SEMI_MINOR_AXIS_2;
 
     let k1 = ((1.0 + u2).sqrt() - 1.0) / ((1.0 + u2).sqrt() + 1.0);
     let a = (1.0 + 0.25 * k1.powi(2)) / (1.0 - k1);
@@ -109,7 +109,7 @@ pub fn vincenty_direct(
 
     // Loop variables that get updated throughout iteration.
     let mut steps: u16 = 0;
-    let mut sigma = range_m / (wgs84_const::EARTH_SEMI_MINOR_AXIS * a);
+    let mut sigma = range_m / (wgs84::EARTH_SEMI_MINOR_AXIS * a);
     let mut twosigm = 2.0 * s1 + sigma;
     let mut cos2sm = twosigm.cos();
     let mut sins = sigma.sin();
@@ -123,7 +123,7 @@ pub fn vincenty_direct(
         let delta_sigma = b * sins * (cos2sm + 0.25 * b * delta_sigma_term_4);
         let sigma_old = sigma;
 
-        sigma = range_m / (wgs84_const::EARTH_SEMI_MINOR_AXIS * a) + delta_sigma;
+        sigma = range_m / (wgs84::EARTH_SEMI_MINOR_AXIS * a) + delta_sigma;
         twosigm = 2.0 * s1 + sigma;
         cos2sm = twosigm.cos();
         sins = sigma.sin();
@@ -138,17 +138,17 @@ pub fn vincenty_direct(
     let phi2_term_1 = u1.sin() * coss + u1.cos() * sins * bearing_rad.cos();
     let phi2_term_2 = (u1.sin() * sins - u1.cos() * coss * bearing_rad.cos()).powi(2);
     let phi2_term_3 =
-        (1.0 - wgs84_const::EARTH_FLATTENING_FACTOR) * (sina.powi(2) + phi2_term_2).sqrt();
+        (1.0 - wgs84::EARTH_FLATTENING_FACTOR) * (sina.powi(2) + phi2_term_2).sqrt();
     let phi2 = phi2_term_1.atan2(phi2_term_3);
 
     let lam =
         (sins * bearing_rad.sin()).atan2(u1.cos() * coss - u1.sin() * sins * bearing_rad.cos());
-    let c = wgs84_const::EARTH_FLATTENING_FACTOR / 16.0
+    let c = wgs84::EARTH_FLATTENING_FACTOR / 16.0
         * cos2a
-        * (4.0 + wgs84_const::EARTH_FLATTENING_FACTOR * (4.0 - 3.0 * cos2a));
+        * (4.0 + wgs84::EARTH_FLATTENING_FACTOR * (4.0 - 3.0 * cos2a));
 
     let l_term_1 = sigma + c * sins * (cos2sm + c * coss * (-1.0 + 2.0 * cos2sm.powi(2)));
-    let l = lam - (1.0 - c) * wgs84_const::EARTH_FLATTENING_FACTOR * sina * l_term_1;
+    let l = lam - (1.0 - c) * wgs84::EARTH_FLATTENING_FACTOR * sina * l_term_1;
     let l2 = l + lon_rad;
 
     Ok((phi2.to_degrees(), l2.to_degrees()))
@@ -222,11 +222,11 @@ pub fn vincenty_inverse(
     let lat_b_rad = lat_b_deg.to_radians();
     let lon_b_rad = lon_b_deg.to_radians();
 
-    let u1 = ((1.0 - wgs84_const::EARTH_FLATTENING_FACTOR) * lat_a_rad.tan()).atan();
+    let u1 = ((1.0 - wgs84::EARTH_FLATTENING_FACTOR) * lat_a_rad.tan()).atan();
     let u1_sin = u1.sin();
     let u1_cos = u1.cos();
 
-    let u2 = ((1.0 - wgs84_const::EARTH_FLATTENING_FACTOR) * lat_b_rad.tan()).atan();
+    let u2 = ((1.0 - wgs84::EARTH_FLATTENING_FACTOR) * lat_b_rad.tan()).atan();
     let u2_sin = u2.sin();
     let u2_cos = u2.cos();
 
@@ -275,14 +275,14 @@ pub fn vincenty_inverse(
             cos2sm = cos_sigma - 2.0 * u1_sin * u2_sin / cos2a;
         }
 
-        let c = wgs84_const::EARTH_FLATTENING_FACTOR / 16.0
+        let c = wgs84::EARTH_FLATTENING_FACTOR / 16.0
             * cos2a
-            * (4.0 + wgs84_const::EARTH_FLATTENING_FACTOR * (4.0 - 3.0 * cos2a));
+            * (4.0 + wgs84::EARTH_FLATTENING_FACTOR * (4.0 - 3.0 * cos2a));
         let lam_old = lam;
         let lam_end_term = cos2sm + c * cos_sigma * (-1.0 + 2.0 * cos2sm.powi(2));
         lam = l
             + (1.0 - c)
-                * wgs84_const::EARTH_FLATTENING_FACTOR
+                * wgs84::EARTH_FLATTENING_FACTOR
                 * sina
                 * (sigma + c * sin_sigma * lam_end_term);
         steps += 1;
@@ -291,8 +291,8 @@ pub fn vincenty_inverse(
         }
     }
 
-    let g2 = cos2a * (wgs84_const::EARTH_SEMI_MAJOR_AXIS_2 - wgs84_const::EARTH_SEMI_MINOR_AXIS_2)
-        / wgs84_const::EARTH_SEMI_MINOR_AXIS_2;
+    let g2 = cos2a * (wgs84::EARTH_SEMI_MAJOR_AXIS_2 - wgs84::EARTH_SEMI_MINOR_AXIS_2)
+        / wgs84::EARTH_SEMI_MINOR_AXIS_2;
     let k1 = ((1.0 + g2).sqrt() - 1.0) / ((1.0 + g2).sqrt() + 1.0);
     let a = (1.0 + 0.25 * k1.powi(2)) / (1.0 - k1);
     let b = k1 * (1.0 - 3.0 / 8.0 * k1.powi(2));
@@ -305,9 +305,9 @@ pub fn vincenty_inverse(
     // For clarity, pi is added to the bearing from B to A so that the angle return is the azimuth from B to A, rather
     // than the forward azimuth from A's perspective. However, to keep both angles in the same domain (+/- pi), the
     // modified angle is wrapped.
-    let range_m = wgs84_const::EARTH_SEMI_MINOR_AXIS * a * (sigma - delta_sigma);
+    let range_m = wgs84::EARTH_SEMI_MINOR_AXIS * a * (sigma - delta_sigma);
     let bearing_ab_rad = (u2_cos * lam.sin()).atan2(u1_cos * u2_sin - u1_sin * u2_cos * lam.cos());
-    let bearing_ba_rad = util::wrap_to_pi(
+    let bearing_ba_rad = utils::wrap_to_pi(
         (u1_cos * lam.sin()).atan2(-u1_sin * u2_cos + u1_cos * u2_sin * lam.cos()) + PI,
     );
 

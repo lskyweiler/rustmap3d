@@ -1,4 +1,4 @@
-use crate::lla::wgs84_const;
+use crate::constants::wgs84;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam;
 
@@ -29,21 +29,21 @@ pub fn juliandate_from_utc_str(utc_datetime_str: String, fmt: Option<String>) ->
 
 /// Computes the linear velocity a body would feel on earth in reference to the stars
 pub fn linear_velocity_from_earth_rotation(earth_pos: &glam::DVec3) -> glam::DVec3 {
-    let rot_axis = glam::DVec3::new(0., 0., wgs84_const::EARTH_ANGULAR_VEL_RADPS);
+    let rot_axis = glam::DVec3::new(0., 0., wgs84::EARTH_ANGULAR_VEL_RADPS);
     return rot_axis.cross(*earth_pos);
 }
 
 /// Converts ecef to eci assuming ecef and eci were aligned time_since_eci_lock seconds ago
 /// This uses a simple constant rotation assumption for earth
 pub fn ecef2eci(ecef: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
-    let earth_rotation_angle: f64 = time_since_eci_lock * wgs84_const::EARTH_ANGULAR_VEL_RADPS;
+    let earth_rotation_angle: f64 = time_since_eci_lock * wgs84::EARTH_ANGULAR_VEL_RADPS;
 
     let eci = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*ecef);
     return eci;
 }
 
 pub fn eci2ecef(eci: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
-    let earth_rotation_angle: f64 = time_since_eci_lock * -wgs84_const::EARTH_ANGULAR_VEL_RADPS;
+    let earth_rotation_angle: f64 = time_since_eci_lock * -wgs84::EARTH_ANGULAR_VEL_RADPS;
     let ecef = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*eci);
     return ecef;
 }

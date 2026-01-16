@@ -1,6 +1,6 @@
 use crate::{
-    enu, lla,
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
+    transforms::{enu, lla},
 };
 use glam;
 
@@ -143,7 +143,7 @@ pub fn ecef2ned_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
 #[cfg(test)]
 mod test_ned {
     use super::*;
-    use crate::util::assert_vecs_close;
+    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]
