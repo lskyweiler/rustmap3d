@@ -1,30 +1,10 @@
 use crate::{
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
-    util,
+    constants::wgs84,
+    utils,
 };
 use almost;
 use core::fmt;
-
-/// WGS84 Earth constants
-/// todo: if we want to make this more flexible, this could be a struct that you can customize
-pub mod wgs84_const {
-    pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0; // Equatorial radius.
-    pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
-    pub static EARTH_SEMI_MINOR_AXIS: f64 = 6356752.314245; // Polar radius.
-    pub static EARTH_SEMI_MINOR_AXIS_2: f64 = EARTH_SEMI_MINOR_AXIS * EARTH_SEMI_MINOR_AXIS;
-    pub static EARTH_FLATTENING_FACTOR: f64 = 0.003352810664740;
-    pub static EARTH_ANGULAR_VEL_RADPS: f64 = 7.292115900000000e-05;
-    pub static EARTH_E: f64 = 521854.0084255785;
-    pub static EARTH_E_2: f64 = EARTH_E * EARTH_E;
-
-    pub static ECEF2LLA_A: f64 = EARTH_SEMI_MAJOR_AXIS;
-    pub static ECEF2LLA_B: f64 = ECEF2LLA_A * (1.0 - EARTH_FLATTENING_FACTOR);
-    pub static ECEF2LLA_A2: f64 = ECEF2LLA_A * ECEF2LLA_A;
-    pub static ECEF2LLA_B2: f64 = ECEF2LLA_B * ECEF2LLA_B;
-    pub static ECEF2LLA_E2: f64 = 1.0 - ECEF2LLA_B2 / ECEF2LLA_A2;
-    pub static ECEF2LLA_EP2: f64 = ECEF2LLA_A2 / ECEF2LLA_B2 - 1.0;
-    pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
-}
 
 /// Converts ECEF to LLA using Ferrari's solution:
 /// https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#Ferrari's_solution
@@ -42,39 +22,39 @@ pub fn ecef2lla_ferarri(ecef: impl IntoDVec3) -> glam::DVec3 {
     let z_ecef_squared: f64 = f64::powf(ecef.z, 2.);
     let range_squared: f64 = f64::powf(ecef.x, 2.) + f64::powf(ecef.y, 2.);
     let range_: f64 = f64::sqrt(range_squared);
-    let f_term: f64 = 54. * f64::powf(wgs84_const::EARTH_SEMI_MINOR_AXIS, 2.) * z_ecef_squared;
-    let g_term: f64 = range_squared + (1. - wgs84_const::ECEF2LLA_E2) * z_ecef_squared
-        - wgs84_const::ECEF2LLA_E2
-            * (f64::powf(wgs84_const::EARTH_SEMI_MAJOR_AXIS, 2.)
-                - f64::powf(wgs84_const::EARTH_SEMI_MINOR_AXIS, 2.));
+    let f_term: f64 = 54. * f64::powf(wgs84::EARTH_SEMI_MINOR_AXIS, 2.) * z_ecef_squared;
+    let g_term: f64 = range_squared + (1. - wgs84::ECEF2LLA_E2) * z_ecef_squared
+        - wgs84::ECEF2LLA_E2
+            * (f64::powf(wgs84::EARTH_SEMI_MAJOR_AXIS, 2.)
+                - f64::powf(wgs84::EARTH_SEMI_MINOR_AXIS, 2.));
 
-    let c_term: f64 = wgs84_const::ECEF2LLA_EP22 * f_term * range_squared / f64::powf(g_term, 3.);
+    let c_term: f64 = wgs84::ECEF2LLA_EP22 * f_term * range_squared / f64::powf(g_term, 3.);
     let c_term_sqrt_mod: f64 = f64::sqrt(f64::powf(c_term, 2.) + 2. * c_term);
     let s_term: f64 = f64::powf(1. + c_term + c_term_sqrt_mod, 1. / 3.);
     let p_term: f64 =
         f_term / (3. * f64::powf(s_term + 1. / s_term + 1., 2.) * f64::powf(g_term, 2.));
-    let q_term: f64 = f64::sqrt(1. + 2. * wgs84_const::ECEF2LLA_EP22 * p_term);
+    let q_term: f64 = f64::sqrt(1. + 2. * wgs84::ECEF2LLA_EP22 * p_term);
     let sqrt_mod2: f64 = f64::sqrt(
-        0.5 * f64::powf(wgs84_const::EARTH_SEMI_MAJOR_AXIS, 2.) * (1. + 1. / q_term)
-            - p_term * (1. - wgs84_const::ECEF2LLA_E2) * z_ecef_squared / (q_term * (1. + q_term))
+        0.5 * f64::powf(wgs84::EARTH_SEMI_MAJOR_AXIS, 2.) * (1. + 1. / q_term)
+            - p_term * (1. - wgs84::ECEF2LLA_E2) * z_ecef_squared / (q_term * (1. + q_term))
             - 0.5 * p_term * range_squared,
     );
-    let r0_term: f64 = -(p_term * wgs84_const::ECEF2LLA_E2 * range_) / (1. + q_term) + sqrt_mod2;
-    let uv_subterm: f64 = f64::powf(range_ - wgs84_const::ECEF2LLA_E2 * r0_term, 2.);
+    let r0_term: f64 = -(p_term * wgs84::ECEF2LLA_E2 * range_) / (1. + q_term) + sqrt_mod2;
+    let uv_subterm: f64 = f64::powf(range_ - wgs84::ECEF2LLA_E2 * r0_term, 2.);
     let u_term: f64 = f64::sqrt(uv_subterm + z_ecef_squared);
-    let v_term: f64 = f64::sqrt(uv_subterm + (1. - wgs84_const::ECEF2LLA_E2) * z_ecef_squared);
-    let z0_term: f64 = f64::powf(wgs84_const::EARTH_SEMI_MINOR_AXIS, 2.) * ecef.z
-        / (wgs84_const::EARTH_SEMI_MAJOR_AXIS * v_term);
+    let v_term: f64 = f64::sqrt(uv_subterm + (1. - wgs84::ECEF2LLA_E2) * z_ecef_squared);
+    let z0_term: f64 = f64::powf(wgs84::EARTH_SEMI_MINOR_AXIS, 2.) * ecef.z
+        / (wgs84::EARTH_SEMI_MAJOR_AXIS * v_term);
     let lat_rad: f64 = if range_ != 0. {
-        f64::atan2(ecef.z + wgs84_const::ECEF2LLA_EP2 * z0_term, range_)
+        f64::atan2(ecef.z + wgs84::ECEF2LLA_EP2 * z0_term, range_)
     } else {
         0.0
     };
     let lon_rad: f64 = f64::atan2(ecef.y, ecef.x);
     let alt: f64 = u_term
         * (1.
-            - f64::powf(wgs84_const::EARTH_SEMI_MINOR_AXIS, 2.)
-                / (wgs84_const::EARTH_SEMI_MAJOR_AXIS * v_term));
+            - f64::powf(wgs84::EARTH_SEMI_MINOR_AXIS, 2.)
+                / (wgs84::EARTH_SEMI_MAJOR_AXIS * v_term));
 
     let lat: f64 = f64::to_degrees(lat_rad);
     let lon: f64 = f64::to_degrees(lon_rad);
@@ -97,15 +77,15 @@ pub fn ecef2lla_map3d(ecef: impl IntoDVec3) -> glam::DVec3 {
     let r = f64::sqrt(ecef.x * ecef.x + ecef.y * ecef.y + ecef.z * ecef.z);
     let r2 = r * r;
     let u = f64::sqrt(
-        0.5 * (r2 - wgs84_const::EARTH_E_2)
+        0.5 * (r2 - wgs84::EARTH_E_2)
             + 0.5
                 * f64::hypot(
-                    r2 - wgs84_const::EARTH_E_2,
-                    2.0 * wgs84_const::EARTH_E * ecef.z,
+                    r2 - wgs84::EARTH_E_2,
+                    2.0 * wgs84::EARTH_E * ecef.z,
                 ),
     );
     let hxy = f64::hypot(ecef.x, ecef.y);
-    let hue = f64::hypot(u, wgs84_const::EARTH_E);
+    let hue = f64::hypot(u, wgs84::EARTH_E);
 
     // rust signum returns 1 for 0.0, but we need 0.0 here for sign
     let sign = if ecef.z != 0.0 {
@@ -117,26 +97,26 @@ pub fn ecef2lla_map3d(ecef: impl IntoDVec3) -> glam::DVec3 {
 
     if !almost::zero(u) && !almost::zero(hxy) {
         beta = f64::atan(hue / u * ecef.z / hxy);
-        beta += ((wgs84_const::EARTH_SEMI_MINOR_AXIS * u
-            - wgs84_const::EARTH_SEMI_MAJOR_AXIS * hue
-            + wgs84_const::EARTH_E_2)
+        beta += ((wgs84::EARTH_SEMI_MINOR_AXIS * u
+            - wgs84::EARTH_SEMI_MAJOR_AXIS * hue
+            + wgs84::EARTH_E_2)
             * f64::sin(beta))
-            / (wgs84_const::EARTH_SEMI_MAJOR_AXIS * hue * 1. / f64::cos(beta)
-                - wgs84_const::EARTH_E_2 * f64::cos(beta))
+            / (wgs84::EARTH_SEMI_MAJOR_AXIS * hue * 1. / f64::cos(beta)
+                - wgs84::EARTH_E_2 * f64::cos(beta))
     }
 
     let lat = f64::atan(
-        wgs84_const::EARTH_SEMI_MAJOR_AXIS / wgs84_const::EARTH_SEMI_MINOR_AXIS * f64::tan(beta),
+        wgs84::EARTH_SEMI_MAJOR_AXIS / wgs84::EARTH_SEMI_MINOR_AXIS * f64::tan(beta),
     );
     let lon = f64::atan2(ecef.y, ecef.x);
 
     let mut alt = f64::hypot(
-        ecef.z - wgs84_const::EARTH_SEMI_MINOR_AXIS * f64::sin(beta),
-        hxy - wgs84_const::EARTH_SEMI_MAJOR_AXIS * f64::cos(beta),
+        ecef.z - wgs84::EARTH_SEMI_MINOR_AXIS * f64::sin(beta),
+        hxy - wgs84::EARTH_SEMI_MAJOR_AXIS * f64::cos(beta),
     );
-    let inside = ecef.x * ecef.x / wgs84_const::EARTH_SEMI_MAJOR_AXIS_2
-        + ecef.y * ecef.y / wgs84_const::EARTH_SEMI_MAJOR_AXIS_2
-        + ecef.z * ecef.z / wgs84_const::EARTH_SEMI_MINOR_AXIS_2
+    let inside = ecef.x * ecef.x / wgs84::EARTH_SEMI_MAJOR_AXIS_2
+        + ecef.y * ecef.y / wgs84::EARTH_SEMI_MAJOR_AXIS_2
+        + ecef.z * ecef.z / wgs84::EARTH_SEMI_MINOR_AXIS_2
         < 1.;
     alt *= if inside { -1. } else { 1.0 };
     return glam::DVec3::new(f64::to_degrees(lat), f64::to_degrees(lon), alt);
@@ -171,16 +151,16 @@ pub fn lla2ecef(lla: impl IntoLatLonTriple) -> glam::DVec3 {
     let lon = f64::to_radians(lla.1);
     let alt = lla.2;
 
-    let alt_correction = wgs84_const::EARTH_SEMI_MAJOR_AXIS_2
+    let alt_correction = wgs84::EARTH_SEMI_MAJOR_AXIS_2
         / f64::hypot(
-            wgs84_const::EARTH_SEMI_MAJOR_AXIS * f64::cos(lat),
-            wgs84_const::EARTH_SEMI_MINOR_AXIS * f64::sin(lat),
+            wgs84::EARTH_SEMI_MAJOR_AXIS * f64::cos(lat),
+            wgs84::EARTH_SEMI_MINOR_AXIS * f64::sin(lat),
         );
     let x = (alt_correction + lla.2) * f64::cos(lat) * f64::cos(lon);
     let y = (alt_correction + lla.2) * f64::cos(lat) * f64::sin(lon);
     let z = (alt_correction
         * f64::powf(
-            wgs84_const::EARTH_SEMI_MINOR_AXIS / wgs84_const::EARTH_SEMI_MAJOR_AXIS,
+            wgs84::EARTH_SEMI_MINOR_AXIS / wgs84::EARTH_SEMI_MAJOR_AXIS,
             2.0,
         )
         + alt)
@@ -194,7 +174,7 @@ pub fn lla2ecef(lla: impl IntoLatLonTriple) -> glam::DVec3 {
 ///
 /// * `ecef` - Random ECEF location [[meters]].
 pub fn rand_ecef() -> glam::DVec3 {
-    return util::rand_point_on_sphere(wgs84_const::EARTH_SEMI_MAJOR_AXIS);
+    return utils::rand_point_on_sphere(wgs84::EARTH_SEMI_MAJOR_AXIS);
 }
 
 /// Generates a uniform random LLA point. Altitude is generated in the domain [[0.0, 10000.0]].
@@ -204,9 +184,9 @@ pub fn rand_ecef() -> glam::DVec3 {
 /// * `lla` - Random LLA location [[degrees-degrees-meters]].
 pub fn rand_lla() -> glam::DVec3 {
     return glam::DVec3::new(
-        util::lerp(-90.0, 90.0, rand::random()),
-        util::lerp(-180.0, 180.0, rand::random()),
-        util::lerp(0.0, 10000.0, rand::random()),
+        utils::lerp(-90.0, 90.0, rand::random()),
+        utils::lerp(-180.0, 180.0, rand::random()),
+        utils::lerp(0.0, 10000.0, rand::random()),
     );
 }
 /// Generates a uniform random LLA point in a given lat/lon/alt bounding box
@@ -223,9 +203,9 @@ pub fn rand_lla_in_range(
     max_alt_m: f64,
 ) -> glam::DVec3 {
     return glam::DVec3::new(
-        util::lerp(min_lat_d, max_lat_d, rand::random()),
-        util::lerp(min_lon_d, max_lon_d, rand::random()),
-        util::lerp(min_alt_m, max_alt_m, rand::random()),
+        utils::lerp(min_lat_d, max_lat_d, rand::random()),
+        utils::lerp(min_lon_d, max_lon_d, rand::random()),
+        utils::lerp(min_alt_m, max_alt_m, rand::random()),
     );
 }
 
@@ -352,7 +332,7 @@ pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
 #[cfg(test)]
 mod test_lla {
     use super::*;
-    use crate::util::assert_vecs_close;
+    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]

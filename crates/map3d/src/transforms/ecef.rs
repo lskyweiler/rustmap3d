@@ -1,4 +1,4 @@
-use crate::{enu, traits::IntoLatLonTuple};
+use crate::{traits::IntoLatLonTuple, transforms::enu};
 use glam;
 
 /// Computes the clockwise angle from North of a local body-frame's x-axis

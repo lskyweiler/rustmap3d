@@ -1,0 +1,19 @@
+/// WGS84 Earth Constants
+pub mod wgs84 {
+    pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0; // Equatorial radius.
+    pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;
+    pub static EARTH_SEMI_MINOR_AXIS: f64 = 6356752.314245; // Polar radius.
+    pub static EARTH_SEMI_MINOR_AXIS_2: f64 = EARTH_SEMI_MINOR_AXIS * EARTH_SEMI_MINOR_AXIS;
+    pub static EARTH_FLATTENING_FACTOR: f64 = 0.003352810664740;
+    pub static EARTH_ANGULAR_VEL_RADPS: f64 = 7.292115900000000e-05;
+    pub static EARTH_E: f64 = 521854.0084255785;
+    pub static EARTH_E_2: f64 = EARTH_E * EARTH_E;
+
+    pub static ECEF2LLA_A: f64 = EARTH_SEMI_MAJOR_AXIS;
+    pub static ECEF2LLA_B: f64 = ECEF2LLA_A * (1.0 - EARTH_FLATTENING_FACTOR);
+    pub static ECEF2LLA_A2: f64 = ECEF2LLA_A * ECEF2LLA_A;
+    pub static ECEF2LLA_B2: f64 = ECEF2LLA_B * ECEF2LLA_B;
+    pub static ECEF2LLA_E2: f64 = 1.0 - ECEF2LLA_B2 / ECEF2LLA_A2;
+    pub static ECEF2LLA_EP2: f64 = ECEF2LLA_A2 / ECEF2LLA_B2 - 1.0;
+    pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
+}

@@ -1,6 +1,6 @@
 use crate::{
-    lla,
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
+    transforms::lla,
 };
 use glam;
 
@@ -156,7 +156,7 @@ pub fn enu2heading(enu: impl IntoDVec3) -> f64 {
 #[cfg(test)]
 mod test_enu {
     use super::*;
-    use crate::util::assert_vecs_close;
+    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]
