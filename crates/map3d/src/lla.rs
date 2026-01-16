@@ -6,6 +6,7 @@ use almost;
 use core::fmt;
 
 /// WGS84 Earth constants
+/// todo: if we want to make this more flexible, this could be a struct that you can customize
 pub mod wgs84_const {
     pub static EARTH_SEMI_MAJOR_AXIS: f64 = 6378137.0; // Equatorial radius.
     pub static EARTH_SEMI_MAJOR_AXIS_2: f64 = EARTH_SEMI_MAJOR_AXIS * EARTH_SEMI_MAJOR_AXIS;

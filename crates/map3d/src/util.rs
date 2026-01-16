@@ -97,6 +97,14 @@ pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
         .normalize());
 }
 
+/// Test utility to assert that two vector's components are close to equal
+/// Panics if not close to equal.
+///
+/// # Arguments
+///
+/// * `a` - Vector A
+/// * `b` - Vector B
+/// * `tol` - Absolute tolerance
 pub fn assert_vecs_close(a: &glam::DVec3, b: &glam::DVec3, tol: f64) {
     assert!(almost::equal_with(a.x, b.x, tol));
     assert!(almost::equal_with(a.y, b.y, tol));

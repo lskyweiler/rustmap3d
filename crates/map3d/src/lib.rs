@@ -1,3 +1,4 @@
+// todo: reorganize into transforms/
 mod aer;
 mod eci;
 mod enu;
@@ -8,6 +9,7 @@ mod vincenty;
 mod ecef;
 mod traits;
 
+// todo: put in prelude
 pub use aer::*;
 pub use eci::*;
 pub use enu::*;

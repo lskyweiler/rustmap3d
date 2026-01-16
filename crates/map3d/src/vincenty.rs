@@ -55,6 +55,7 @@ pub fn vincenty_direct(
     lon_deg: f64,
     range_m: f64,
     bearing_deg: f64,
+    // TODO: need to make this easier to set defaults
     atol: f64,
     max_iters: u16,
 ) -> Result<(f64, f64), DomainError> {
@@ -165,8 +166,8 @@ pub fn vincenty_direct(
 /// * `lon_a_deg` - Longitude point A [[degrees]].
 /// * `lat_b_deg` - Latitude point A [[degrees]].
 /// * `lon_b_deg` - Longitude point A [[degrees]].
-/// * `atol` - Absolute tolerance used for convergence.
-/// * `max_iters` - Maximum possible number of iterations before early termination.
+/// * `atol` - Absolute tolerance used for convergence.  WHATS A GOOD DEFAULT? 
+/// * `max_iters` - Maximum possible number of iterations before early termination. WHATS A GOOD DEFAULT? 
 ///
 /// # Returns
 ///
@@ -179,6 +180,7 @@ pub fn vincenty_inverse(
     lon_a_deg: f64,
     lat_b_deg: f64,
     lon_b_deg: f64,
+    // TODO: need to make this easier to set defaults
     atol: f64,
     max_iters: u16,
 ) -> Result<(f64, f64, f64), DomainError> {
