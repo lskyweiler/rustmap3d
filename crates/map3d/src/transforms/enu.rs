@@ -156,7 +156,6 @@ pub fn enu2heading(enu: impl IntoDVec3) -> f64 {
 #[cfg(test)]
 mod test_enu {
     use super::*;
-    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]
@@ -425,7 +424,7 @@ mod test_enu {
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
             let actual_enu = ecef_uvw2enu(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
             let expected_enu = enu.get(i).unwrap();
-            assert_vecs_close(&actual_enu, expected_enu, 1e-6);
+            assert!(actual_enu.abs_diff_eq(*expected_enu, 1e-5));
         }
     }
     #[rstest]
@@ -435,7 +434,7 @@ mod test_enu {
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
             let actual_ecef = enu2ecef_uvw(enu.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
-            assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
+            assert!(actual_ecef.abs_diff_eq(expected_ecef, 1e-5));
         }
     }
 

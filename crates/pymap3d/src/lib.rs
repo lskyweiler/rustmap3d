@@ -726,7 +726,9 @@ pub fn ecef_quat2heading(w: f64, x: f64, y: f64, z: f64, lat_ref_d: f64, lon_ref
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn angle_between(ax: f64, ay: f64, az: f64, bx: f64, by: f64, bz: f64) -> f64 {
-    return map3d::utils::angle_between_vec3(&glam::dvec3(ax, ay, az), &glam::dvec3(bx, by, bz));
+    let a = glam::dvec3(ax, ay, az);
+    let b = glam::dvec3(bx, by, bz);
+    return a.angle_between(b);
 }
 
 /// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative

@@ -143,7 +143,6 @@ pub fn ecef2ned_quat(ll_deg: impl IntoLatLonTuple) -> glam::DQuat {
 #[cfg(test)]
 mod test_ned {
     use super::*;
-    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]
@@ -409,7 +408,7 @@ mod test_ned {
     fn test_ecef2ned_dcm() {
         let actual = ecef2ned_dcm((0., 0.));
         let ned = actual * glam::DVec3::new(0.5, -1., 1.);
-        assert_vecs_close(&ned, &glam::DVec3::new(1., -1., -0.5), 1e-6);
+        assert!(ned.abs_diff_eq(glam::DVec3::new(1., -1., -0.5), 1e-6));
     }
     #[rstest]
     fn test_ecef2ned(ecef2ned_fixture: (Vec<(glam::DVec3, glam::DVec3)>, Vec<glam::DVec3>)) {
@@ -418,7 +417,7 @@ mod test_ned {
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
             let actual_ned = ecef_uvw2ned(&ecef_ref_tuple.0, &ecef_ref_tuple.1);
             let expected_ned = neds.get(i).unwrap();
-            assert_vecs_close(&actual_ned, expected_ned, 1e-6);
+            assert!(actual_ned.abs_diff_eq(*expected_ned, 1e-6));
         }
     }
     #[rstest]
@@ -428,7 +427,7 @@ mod test_ned {
         for (i, ecef_ref_tuple) in ecef_ref_tuples.iter().enumerate() {
             let actual_ecef = ned2ecef_uvw(neds.get(i).unwrap(), &ecef_ref_tuple.1);
             let expected_ecef = ecef_ref_tuple.0;
-            assert_vecs_close(&actual_ecef, &expected_ecef, 1e-6);
+            assert!(actual_ecef.abs_diff_eq(expected_ecef, 1e-6));
         }
     }
 }

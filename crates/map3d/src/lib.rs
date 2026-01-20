@@ -15,3 +15,5 @@ mod vincenty;
 pub use vincenty::*;
 
 pub mod utils;
+
+pub mod geo_objects;

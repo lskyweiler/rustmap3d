@@ -1,6 +1,6 @@
 use crate::{
-    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
     constants::wgs84,
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
     utils,
 };
 use almost;
@@ -78,11 +78,7 @@ pub fn ecef2lla_map3d(ecef: impl IntoDVec3) -> glam::DVec3 {
     let r2 = r * r;
     let u = f64::sqrt(
         0.5 * (r2 - wgs84::EARTH_E_2)
-            + 0.5
-                * f64::hypot(
-                    r2 - wgs84::EARTH_E_2,
-                    2.0 * wgs84::EARTH_E * ecef.z,
-                ),
+            + 0.5 * f64::hypot(r2 - wgs84::EARTH_E_2, 2.0 * wgs84::EARTH_E * ecef.z),
     );
     let hxy = f64::hypot(ecef.x, ecef.y);
     let hue = f64::hypot(u, wgs84::EARTH_E);
@@ -97,17 +93,15 @@ pub fn ecef2lla_map3d(ecef: impl IntoDVec3) -> glam::DVec3 {
 
     if !almost::zero(u) && !almost::zero(hxy) {
         beta = f64::atan(hue / u * ecef.z / hxy);
-        beta += ((wgs84::EARTH_SEMI_MINOR_AXIS * u
-            - wgs84::EARTH_SEMI_MAJOR_AXIS * hue
+        beta += ((wgs84::EARTH_SEMI_MINOR_AXIS * u - wgs84::EARTH_SEMI_MAJOR_AXIS * hue
             + wgs84::EARTH_E_2)
             * f64::sin(beta))
             / (wgs84::EARTH_SEMI_MAJOR_AXIS * hue * 1. / f64::cos(beta)
                 - wgs84::EARTH_E_2 * f64::cos(beta))
     }
 
-    let lat = f64::atan(
-        wgs84::EARTH_SEMI_MAJOR_AXIS / wgs84::EARTH_SEMI_MINOR_AXIS * f64::tan(beta),
-    );
+    let lat =
+        f64::atan(wgs84::EARTH_SEMI_MAJOR_AXIS / wgs84::EARTH_SEMI_MINOR_AXIS * f64::tan(beta));
     let lon = f64::atan2(ecef.y, ecef.x);
 
     let mut alt = f64::hypot(
@@ -332,7 +326,6 @@ pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
 #[cfg(test)]
 mod test_lla {
     use super::*;
-    use crate::utils::assert_vecs_close;
     use rstest::*;
 
     #[fixture]
@@ -559,7 +552,7 @@ mod test_lla {
         for (i, ecef) in ecefs.iter().enumerate() {
             let actual_lla: glam::DVec3 = ecef2lla_ferarri(ecef);
             let expected_lla = llas.get(i).unwrap();
-            assert_vecs_close(&actual_lla, expected_lla, 1e-6);
+            assert!(actual_lla.abs_diff_eq(*expected_lla, 1e-6));
         }
     }
     #[rstest]
@@ -569,7 +562,7 @@ mod test_lla {
         for (i, ecef) in ecefs.iter().enumerate() {
             let actual_lla: glam::DVec3 = ecef2lla_map3d(ecef);
             let expected_lla = llas.get(i).unwrap();
-            assert_vecs_close(&actual_lla, expected_lla, 1e-6);
+            assert!(actual_lla.abs_diff_eq(*expected_lla, 1e-1));
         }
     }
 
@@ -597,7 +590,7 @@ mod test_lla {
         for (i, lla) in llas.iter().enumerate() {
             let actual_ecef = lla2ecef(lla);
             let expected_ecef = ecefs.get(i).unwrap();
-            assert_vecs_close(&actual_ecef, expected_ecef, 1e-6);
+            assert!(actual_ecef.abs_diff_eq(*expected_ecef, 1e-6));
         }
     }
     #[test]

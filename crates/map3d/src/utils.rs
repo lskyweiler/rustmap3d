@@ -26,19 +26,6 @@ pub fn quat_up(q: &glam::DQuat) -> glam::DVec3 {
     return glam::DMat3::from_quat(*q).z_axis;
 }
 
-/// Safely compute the angle between two 2d vectors
-pub fn angle_between_vec2(a: &glam::DVec2, b: &glam::DVec2) -> f64 {
-    let mut dot: f64 = a.dot(*b);
-    dot = f64::clamp(dot, -1., 1.);
-    return f64::acos(dot);
-}
-/// Safely compute the angle between two 3d vectors
-pub fn angle_between_vec3(a: &glam::DVec3, b: &glam::DVec3) -> f64 {
-    let mut dot: f64 = a.dot(*b);
-    dot = f64::clamp(dot, -1., 1.);
-    return f64::acos(dot);
-}
-
 /// Generates a random normalized quaternion.
 ///
 /// # Returns
@@ -75,6 +62,23 @@ pub fn wrap_to_pi(angle: f64) -> f64 {
     x
 }
 
+/// Wraps an angle in degrees to be between [0, 360]
+///
+/// # Arguments
+///
+/// - `angle_d` (`f64`) - angle in degrees
+///
+/// # Returns
+///
+/// - `f64` - 0. <= angle <= 360.
+pub fn wrap_to_0_360(angle_d: f64) -> f64 {
+    let mut wrapped = angle_d % 360.0;
+    if wrapped < 0.0 {
+        wrapped += 360.0;
+    }
+    wrapped
+}
+
 /// Generates a uniform random point on the surface of a sphere.
 ///
 /// # Arguments
@@ -105,6 +109,10 @@ pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
 /// * `a` - Vector A
 /// * `b` - Vector B
 /// * `tol` - Absolute tolerance
+#[deprecated(
+    since = "0.2.0",
+    note = "assert!(glam::DVec3::abs_diff_eq(...)) instead"
+)]
 pub fn assert_vecs_close(a: &glam::DVec3, b: &glam::DVec3, tol: f64) {
     assert!(almost::equal_with(a.x, b.x, tol));
     assert!(almost::equal_with(a.y, b.y, tol));
@@ -127,6 +135,21 @@ mod util_tests {
     #[case(1.6*PI, -0.4*PI)]
     fn test_wrap_to_pi(#[case] angle: f64, #[case] truth: f64) {
         let test = wrap_to_pi(angle);
+        assert!(relative_eq!(
+            test,
+            truth,
+            max_relative = 1e-13,
+            epsilon = 1e-14
+        ));
+    }
+
+    #[rstest]
+    #[case(90., 90.)]
+    #[case(720., 0.)]
+    #[case(450., 90.)]
+    #[case(-90., 270.)]
+    fn test_wrap_to_0_360(#[case] angle: f64, #[case] truth: f64) {
+        let test = wrap_to_0_360(angle);
         assert!(relative_eq!(
             test,
             truth,
