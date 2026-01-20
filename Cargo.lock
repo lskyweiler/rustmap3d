@@ -607,6 +607,9 @@ dependencies = [
  "chrono",
  "criterion",
  "glam",
+ "pyglam",
+ "pyo3",
+ "pyo3-stub-gen",
  "rand 0.9.2",
  "rand_distr",
  "rstest",
@@ -817,6 +820,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ee95bc4ef87b8d5ba32e8b7714ccc834865276eab0aed5c9958d00ec45f49e8"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "pyglam"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "glam",
+ "pyo3",
+ "pyo3-stub-gen",
 ]
 
 [[package]]
@@ -1124,6 +1137,7 @@ dependencies = [
  "env_logger",
  "glam",
  "map3d",
+ "pyglam",
  "pymap3d",
  "pyo3",
  "pyo3-stub-gen",

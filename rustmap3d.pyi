@@ -2,125 +2,209 @@
 # ruff: noqa: E501, F401
 
 import builtins
+import typing
 
-def aer2ecef(
-    a_d: builtins.float,
-    e_d: builtins.float,
-    r_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+@typing.final
+class DVec3:
+    r"""
+    3 Component vector xyz
+    """
+    @property
+    def x(self) -> builtins.float: ...
+    @x.setter
+    def x(self, value: builtins.float) -> None: ...
+    @property
+    def y(self) -> builtins.float: ...
+    @y.setter
+    def y(self, value: builtins.float) -> None: ...
+    @property
+    def z(self) -> builtins.float: ...
+    @z.setter
+    def z(self, value: builtins.float) -> None: ...
+    def __new__(cls, x: builtins.float, y: typing.Optional[builtins.float] = None, z: typing.Optional[builtins.float] = None) -> DVec3: ...
+    def __add__(self, rhs: typing.Any) -> DVec3: ...
+    def __radd__(self, lhs: typing.Any) -> DVec3: ...
+    def __sub__(self, rhs: typing.Any) -> DVec3: ...
+    def __rsub__(self, lhs: typing.Any) -> DVec3: ...
+    def __mul__(self, rhs: typing.Any) -> DVec3: ...
+    def __rmul__(self, lhs: typing.Any) -> DVec3: ...
+    def __truediv__(self, rhs: typing.Any) -> DVec3: ...
+    def __rtruediv__(self, lhs: typing.Any) -> DVec3: ...
+    def __iadd__(self, rhs: typing.Any) -> None: ...
+    def __isub__(self, rhs: typing.Any) -> None: ...
+    def __imul__(self, rhs: typing.Any) -> None: ...
+    def __itruediv__(self, rhs: typing.Any) -> None: ...
+    def __neg__(self) -> DVec3: ...
+    def normalize(self) -> DVec3: ...
+    def length(self) -> builtins.float: ...
+    def dot(self, rhs: typing.Any) -> builtins.float: ...
+    def cross(self, rhs: typing.Any) -> DVec3: ...
+
+@typing.final
+class GeoPosition:
+    r"""
+    Represents a position on the earth
+    """
+    @staticmethod
+    def from_ecef(ecef: DVec3) -> GeoPosition: ...
+    @staticmethod
+    def from_lla(lla: tuple[builtins.float, builtins.float, builtins.float]) -> GeoPosition: ...
+    @staticmethod
+    def from_enu(enu: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]) -> GeoPosition: ...
+    @staticmethod
+    def from_ned(ned: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]) -> GeoPosition: ...
+    def lla(self) -> tuple[builtins.float, builtins.float, builtins.float]: ...
+    def alt(self) -> builtins.float: ...
+    def set_alt(self, alt_m: builtins.float) -> None:
+        r"""
+        Sets the altitude of this position while preserving the lat/lon
+        
+        # Arguments
+        
+        - `alt_m` (`f64`) - New MSL altitude in meters
+        """
+    def bearing_to(self, to_point: GeoPosition) -> builtins.float: ...
+    def enu_to(self, to_point: GeoPosition) -> DVec3: ...
+    def aer_to(self, to_point: GeoPosition) -> DVec3: ...
+    def ned_to(self, to_point: GeoPosition) -> DVec3: ...
+    def bearing_from(self, from_point: GeoPosition) -> builtins.float: ...
+    def enu_from(self, from_point: GeoPosition) -> DVec3: ...
+    def aer_from(self, from_point: GeoPosition) -> DVec3: ...
+    def ned_from(self, from_point: GeoPosition) -> DVec3: ...
+    def distance(self, other: GeoPosition) -> builtins.float: ...
+    def lat_lon_dms(self) -> builtins.str: ...
+
+@typing.final
+class Vec3:
+    r"""
+    3 Component vector xyz
+    """
+    @property
+    def x(self) -> builtins.float: ...
+    @x.setter
+    def x(self, value: builtins.float) -> None: ...
+    @property
+    def y(self) -> builtins.float: ...
+    @y.setter
+    def y(self, value: builtins.float) -> None: ...
+    @property
+    def z(self) -> builtins.float: ...
+    @z.setter
+    def z(self, value: builtins.float) -> None: ...
+    def __new__(cls, x: builtins.float, y: typing.Optional[builtins.float] = None, z: typing.Optional[builtins.float] = None) -> Vec3: ...
+    def __add__(self, rhs: typing.Any) -> Vec3: ...
+    def __radd__(self, lhs: typing.Any) -> Vec3: ...
+    def __sub__(self, rhs: typing.Any) -> Vec3: ...
+    def __rsub__(self, lhs: typing.Any) -> Vec3: ...
+    def __mul__(self, rhs: typing.Any) -> Vec3: ...
+    def __rmul__(self, lhs: typing.Any) -> Vec3: ...
+    def __truediv__(self, rhs: typing.Any) -> Vec3: ...
+    def __rtruediv__(self, lhs: typing.Any) -> Vec3: ...
+    def __iadd__(self, rhs: typing.Any) -> None: ...
+    def __isub__(self, rhs: typing.Any) -> None: ...
+    def __imul__(self, rhs: typing.Any) -> None: ...
+    def __itruediv__(self, rhs: typing.Any) -> None: ...
+    def __neg__(self) -> Vec3: ...
+    def normalize(self) -> Vec3: ...
+    def length(self) -> builtins.float: ...
+    def dot(self, rhs: typing.Any) -> builtins.float: ...
+    def cross(self, rhs: typing.Any) -> Vec3: ...
+
+def aer2ecef(a_d: builtins.float, e_d: builtins.float, r_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER from a given lat/lon to a new ECEF location
-
+    
     # Arguments
-
+    
     * `a_d` - Azimuth in degrees [float]
     * `e_d` - Elevation in degrees [float]
     * `r_m` - Range in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef` - Absolute ECEF position in meters
     """
 
-def aer2ecef_uvw(
-    a_d: builtins.float,
-    e_d: builtins.float,
-    r_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def aer2ecef_uvw(a_d: builtins.float, e_d: builtins.float, r_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts a vector direction and distance given in AER to ECEF uvw
-
+    
     # Arguments
-
+    
     * `a_d` - Azimuth in degrees [float]
     * `e_d` - Elevation in degrees [float]
     * `r_m` - Range in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
-def aer2enu(
-    a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def aer2enu(a_d: builtins.float, e_d: builtins.float, r_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER vector direction and magnitude to ENU.
-
+    
     # Arguments
-
+    
     * `a_d` - Azimuth in degrees [float]
     * `e_d` - Elevation in degrees [float]
     * `r_m` - Range in meters [float]
-
+    
     # Returns
-
+    
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
-def aer2ned(
-    a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def aer2ned(a_d: builtins.float, e_d: builtins.float, r_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER vector direction and magnitude to NED.
-
+    
     # Arguments
-
+    
     * `a_d` - Azimuth in degrees [float]
     * `e_d` - Elevation in degrees [float]
     * `r_m` - Range in meters [float]
-
+    
     # Returns
-
+    
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
-def angle_between(
-    ax: builtins.float,
-    ay: builtins.float,
-    az: builtins.float,
-    bx: builtins.float,
-    by: builtins.float,
-    bz: builtins.float,
-) -> builtins.float:
+def angle_between(ax: builtins.float, ay: builtins.float, az: builtins.float, bx: builtins.float, by: builtins.float, bz: builtins.float) -> builtins.float:
     r"""
     Computes the angle between two vectors in radians. Dot product is clamped to [-1, 1] so this always outputs a number
-
+    
     # Arguments
-
+    
     * `ax` - a vector x [float]
     * `ay` - a vector y [float]
     * `az` - a vector z [float]
     * `bx` - b vector x [float]
     * `by` - b vector y [float]
     * `bz` - b vector z [float]
-
+    
     # Returns
-
+    
     * `angle` - angle between the two vectors in radians
     """
 
 def dd2dms(dd: builtins.float, is_lat: builtins.bool) -> builtins.str:
     r"""
     Converts decimal degrees (DD) to degrees-minutes-seconds (DMS).
-
+    
     # Arguments
-
+    
     * `dd` - Decimal degrees [degrees].
     * `is_lat` - Flag to denote if this decimal value describes a latitude [bool]
-
+    
     # Returns
-
+    
     * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
-
+    
     # Examples
     ```
     dms = map3d.dd2dms(25.37909389, true) #> "25:22:44.738N"
@@ -130,726 +214,552 @@ def dd2dms(dd: builtins.float, is_lat: builtins.bool) -> builtins.str:
 def dms2dd(dms: builtins.str) -> builtins.float:
     r"""
     Converts degrees-minutes-seconds (DMS) to decimal degrees (DD).
-
+    
     # Arguments
-
+    
     * `dms` - Format "{Degrees}:{Minutes}:{Seconds}.{DecSeconds}{Direction}" where Direction is one of N, E, S, or W.
-
+    
     # Returns
-
+    
     * `dd` - Decimal degrees [degrees].
-
+    
     # Examples
     ```
     dd = map3d.dms2dd("25:22:44.738N")  #> 25.37909389
     ```
     """
 
-def ecef2aer(
-    x_m: builtins.float,
-    y_m: builtins.float,
-    z_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef2aer(x_m: builtins.float, y_m: builtins.float, z_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute ECEF to AER (az el range).
-
+    
     # Arguments
-
+    
     * `x_m` - ECEF x in meters [float]
     * `y_m` - ECEF y in meters [float]
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def ecef2enu(
-    x_m: builtins.float,
-    y_m: builtins.float,
-    z_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef2enu(x_m: builtins.float, y_m: builtins.float, z_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an ECEF position to ENU.
-
+    
     # Arguments
-
+    
     * `x_m` - ECEF x in meters [float]
     * `y_m` - ECEF y in meters [float]
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
-def ecef2enu_dcm(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-]:
+def ecef2enu_dcm(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the direction cosine matrix that yields an ECEF to ENU transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `dcm` - ECEF to ENU direction cosine matrix [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]]
     """
 
-def ecef2enu_quat(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+def ecef2enu_quat(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the quaternion that yields an ECEF to ENU transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `quat` - Normalized ECEF to ENU quaternion.
     """
 
-def ecef2lla(
-    x_m: builtins.float, y_m: builtins.float, z_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef2lla(x_m: builtins.float, y_m: builtins.float, z_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ECEF to WGS84 LLA
-
+    
     # Arguments
-
+    
     * `x_m` - ECEF x in meters [float]
     * `y_m` - ECEF y in meters [float]
     * `z_m` - ECEF z in meters [float]
-
+    
     # Returns
-
+    
     * `lla` - Vector represented in WGS84 LLA [degrees-degrees-meters].
     """
 
-def ecef2ned(
-    x_m: builtins.float,
-    y_m: builtins.float,
-    z_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef2ned(x_m: builtins.float, y_m: builtins.float, z_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute ECEF location to NED.
-
+    
     # Arguments
-
+    
     * `x_m` - ECEF x in meters [float]
     * `y_m` - ECEF y in meters [float]
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
-def ecef2ned_dcm(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-]:
+def ecef2ned_dcm(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the direction cosine matrix that yields an ECEF to NED transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `dcm` - ECEF to NED direction cosine matrix [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]]
     """
 
-def ecef2ned_quat(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+def ecef2ned_quat(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the quaternion that yields an ECEF to NED transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `quat` - Normalized ECEF to NED quaternion (w, x, y, z).
     """
 
-def ecef_quat2heading(
-    w: builtins.float,
-    x: builtins.float,
-    y: builtins.float,
-    z: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> builtins.float:
+def ecef_quat2heading(w: builtins.float, x: builtins.float, y: builtins.float, z: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> builtins.float:
     r"""
     Computes the clockwise angle from North of a local body-frame's x-axis
-
+    
     # Arguments
-
+    
     * `w` - Scalar part of quaternion [float]
     * `x` - x part of quaternion [float]
     * `y` - y part of quaternion [float]
     * `z` - z part of quaternion [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     *  `heading` - Clockwise angle off true north [[degrees]] of the body's x axis
     """
 
-def ecef_uvw2aer(
-    u_m: builtins.float,
-    v_m: builtins.float,
-    w_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef_uvw2aer(u_m: builtins.float, v_m: builtins.float, w_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ECEF uvw to AER (az el range).
-
+    
     # Arguments
-
+    
     * `u_m` - ECEF u in meters [float]
     * `v_m` - ECEF v in meters [float]
     * `w_m` - ECEF w in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def ecef_uvw2enu(
-    u_m: builtins.float,
-    v_m: builtins.float,
-    w_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef_uvw2enu(u_m: builtins.float, v_m: builtins.float, w_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an ECEF uvw vector to ENU.
-
+    
     # Arguments
-
+    
     * `u_m` - ECEF u in meters [float]
     * `v_m` - ECEF v in meters [float]
     * `w_m` - ECEF w in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
-def ecef_uvw2ned(
-    u_m: builtins.float,
-    v_m: builtins.float,
-    w_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ecef_uvw2ned(u_m: builtins.float, v_m: builtins.float, w_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ECEF UVW Vector to NED.
-
+    
     # Arguments
-
+    
     * `u_m` - ECEF u in meters [float]
     * `v_m` - ECEF v in meters [float]
     * `w_m` - ECEF w in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
-def enu2aer(
-    e_m: builtins.float, n_m: builtins.float, u_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def enu2aer(e_m: builtins.float, n_m: builtins.float, u_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to AER.
-
+    
     # Arguments
-
+    
     * `e_m` - East in meters [float]
     * `n_m` - North in meters [float]
     * `u_m` - Up in meters [float]
-
+    
     # Returns
-
+    
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def enu2ecef(
-    e_m: builtins.float,
-    n_m: builtins.float,
-    u_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def enu2ecef(e_m: builtins.float, n_m: builtins.float, u_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to an ECEF position
-
+    
     # Arguments
-
+    
     * `e_m` - East in meters [float]
     * `n_m` - North in meters [float]
     * `u_m` - Up in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef` - Absolute ECEF position in meters
     """
 
-def enu2ecef_dcm(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-]:
+def enu2ecef_dcm(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the direction cosine matrix that yields an ENU to ECEF transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `dcm` - ENU to ECEF direction cosine matrix [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]]
     """
 
-def enu2ecef_quat(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+def enu2ecef_quat(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the quaternion that yields an ENU to ECEF transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `quat` - Normalized ENU to ECEF quaternion (w, x, y, z).
     """
 
-def enu2ecef_uvw(
-    e_m: builtins.float,
-    n_m: builtins.float,
-    u_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def enu2ecef_uvw(e_m: builtins.float, n_m: builtins.float, u_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to ECEF uvw vector
-
+    
     # Arguments
-
+    
     * `e_m` - East in meters [float]
     * `n_m` - North in meters [float]
     * `u_m` - Up in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
-def enu2heading(
-    e_m: builtins.float, n_m: builtins.float, u_m: builtins.float
-) -> builtins.float:
+def enu2heading(e_m: builtins.float, n_m: builtins.float, u_m: builtins.float) -> builtins.float:
     r"""
     Calculates heading angle from ENU.
-
+    
     # Arguments
-
+    
     * `e_m` - East in meters [float]
     * `n_m` - North in meters [float]
     * `u_m` - Up in meters [float]
-
+    
     # Returns
-
+    
     * `heading_deg` - Heading angle relative to true north [degrees].
     """
 
-def enu2lla(
-    e_m: builtins.float,
-    n_m: builtins.float,
-    u_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def enu2lla(e_m: builtins.float, n_m: builtins.float, u_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to an absolute LLA position
-
+    
     # Arguments
-
+    
     * `e_m` - East in meters [float]
     * `n_m` - North in meters [float]
     * `u_m` - Up in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `lla` - Absolute LLA position [deg-deg-m]
     """
 
-def ll2dms(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[builtins.str, builtins.str]:
+def ll2dms(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.str, builtins.str]:
     r"""
     Convenience function to convert lat/lon to a tuple of (lat dms, lon dms)
-
+    
     # Arguments
-
+    
     * `lat` - Latitude in decimal degrees
     * `lon` - Longitude in decimal degrees
-
+    
     # Returns
-
+    
     * `(lat dms, lon dms)` - Tuple of lat/lon as degrees:minutes:seconds [Tuple[String, String]]
     ```
     """
 
-def lla2ecef(
-    lat_d: builtins.float, lon_d: builtins.float, alt_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def lla2ecef(lat_d: builtins.float, lon_d: builtins.float, alt_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts WGS84 LLA to ECEF.
-
+    
     # Arguments
-
+    
     * `lat_d` - WGS84 Lat in degrees [float]
     * `lon_d` - WGS84 Lon in degrees [float]
     * `alt_m` - WGS84 MSL alt in meters [float]
-
+    
     # Returns
-
+    
     * `ecef` - Vector represented in ECEF coordinates [meters].
     """
 
-def lla2enu(
-    lat_d: builtins.float,
-    lon_d: builtins.float,
-    alt_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def lla2enu(lat_d: builtins.float, lon_d: builtins.float, alt_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute LLA position to an ENU vector relative to a lla reference
-
+    
     # Arguments
-
+    
     * `lat_d` - WGS84 Lat in degrees [float]
     * `lon_d` - WGS84 Lon in degrees [float]
     * `alt_m` - WGS84 MSL alt in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
-def lla2ned(
-    lat_d: builtins.float,
-    lon_d: builtins.float,
-    alt_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def lla2ned(lat_d: builtins.float, lon_d: builtins.float, alt_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute LLA location to a NED vector relative to a lla reference point
-
+    
     # Arguments
-
+    
     * `lat_d` - WGS84 Lat in degrees [float]
     * `lon_d` - WGS84 Lon in degrees [float]
     * `alt_m` - WGS84 MSL alt in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
-def ned2aer(
-    n_m: builtins.float, e_m: builtins.float, d_m: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ned2aer(n_m: builtins.float, e_m: builtins.float, d_m: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts NED to AER.
-
+    
     # Arguments
-
+    
     * `n_m` - North in meters [float]
     * `e_m` - East in meters [float]
     * `d_m` - Down in meters [float]
-
+    
     # Returns
-
+    
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def ned2ecef(
-    n_m: builtins.float,
-    e_m: builtins.float,
-    d_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ned2ecef(n_m: builtins.float, e_m: builtins.float, d_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts NED to an absolute ECEF location
-
+    
     # Arguments
-
+    
     * `n_m` - North in meters [float]
     * `e_m` - East in meters [float]
     * `d_m` - Down in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef` - Absolute ECEF position in meters
     """
 
-def ned2ecef_dcm(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-    builtins.float,
-]:
+def ned2ecef_dcm(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `dcm` - NED to ECEF direction cosine matrix  [[xx, xy, xz], [yx, yy, yz], [zx, zy, zz]]
     """
 
-def ned2ecef_quat(
-    lat_d: builtins.float, lon_d: builtins.float
-) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+def ned2ecef_quat(lat_d: builtins.float, lon_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates the quaternion that yields an NED to ECEF transformation at this LLA.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
-
+    
     # Returns
-
+    
     * `quat` - Normalized NED to ECEF quaternion (w, x, y, z).
     """
 
-def ned2ecef_uvw(
-    n_m: builtins.float,
-    e_m: builtins.float,
-    d_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ned2ecef_uvw(n_m: builtins.float, e_m: builtins.float, d_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts NED to ECEF uvw
-
+    
     # Arguments
-
+    
     * `n_m` - North in meters [float]
     * `e_m` - East in meters [float]
     * `d_m` - Down in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
-def ned2lla(
-    n_m: builtins.float,
-    e_m: builtins.float,
-    d_m: builtins.float,
-    lat_ref_d: builtins.float,
-    lon_ref_d: builtins.float,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def ned2lla(n_m: builtins.float, e_m: builtins.float, d_m: builtins.float, lat_ref_d: builtins.float, lon_ref_d: builtins.float) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts a NED vector to an absolute lat lon alt
-
+    
     # Arguments
-
+    
     * `n_m` - North in meters [float]
     * `e_m` - East in meters [float]
     * `d_m` - Down in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
-
+    
     # Returns
-
+    
     * `lla` - Absolute lat lon alt [deg-deg-m]
     """
 
 def rand_ecef() -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Generates a uniform random ECEF point on the surface of a spherical Earth.
-
+    
     # Returns
-
+    
     * `ecef` - Random ECEF location [meters].
     """
 
 def rand_lla() -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Generates a uniform random LLA point. Altitude is generated in the domain [0.0, 10000.0].
-
+    
     # Returns
-
+    
     * `lla` - Random LLA location [degrees-degrees-meters].
     """
 
-def rand_orientation() -> tuple[
-    builtins.float, builtins.float, builtins.float, builtins.float
-]:
+def rand_orientation() -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
     r"""
     Generates a random normalized quaternion.
-
+    
     # Returns
-
+    
     * `quat` - Random normalized quaternion (w, x, y, z).
     """
 
-def vincenty_direct(
-    lat_d: builtins.float,
-    lon_d: builtins.float,
-    range_m: builtins.float,
-    bearing_d: builtins.float,
-    atol: builtins.float = ...,
-    max_iters: builtins.int = ...,
-) -> tuple[builtins.float, builtins.float]:
+def vincenty_direct(lat_d: builtins.float, lon_d: builtins.float, range_m: builtins.float, bearing_d: builtins.float, atol: builtins.float = ..., max_iters: builtins.int = ...) -> tuple[builtins.float, builtins.float]:
     r"""
     Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
     solution to determine outputs using the WGS84 ellipsoidal Earth model.
-
+    
     See reference:
     https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
-
+    
     # Arguments
-
+    
     * `lat_d` - Latitude reference in degrees [float].
     * `lon_d` - Longitude reference in degrees [float].
     * `range_m` - Range (i.e., distance) from point A to point B [meters].
     * `bearing_d` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
     * `abs_tol` - Absolute tolerance used for convergence.
     * `max_iters` - Maximum possible number of iterations before early termination.
-
+    
     # Returns
-
+    
     A tuple `(lat_deg, lon_deg)` where:
     * `lat_deg` - Latitude location [degrees].
     * `lon_deg` - Longitude location [degrees].
     """
 
-def vincenty_inverse(
-    lat_a_deg: builtins.float,
-    lon_a_deg: builtins.float,
-    lat_b_deg: builtins.float,
-    lon_b_deg: builtins.float,
-    atol: builtins.float = ...,
-    max_iters: builtins.int = ...,
-) -> tuple[builtins.float, builtins.float, builtins.float]:
+def vincenty_inverse(lat_a_deg: builtins.float, lon_a_deg: builtins.float, lat_b_deg: builtins.float, lon_b_deg: builtins.float, atol: builtins.float = ..., max_iters: builtins.int = ...) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Calculates range and bearings between two latitude-longitude points. This function uses an iterative solution to
     determine outputs using the WGS84 ellipsoidal Earth model.
-
+    
     See reference:
     https://en.wikipedia.org/wiki/Vincenty%27s_formulae.
-
+    
     # Arguments
-
+    
     * `lat_a_deg` - Latitude point A [degrees].
     * `lon_a_deg` - Longitude point A [degrees].
     * `lat_b_deg` - Latitude point A [degrees].
     * `lon_b_deg` - Longitude point A [degrees].
     * `atol` - Absolute tolerance used for convergence.
     * `max_iters` - Maximum possible number of iterations before early termination.
-
+    
     # Returns
-
+    
     A tuple `(range_m, bearing_ab_deg, bearing_ba_deg)` where:
     * `range_m` - Range (i.e., distance) from point A to point B [meters].
     * `bearing_ab_deg` - Bearing (i.e., azimuth) from point A to point B relative to true north [degrees].
     * `bearing_ba_deg` - Bearing (i.e., azimuth) from point B to point A relative to true north [degrees].
     """
+

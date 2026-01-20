@@ -1,4 +1,5 @@
 use glam;
+use pyglam;
 
 pub trait IntoDVec3 {
     fn into_dvec3(&self) -> glam::DVec3;
@@ -18,6 +19,16 @@ impl IntoDVec3 for &glam::DVec3 {
 impl IntoDVec3 for glam::DVec3 {
     fn into_dvec3(&self) -> glam::DVec3 {
         self.clone()
+    }
+}
+impl IntoDVec3 for &pyglam::DVec3 {
+    fn into_dvec3(&self) -> glam::DVec3 {
+        (**self).into()
+    }
+}
+impl IntoDVec3 for pyglam::DVec3 {
+    fn into_dvec3(&self) -> glam::DVec3 {
+        (**self).into()
     }
 }
 

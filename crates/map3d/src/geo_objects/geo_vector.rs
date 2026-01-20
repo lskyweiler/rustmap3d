@@ -1,38 +1,38 @@
 use crate::{traits::*, transforms::*};
-use glam;
+use pyglam;
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy)]
 pub struct GeoVector {
-    ecef_uvw: glam::DVec3,
+    ecef_uvw: pyglam::DVec3,
     lla_ref: (f64, f64, f64),
 }
 
 impl GeoVector {
-    pub fn from_ecef(ecef_uvw: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
+    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, lla_ref: impl IntoLatLonTriple) -> Self {
         Self {
-            ecef_uvw: ecef_uvw.into_dvec3(),
+            ecef_uvw: ecef_uvw.clone(),
             lla_ref: lla_ref.into_lat_lon_triple(),
         }
     }
     pub fn from_enu(enu: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
-            ecef_uvw: enu2ecef_uvw(enu, &lla_ref),
+            ecef_uvw: enu2ecef_uvw(enu, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
     pub fn from_ned(ned: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
-            ecef_uvw: ned2ecef_uvw(ned, &lla_ref),
+            ecef_uvw: ned2ecef_uvw(ned, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
     pub fn from_aer(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
-            ecef_uvw: aer2ecef_uvw(aer, &lla_ref),
+            ecef_uvw: aer2ecef_uvw(aer, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
@@ -46,20 +46,20 @@ impl GeoVector {
         self.ecef_uvw.length()
     }
 
-    pub fn ecef(&self) -> glam::DVec3 {
+    pub fn ecef(&self) -> pyglam::DVec3 {
         self.ecef_uvw + lla2ecef(self.lla_ref)
     }
-    pub fn ecef_uvw(&self) -> &glam::DVec3 {
+    pub fn ecef_uvw(&self) -> &pyglam::DVec3 {
         &self.ecef_uvw
     }
-    pub fn enu(&self) -> glam::DVec3 {
-        ecef_uvw2enu(&self.ecef_uvw, &self.lla_ref)
+    pub fn enu(&self) -> pyglam::DVec3 {
+        ecef_uvw2enu(&self.ecef_uvw, &self.lla_ref).into()
     }
-    pub fn ned(&self) -> glam::DVec3 {
-        ecef_uvw2ned(&self.ecef_uvw, &self.lla_ref)
+    pub fn ned(&self) -> pyglam::DVec3 {
+        ecef_uvw2ned(&self.ecef_uvw, &self.lla_ref).into()
     }
-    pub fn aer(&self) -> glam::DVec3 {
-        ecef_uvw2aer(&self.ecef_uvw, &self.lla_ref)
+    pub fn aer(&self) -> pyglam::DVec3 {
+        ecef_uvw2aer(&self.ecef_uvw, &self.lla_ref).into()
     }
 
     pub fn north(&self) -> f64 {
@@ -101,7 +101,7 @@ mod test_geo_vector {
 
         #[test]
         fn test_from_ecef() {
-            let actual = GeoVector::from_ecef(glam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual = GeoVector::from_ecef(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
             assert!(actual
                 .ecef_uvw()
                 .abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
@@ -128,7 +128,7 @@ mod test_geo_vector {
 
         #[test]
         fn test_cardinals() {
-            let actual = GeoVector::from_ecef(glam::dvec3(100., 50., -100.), (0., 0., 0.));
+            let actual = GeoVector::from_ecef(&pyglam::dvec3(100., 50., -100.), (0., 0., 0.));
 
             almost::equal_with(actual.north(), -100., 1e-10);
             almost::equal_with(actual.south(), 100., 1e-10);
@@ -141,13 +141,13 @@ mod test_geo_vector {
         #[test]
         fn test_angles() {
             // vector due east
-            let actual = GeoVector::from_ecef(glam::dvec3(0., 100., 0.), (0., 0., 0.));
+            let actual = GeoVector::from_ecef(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.));
             almost::equal_with(actual.azimuth(), 90., 1e-10);
         }
 
         #[test]
         fn test_length() {
-            let actual = GeoVector::from_ecef(glam::dvec3(-100., 0., 0.), (0., 0., 0.));
+            let actual = GeoVector::from_ecef(&pyglam::dvec3(-100., 0., 0.), (0., 0., 0.));
             almost::equal_with(actual.length(), 100., 1e-10);
         }
     }
