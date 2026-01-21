@@ -385,14 +385,17 @@ class GeoVector:
 
 @typing.final
 class GeoVelocity:
+    r"""
+    Represents a 3D velocity vector in Geo space
+    """
     @property
-    def ecef_vel(self) -> DVec3:
+    def ecef_uvw(self) -> DVec3:
         r"""
         Get this velocity in ecef frame
 
         # Returns
 
-        - `pyglam::DVec3` - ECEF velocity in m/s
+        - `DVec3` - ECEF velocity in m/s
         """
     @property
     def speed(self) -> builtins.float:
@@ -415,17 +418,17 @@ class GeoVelocity:
 
         # Arguments
 
-        - `ecef_dir` (`&pyglam`) - Unit vector in ecef frame
+        - `ecef_dir` (`&DVec3`) - Unit vector in ecef frame
         - `speed_mps` (`f64`) - speed in meters per second
         """
     @staticmethod
-    def from_ecef(ecef_mps: DVec3) -> GeoVelocity:
+    def from_ecef_uvw(ecef_uvw_mps: DVec3) -> GeoVelocity:
         r"""
         Construct a velocity from an ecef vector in meters/second
 
         # Arguments
 
-        - `ecef` (`&pyglam`) - Velocity vector in ecef frame in meters/second
+        - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
         """
     @staticmethod
     def from_enu(enu_mps: DVec3, reference: GeoPosition) -> GeoVelocity:
@@ -434,7 +437,7 @@ class GeoVelocity:
 
         # Arguments
 
-        - `enu_mps` (`&pyglam`) - Local enu velocity in meters/second
+        - `enu_mps` (`&DVec3`) - Local enu velocity in meters/second
         - `reference` (`&GeoPosition`) - ENU reference location
         """
     @staticmethod
@@ -444,7 +447,7 @@ class GeoVelocity:
 
         # Arguments
 
-        - `ned_mps` (`&pyglam`) - Local ned velocity in meters/second
+        - `ned_mps` (`&DVec3`) - Local ned velocity in meters/second
         - `reference` (`&GeoPosition`) - NED reference location
         """
     def enu(self, reference: GeoPosition) -> DVec3:
@@ -475,6 +478,30 @@ class GeoVelocity:
 
         - `f64` - Mach number as an index
         """
+    def __mul__(
+        self, rhs: typing.Union[GeoVelocity, builtins.float]
+    ) -> typing.Union[GeoVelocity, GeoVector]:
+        r"""
+        Multiply this GeoVelocity with either another GeoVelocity or time
+        Multiplying by a float will produce a GeoVector equal to v * dt
+
+        # Arguments
+
+        - `rhs` (`Either<GeoVelocity, f64>`) - Velocity or time to multiply
+
+        # Returns
+
+        - `PyResult<Either<GeoVelocity, GeoVector>>` - Either a component-wise velocity multiply or a new GeoVector in meters
+        """
+    def __rmul__(
+        self, rhs: typing.Union[GeoVelocity, builtins.float]
+    ) -> typing.Union[GeoVelocity, GeoVector]: ...
+    def __add__(self, rhs: GeoVelocity) -> GeoVelocity: ...
+    def __sub__(self, rhs: GeoVelocity) -> GeoVelocity: ...
+    def __div__(self, rhs: GeoVelocity) -> GeoVelocity: ...
+    def __radd__(self, lhs: GeoVelocity) -> GeoVelocity: ...
+    def __rsub__(self, lhs: GeoVelocity) -> GeoVelocity: ...
+    def __rdiv__(self, lhs: GeoVelocity) -> GeoVelocity: ...
 
 @typing.final
 class Quat:

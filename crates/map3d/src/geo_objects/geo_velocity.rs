@@ -1,8 +1,14 @@
-use crate::{geo_objects::geo_position::GeoPosition, transforms::*};
+use crate::{
+    geo_objects::{geo_position::GeoPosition, geo_vector::GeoVector},
+    transforms::*,
+};
+use either::Either;
 use pyglam;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
+use std::ops::{Add, Div, Mul, Sub};
 
+/// Represents a 3D velocity vector in Geo space
 #[derive(Clone)]
 #[gen_stub_pyclass]
 #[pyclass]
@@ -27,7 +33,7 @@ impl GeoVelocity {
     ///
     /// # Arguments
     ///
-    /// - `ecef_dir` (`&pyglam`) - Unit vector in ecef frame
+    /// - `ecef_dir` (`&DVec3`) - Unit vector in ecef frame
     /// - `speed_mps` (`f64`) - speed in meters per second
     ///
     #[staticmethod]
@@ -41,20 +47,20 @@ impl GeoVelocity {
     ///
     /// # Arguments
     ///
-    /// - `ecef` (`&pyglam`) - Velocity vector in ecef frame in meters/second
+    /// - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
     ///
     #[staticmethod]
-    pub fn from_ecef(ecef_mps: &pyglam::DVec3) -> Self {
+    pub fn from_ecef_uvw(ecef_uvw_mps: &pyglam::DVec3) -> Self {
         return GeoVelocity {
-            dir_ecef: ecef_mps.normalize().into(),
-            speed: ecef_mps.length(),
+            dir_ecef: ecef_uvw_mps.normalize().into(),
+            speed: ecef_uvw_mps.length(),
         };
     }
     /// Construct a velocity from a local enu velocity vector in meters/second
     ///
     /// # Arguments
     ///
-    /// - `enu_mps` (`&pyglam`) - Local enu velocity in meters/second
+    /// - `enu_mps` (`&DVec3`) - Local enu velocity in meters/second
     /// - `reference` (`&GeoPosition`) - ENU reference location
     ///
     #[staticmethod]
@@ -70,7 +76,7 @@ impl GeoVelocity {
     ///
     /// # Arguments
     ///
-    /// - `ned_mps` (`&pyglam`) - Local ned velocity in meters/second
+    /// - `ned_mps` (`&DVec3`) - Local ned velocity in meters/second
     /// - `reference` (`&GeoPosition`) - NED reference location
     ///
     #[staticmethod]
@@ -87,10 +93,10 @@ impl GeoVelocity {
     ///
     /// # Returns
     ///
-    /// - `pyglam::DVec3` - ECEF velocity in m/s
+    /// - `DVec3` - ECEF velocity in m/s
     ///
     #[getter]
-    pub fn get_ecef_vel(&self) -> pyglam::DVec3 {
+    pub fn get_ecef_uvw(&self) -> pyglam::DVec3 {
         return self.dir_ecef * self.speed;
     }
     /// Gets the speed of this velocity in m/s
@@ -119,7 +125,7 @@ impl GeoVelocity {
     /// - `reference` (`GeoPosition`) - enu reference frame
     ///
     pub fn enu(&self, reference: GeoPosition) -> pyglam::DVec3 {
-        ecef_uvw2enu(&self.get_ecef_vel(), &reference.lla()).into()
+        ecef_uvw2enu(&self.get_ecef_uvw(), &reference.lla()).into()
     }
     /// Get this velocity in a local ned frame in m/s
     ///
@@ -128,7 +134,7 @@ impl GeoVelocity {
     /// - `reference` (`GeoPosition`) - ned reference frame
     ///
     pub fn ned(&self, reference: GeoPosition) -> pyglam::DVec3 {
-        ecef_uvw2ned(&self.get_ecef_vel(), &reference.lla()).into()
+        ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
 
     /// Computes the mach number for this velocity at a given geo position
@@ -145,18 +151,102 @@ impl GeoVelocity {
         let _alt = reference.alt();
         return self.speed / 343.; // todo: lookup up speed of sound at alt
     }
+
+    /// Multiply this GeoVelocity with either another GeoVelocity or time
+    /// Multiplying by a float will produce a GeoVector equal to v * dt
+    ///
+    /// # Arguments
+    ///
+    /// - `rhs` (`Either<GeoVelocity, f64>`) - Velocity or time to multiply
+    ///
+    /// # Returns
+    ///
+    /// - `PyResult<Either<GeoVelocity, GeoVector>>` - Either a component-wise velocity multiply or a new GeoVector in meters
+    ///
+    fn __mul__(&self, rhs: Either<GeoVelocity, f64>) -> PyResult<Either<GeoVelocity, GeoVector>> {
+        match rhs {
+            Either::Left(vel) => Ok(Either::Left(self * vel)),
+            Either::Right(time_s) => Ok(Either::Right(self * time_s)),
+        }
+    }
+    fn __rmul__(&self, rhs: Either<GeoVelocity, f64>) -> PyResult<Either<GeoVelocity, GeoVector>> {
+        self.__mul__(rhs)
+    }
+    /// Component-wise addition of velocity
+    fn __add__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(self + rhs)
+    }
+    /// Component-wise subtraction of velocity
+    fn __sub__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(self - rhs)
+    }
+    /// Component-wise division of velocity
+    fn __div__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(self / rhs)
+    }
+    /// Component-wise addition of velocity
+    fn __radd__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(self + lhs)
+    }
+    /// Component-wise subtraction of velocity
+    fn __rsub__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(lhs - self)
+    }
+    /// Component-wise division of velocity
+    fn __rdiv__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
+        Ok(lhs / self)
+    }
 }
-// impl Mul<f64> for GeoVelocity {
-//     type Output = GeoVector;
-//     fn mul(self, time_s: f64) -> Self::Output {
-//         let delta_pos = self.ecef() * time_s;
-//         GeoVector::from_ecef(delta_pos)
-//     }
-// }
-// impl Mul<f64> for &GeoVelocity {
-//     type Output = GeoVector;
-//     fn mul(self, time_s: f64) -> Self::Output {
-//         let delta_pos = self.ecef() * time_s;
-//         GeoVector::from_ecef(delta_pos)
-//     }
-// }
+
+macro_rules! geo_vel_mul_time {
+    ($a:ty, $b:ty) => {
+        impl Mul<$a> for $b {
+            type Output = GeoVector;
+            fn mul(self, time_s: $a) -> Self::Output {
+                let delta_pos = self.get_ecef_uvw() * time_s;
+                GeoVector::from_ecef(&delta_pos, (0., 0., 0.))
+            }
+        }
+    };
+}
+geo_vel_mul_time!(f64, GeoVelocity);
+geo_vel_mul_time!(&f64, GeoVelocity);
+geo_vel_mul_time!(f64, &GeoVelocity);
+geo_vel_mul_time!(&f64, &GeoVelocity);
+
+macro_rules! ops_with_self {
+    ($a:ty, $b:ty) => {
+        impl Add<$a> for $b {
+            type Output = GeoVelocity;
+            fn add(self, rhs: $a) -> Self::Output {
+                let new_vel = self.get_ecef_uvw() + rhs.get_ecef_uvw();
+                GeoVelocity::from_ecef_uvw(&new_vel)
+            }
+        }
+        impl Sub<$a> for $b {
+            type Output = GeoVelocity;
+            fn sub(self, rhs: $a) -> Self::Output {
+                let new_vel = self.get_ecef_uvw() - rhs.get_ecef_uvw();
+                GeoVelocity::from_ecef_uvw(&new_vel)
+            }
+        }
+        impl Mul<$a> for $b {
+            type Output = GeoVelocity;
+            fn mul(self, rhs: $a) -> Self::Output {
+                let new_vel = self.get_ecef_uvw() * rhs.get_ecef_uvw();
+                GeoVelocity::from_ecef_uvw(&new_vel)
+            }
+        }
+        impl Div<$a> for $b {
+            type Output = GeoVelocity;
+            fn div(self, rhs: $a) -> Self::Output {
+                let new_vel = self.get_ecef_uvw() / rhs.get_ecef_uvw();
+                GeoVelocity::from_ecef_uvw(&new_vel)
+            }
+        }
+    };
+}
+ops_with_self!(GeoVelocity, GeoVelocity);
+ops_with_self!(&GeoVelocity, GeoVelocity);
+ops_with_self!(GeoVelocity, &GeoVelocity);
+ops_with_self!(&GeoVelocity, &GeoVelocity);

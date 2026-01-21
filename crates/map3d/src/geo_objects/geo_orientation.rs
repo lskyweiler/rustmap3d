@@ -1,7 +1,9 @@
 use crate::{geo_objects::geo_position::GeoPosition, transforms::*};
+use either::Either;
 use pyglam;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
+use std::ops::Mul;
 
 #[derive(Clone)]
 #[gen_stub_pyclass]
@@ -161,4 +163,46 @@ impl GeoOrientation {
     pub fn back(&self) -> pyglam::DVec3 {
         (-self.dcm().col(0)).into()
     }
+
+    fn __mul__(
+        &self,
+        rhs: Either<GeoPosition, GeoOrientation>,
+    ) -> PyResult<Either<GeoPosition, GeoOrientation>> {
+        match rhs {
+            Either::Left(pos) => Ok(Either::Left(self * pos)),
+            Either::Right(rot) => Ok(Either::Right(self * rot)),
+        }
+    }
 }
+
+macro_rules! ops_with_geo_pos {
+    ($a:ty, $b:ty) => {
+        impl Mul<$a> for $b {
+            type Output = GeoPosition;
+            fn mul(self, rhs: $a) -> Self::Output {
+                let new_vel = self.ecef() * rhs.ecef();
+                GeoPosition::from_ecef(&new_vel)
+            }
+        }
+    };
+}
+ops_with_geo_pos!(GeoPosition, GeoOrientation);
+ops_with_geo_pos!(&GeoPosition, GeoOrientation);
+ops_with_geo_pos!(GeoPosition, &GeoOrientation);
+ops_with_geo_pos!(&GeoPosition, &GeoOrientation);
+
+macro_rules! ops_with_self {
+    ($a:ty, $b:ty) => {
+        impl Mul<$a> for $b {
+            type Output = GeoOrientation;
+            fn mul(self, rhs: $a) -> Self::Output {
+                let new_vel = self.ecef() * rhs.ecef();
+                GeoOrientation::from_ecef(&new_vel)
+            }
+        }
+    };
+}
+ops_with_self!(GeoOrientation, GeoOrientation);
+ops_with_self!(&GeoOrientation, GeoOrientation);
+ops_with_self!(GeoOrientation, &GeoOrientation);
+ops_with_self!(&GeoOrientation, &GeoOrientation);

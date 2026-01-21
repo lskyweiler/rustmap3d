@@ -58,6 +58,7 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<map3d::geo_objects::geo_position::GeoPosition>()?;
         m.add_class::<map3d::geo_objects::geo_vector::GeoVector>()?;
         m.add_class::<map3d::geo_objects::geo_orientation::GeoOrientation>()?;
+        m.add_class::<map3d::geo_objects::geo_velocity::GeoVelocity>()?;
     }
     {
         // re-export vecs so that we can use them here
