@@ -24,14 +24,6 @@ impl GeoPosition {
     pub fn ecef_mut(&mut self) -> &mut pyglam::DVec3 {
         return &mut self.ecef;
     }
-
-    /// Rotate the geo position by an ecef rotation, but preserve the starting altitude
-    pub fn rotate_lat_lon(&mut self, ecef_rot: glam::DQuat) {
-        let starting_alt = self.alt();
-        let new_ecef = ecef_rot * self.ecef.into_dvec3();
-        let new_lat_lon = ecef2lla(&new_ecef).xy();
-        self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
-    }
 }
 
 #[gen_stub_pymethods]
@@ -120,6 +112,14 @@ impl GeoPosition {
     pub fn lat_lon_dms(&self) -> String {
         let ll = self.lla();
         return format!("{}, {}", dd2dms(ll.0, true), dd2dms(ll.1, false));
+    }
+
+    /// Rotate the geo position by an ecef rotation, but preserve the starting altitude
+    pub fn rotate_lat_lon(&mut self, ecef_rot: &pyglam::DQuat) {
+        let starting_alt = self.alt();
+        let new_ecef = ecef_rot * self.ecef;
+        let new_lat_lon = ecef2lla(&new_ecef).xy();
+        self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
 }
 
@@ -324,8 +324,8 @@ mod test_geo_pos {
         #[test]
         fn test_rot_alt() {
             let mut actual = GeoPosition::from_lla((0., 0., 100.));
-            let rot = glam::DQuat::from_axis_angle(glam::DVec3::Z, f64::consts::PI);
-            actual.rotate_lat_lon(rot);
+            let rot = pyglam::DQuat::from_axis_angle(&pyglam::dvec3(0., 0., 1.), f64::consts::PI);
+            actual.rotate_lat_lon(&rot);
 
             almost::equal_with(actual.lla().0, 0., 1e-5);
             almost::equal_with(actual.lla().1, 90., 1e-5);

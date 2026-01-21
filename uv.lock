@@ -2671,6 +2671,11 @@ wheels = [
 ]
 
 [[package]]
+name = "pyglam"
+version = "0.1.0"
+source = { git = "https://github.com/lskyweiler/pyglam?branch=feat%2Fquats#06ed4dacb5ead24ae444355375379bdc19fd60d3" }
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }
@@ -3123,6 +3128,7 @@ dev = [
     { name = "pre-commit", version = "3.5.0", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pre-commit", version = "4.3.0", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version == '3.9.*'" },
     { name = "pre-commit", version = "4.5.0", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pyglam" },
     { name = "pylint", version = "3.2.7", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pylint", version = "3.3.9", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version == '3.9.*'" },
     { name = "pylint", version = "4.0.4", source = { registry = "https://gitlab.sdo.psdo.leidos.com/api/v4/projects/4516/packages/pypi/simple" }, marker = "python_full_version >= '3.10'" },
@@ -3148,6 +3154,7 @@ dev = [
     { name = "numba" },
     { name = "numpy" },
     { name = "pre-commit" },
+    { name = "pyglam", git = "https://github.com/lskyweiler/pyglam?branch=feat%2Fquats" },
     { name = "pylint" },
     { name = "pymap3d" },
     { name = "pytest" },
