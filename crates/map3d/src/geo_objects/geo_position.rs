@@ -24,6 +24,9 @@ impl GeoPosition {
     pub fn ecef_mut(&mut self) -> &mut pyglam::DVec3 {
         return &mut self.ecef;
     }
+    pub fn lla(&self) -> (f64, f64, f64) {
+        ecef2lla(&self.ecef).into()
+    }
 }
 
 #[gen_stub_pymethods]
@@ -52,11 +55,20 @@ impl GeoPosition {
         }
     }
 
-    pub fn lla(&self) -> (f64, f64, f64) {
-        ecef2lla(&self.ecef).into()
+    #[getter]
+    fn get_ecef(&self) -> pyglam::DVec3 {
+        self.ecef
+    }
+    #[setter]
+    fn set_ecef(&mut self, ecef: pyglam::DVec3) {
+        self.ecef = ecef
+    }
+    #[getter]
+    fn get_lla(&self) -> (f64, f64, f64) {
+        self.lla()
     }
     pub fn alt(&self) -> f64 {
-        return self.lla().2;
+        self.lla().2
     }
     ///  Sets the altitude of this position while preserving the lat/lon
     ///

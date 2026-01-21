@@ -38,13 +38,11 @@ glam = { version = "~0.30", features = ["approx"] }
 # bin/stub_gen deps
 env_logger = "~0.11"
 pyo3-stub-gen = { version = "~0.17", default-features = false }
-# pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
-pyglam = { "path" = "../pyglam" }
+pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
 
 [workspace.dependencies]
 map3d = { path = "crates/map3d" }
-pyglam = { "path" = "../pyglam" }
-# pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
+pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
 
 glam = "~0.30"
 pyo3 = "~0.27"

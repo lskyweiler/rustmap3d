@@ -61,8 +61,6 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         // re-export vecs so that we can use them here
         m.add_class::<pyglam::DVec3>()?;
         m.add_class::<pyglam::DQuat>()?;
-        m.add_function(wrap_pyfunction!(pyglam::dvec3, m)?)?;
-        m.add_function(wrap_pyfunction!(pyglam::dquat, m)?)?;
     }
 
     Ok(())
