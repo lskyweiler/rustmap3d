@@ -606,6 +606,7 @@ dependencies = [
  "approx",
  "chrono",
  "criterion",
+ "either",
  "glam",
  "pyglam",
  "pyo3",
@@ -825,7 +826,7 @@ dependencies = [
 [[package]]
 name = "pyglam"
 version = "0.1.0"
-source = "git+https://github.com/lskyweiler/pyglam#d6b4d61b61e63c21d03de6563b2d797003267e61"
+source = "git+https://github.com/lskyweiler/pyglam?branch=develop#939b44f26e5c27bc31e5c2fdb63ffefb76d3f7be"
 dependencies = [
  "either",
  "env_logger",

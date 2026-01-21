@@ -17,6 +17,7 @@ chrono = "~0.4"
 approx = "~0.5"
 rand_distr = "0.5.1"
 
+either.workspace = true
 pyo3.workspace = true
 pyo3-stub-gen.workspace = true
 pyglam.workspace = true

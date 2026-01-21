@@ -1,35 +1,51 @@
 use crate::{traits::*, transforms::*};
 use pyglam;
+use pyo3::prelude::*;
+use pyo3_stub_gen::derive::*;
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy)]
+#[gen_stub_pyclass]
+#[pyclass]
 pub struct GeoVector {
     ecef_uvw: pyglam::DVec3,
     lla_ref: (f64, f64, f64),
 }
 
 impl GeoVector {
-    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, lla_ref: impl IntoLatLonTriple) -> Self {
+    pub fn ecef_uvw(&self) -> &pyglam::DVec3 {
+        &self.ecef_uvw
+    }
+}
+
+#[gen_stub_pymethods]
+#[pymethods]
+impl GeoVector {
+    #[staticmethod]
+    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
         Self {
             ecef_uvw: ecef_uvw.clone(),
             lla_ref: lla_ref.into_lat_lon_triple(),
         }
     }
-    pub fn from_enu(enu: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
+    #[staticmethod]
+    pub fn from_enu(enu: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
             ecef_uvw: enu2ecef_uvw(enu, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
-    pub fn from_ned(ned: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
+    #[staticmethod]
+    pub fn from_ned(ned: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
             ecef_uvw: ned2ecef_uvw(ned, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
-    pub fn from_aer(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> Self {
+    #[staticmethod]
+    pub fn from_aer(aer: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
         let lla_ref = lla_ref.into_lat_lon_triple();
         Self {
             ecef_uvw: aer2ecef_uvw(aer, &lla_ref).into(),
@@ -46,12 +62,25 @@ impl GeoVector {
         self.ecef_uvw.length()
     }
 
+    /// Get the absolute ecef position of this vector
+    ///
+    /// # Returns
+    ///
+    /// - `pyglam::DVec3` - Absolute ecef position in meters
+    ///
     pub fn ecef(&self) -> pyglam::DVec3 {
         self.ecef_uvw + lla2ecef(self.lla_ref)
     }
-    pub fn ecef_uvw(&self) -> &pyglam::DVec3 {
-        &self.ecef_uvw
+    /// Gets this vector in the ECEF frame in meters
+    #[getter]
+    fn get_ecef_uvw(&self) -> pyglam::DVec3 {
+        self.ecef_uvw
     }
+    #[setter]
+    fn set_ecef_uvw(&mut self, ecef_uvw: pyglam::DVec3) {
+        self.ecef_uvw = ecef_uvw;
+    }
+
     pub fn enu(&self) -> pyglam::DVec3 {
         ecef_uvw2enu(&self.ecef_uvw, &self.lla_ref).into()
     }
@@ -81,7 +110,7 @@ impl GeoVector {
         self.ned().z
     }
 
-    /// Compute the clockwise angle off north for this vector relative to its reference
+    /// Compute the clockwise angle off true north for this vector relative to its reference
     /// Angle is always between [0., 360.]
     ///
     /// # Returns
@@ -108,17 +137,17 @@ mod test_geo_vector {
         }
         #[test]
         fn test_from_enu() {
-            let actual = GeoVector::from_enu(glam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual = GeoVector::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
             assert!(actual.enu().abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
         }
         #[test]
         fn test_from_ned() {
-            let actual = GeoVector::from_ned(glam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual = GeoVector::from_ned(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
             assert!(actual.ned().abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
         }
         #[test]
         fn test_from_aer() {
-            let actual = GeoVector::from_aer(glam::dvec3(100., 0., 100.), (0., 0., 0.));
+            let actual = GeoVector::from_aer(&pyglam::dvec3(100., 0., 100.), (0., 0., 0.));
             assert!(actual.aer().abs_diff_eq(glam::dvec3(100., 0., 100.), 1e-10));
         }
     }

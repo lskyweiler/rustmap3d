@@ -61,6 +61,16 @@ class DQuat:
 
         - `PyResult<Self>` - Returns a quaternion that would rotate vector from onto to
         """
+    def to_tuple(
+        self,
+    ) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+        r"""
+        Convert this quat to a 4 component tuple
+
+        # Returns
+
+        - `(float, float, float, float)` - XYZW tuple
+        """
     def __mul__(self, rhs: typing.Any) -> typing.Union[DQuat, DVec3]:
         r"""
         Multiply this quaternion with either another quaternion or a vector
@@ -123,6 +133,14 @@ class DVec3:
         y: typing.Optional[builtins.float] = None,
         z: typing.Optional[builtins.float] = None,
     ) -> DVec3: ...
+    def to_tuple(self) -> tuple[builtins.float, builtins.float, builtins.float]:
+        r"""
+        Convert this vector to a 3 component tuple
+
+        # Returns
+
+        - `(float, float, float)` - XYZ tuple
+        """
     def __add__(self, rhs: typing.Any) -> DVec3: ...
     def __radd__(self, lhs: typing.Any) -> DVec3: ...
     def __sub__(self, rhs: typing.Any) -> DVec3: ...
@@ -140,6 +158,112 @@ class DVec3:
     def length(self) -> builtins.float: ...
     def dot(self, rhs: typing.Any) -> builtins.float: ...
     def cross(self, rhs: typing.Any) -> DVec3: ...
+
+@typing.final
+class GeoOrientation:
+    @staticmethod
+    def from_identity() -> GeoOrientation:
+        r"""
+        Create an identity ecef orientation
+        """
+    @staticmethod
+    def from_ecef(body2ecef: DQuat) -> GeoOrientation:
+        r"""
+        Construct an orientation from a body2ecef quaternion
+
+        # Arguments
+
+        - `body2ecef` (`&pyglam::DQuat`) - Quaternion rotating a body coordinate frame into the ecef frame
+        """
+    @staticmethod
+    def from_geo_rotation_arc(from_: GeoPosition, to: GeoPosition) -> GeoOrientation:
+        r"""
+        Create a minimum rotation from one geo position to another
+
+        # Arguments
+
+        - `from_` (`&GeoPosition`) - Starting geo position
+        - `to` (`&GeoPosition`) - Ending geo position
+        """
+    @staticmethod
+    def from_ecef_euler(ecef_321: DVec3) -> GeoOrientation:
+        r"""
+        Construct an orientation from ecef euler angles
+
+        # Arguments
+
+        - `ecef_321` (`&pyglam`) - Euler angles in radians in ecef frame
+        """
+    @staticmethod
+    def from_ned_euler(ned_321: DVec3, reference_pos: GeoPosition) -> GeoOrientation:
+        r"""
+        Construct a GeoOrientation from a local ned coordinate frame
+        enu is the euler radians around north, east, down in a 3-2-1 sequence
+
+        # Arguments
+
+        - `ned_321` (`&pyglam`) - NED euler angles in radians
+        - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+        """
+    @staticmethod
+    def from_enu_euler(enu_321: DVec3, reference_pos: GeoPosition) -> GeoOrientation:
+        r"""
+        Construct a GeoOrientation from a local enu coordinate frame
+        enu is the euler radians around east, north, up in a 3-2-1 sequence
+
+        # Arguments
+
+        - `enu_321` (`&pyglam`) - ENU euler angles in radians
+        - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+        """
+    def heading(self, reference: GeoPosition) -> builtins.float:
+        r"""
+        Gets the heading direction (clockwise off north) in degrees for the body's forward vector
+
+        # Arguments
+
+        - `reference` (`&GeoPosition`) - Reference location to compute heading in relation to
+
+        # Returns
+
+        - `f64` - Heading angle in degrees
+        """
+    def as_enu(self, reference: GeoPosition) -> DQuat:
+        r"""
+        Express this bodies orientation in a local enu frame
+
+        # Arguments
+
+        - `reference` (`&GeoPosition`) - Refernce location
+
+        # Returns
+
+        - `pyglam::DQuat` - body 2 local enu rotation
+        """
+    def forward(self) -> DVec3:
+        r"""
+        Get the forward (positive x axis) for this orientation in the ecef frame
+        """
+    def left(self) -> DVec3:
+        r"""
+        Get the left (positive y axis) for this orientation in the ecef frame
+        """
+    def up(self) -> DVec3:
+        r"""
+        Get the up (positive z axis) for this orientation in the ecef frame
+        """
+    def right(self) -> DVec3:
+        r"""
+        Get the right (negative y axis) for this orientation in the ecef frame
+        """
+    def down(self) -> DVec3:
+        r"""
+        Get the down (negative z axis) for this orientation in the ecef frame
+        """
+    def back(self) -> DVec3:
+        r"""
+        Get the back (negative x axis) for this orientation in the ecef frame
+        """
 
 @typing.final
 class GeoPosition:
@@ -188,6 +312,168 @@ class GeoPosition:
     def rotate_lat_lon(self, ecef_rot: DQuat) -> None:
         r"""
         Rotate the geo position by an ecef rotation, but preserve the starting altitude
+        """
+    def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
+    def __radd__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
+    def __sub__(
+        self, rhs: typing.Union[GeoVector, GeoPosition]
+    ) -> typing.Union[GeoVector, GeoPosition]: ...
+    def __rsub__(self, lhs: GeoPosition) -> GeoVector: ...
+
+@typing.final
+class GeoVector:
+    r"""
+    Represents a vector relative to a reference point
+    """
+    @property
+    def ecef_uvw(self) -> DVec3:
+        r"""
+        Gets this vector in the ECEF frame in meters
+        """
+    @ecef_uvw.setter
+    def ecef_uvw(self, value: DVec3) -> None: ...
+    @staticmethod
+    def from_ecef(
+        ecef_uvw: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+    ) -> GeoVector: ...
+    @staticmethod
+    def from_enu(
+        enu: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+    ) -> GeoVector: ...
+    @staticmethod
+    def from_ned(
+        ned: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+    ) -> GeoVector: ...
+    @staticmethod
+    def from_aer(
+        aer: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+    ) -> GeoVector: ...
+    def length(self) -> builtins.float:
+        r"""
+        Compute the length of this vector in meters
+
+        # Returns
+
+        * `length` - Length of this vector in [[meters]]
+        """
+    def ecef(self) -> DVec3:
+        r"""
+        Get the absolute ecef position of this vector
+
+        # Returns
+
+        - `pyglam::DVec3` - Absolute ecef position in meters
+        """
+    def enu(self) -> DVec3: ...
+    def ned(self) -> DVec3: ...
+    def aer(self) -> DVec3: ...
+    def north(self) -> builtins.float: ...
+    def south(self) -> builtins.float: ...
+    def east(self) -> builtins.float: ...
+    def west(self) -> builtins.float: ...
+    def up(self) -> builtins.float: ...
+    def down(self) -> builtins.float: ...
+    def azimuth(self) -> builtins.float:
+        r"""
+        Compute the clockwise angle off true north for this vector relative to its reference
+        Angle is always between [0., 360.]
+
+        # Returns
+
+        * `azimuth` - Clockwise angle off true north in [[degrees]]
+        """
+
+@typing.final
+class GeoVelocity:
+    @property
+    def ecef_vel(self) -> DVec3:
+        r"""
+        Get this velocity in ecef frame
+
+        # Returns
+
+        - `pyglam::DVec3` - ECEF velocity in m/s
+        """
+    @property
+    def speed(self) -> builtins.float:
+        r"""
+        Gets the speed of this velocity in m/s
+        """
+    @speed.setter
+    def speed(self, value: builtins.float) -> None: ...
+    @property
+    def direction(self) -> DVec3:
+        r"""
+        Get this velocity's direction in the ecef frame
+        """
+    @direction.setter
+    def direction(self, value: DVec3) -> None: ...
+    @staticmethod
+    def from_dir_speed(ecef_dir: DVec3, speed_mps: builtins.float) -> GeoVelocity:
+        r"""
+        Construct a velocity from an ecef unit direction and speed
+
+        # Arguments
+
+        - `ecef_dir` (`&pyglam`) - Unit vector in ecef frame
+        - `speed_mps` (`f64`) - speed in meters per second
+        """
+    @staticmethod
+    def from_ecef(ecef_mps: DVec3) -> GeoVelocity:
+        r"""
+        Construct a velocity from an ecef vector in meters/second
+
+        # Arguments
+
+        - `ecef` (`&pyglam`) - Velocity vector in ecef frame in meters/second
+        """
+    @staticmethod
+    def from_enu(enu_mps: DVec3, reference: GeoPosition) -> GeoVelocity:
+        r"""
+        Construct a velocity from a local enu velocity vector in meters/second
+
+        # Arguments
+
+        - `enu_mps` (`&pyglam`) - Local enu velocity in meters/second
+        - `reference` (`&GeoPosition`) - ENU reference location
+        """
+    @staticmethod
+    def from_ned(ned_mps: DVec3, reference: GeoPosition) -> GeoVelocity:
+        r"""
+        Construct a velocity from a local ned velocity vector in meters/second
+
+        # Arguments
+
+        - `ned_mps` (`&pyglam`) - Local ned velocity in meters/second
+        - `reference` (`&GeoPosition`) - NED reference location
+        """
+    def enu(self, reference: GeoPosition) -> DVec3:
+        r"""
+        Get this velocity in a local enu frame in m/s
+
+        # Arguments
+
+        - `reference` (`GeoPosition`) - enu reference frame
+        """
+    def ned(self, reference: GeoPosition) -> DVec3:
+        r"""
+        Get this velocity in a local ned frame in m/s
+
+        # Arguments
+
+        - `reference` (`GeoPosition`) - ned reference frame
+        """
+    def mach(self, reference: GeoPosition) -> builtins.float:
+        r"""
+        Computes the mach number for this velocity at a given geo position
+
+        # Arguments
+
+        - `reference` (`&GeoPosition`) - Position to compute mach
+
+        # Returns
+
+        - `f64` - Mach number as an index
         """
 
 @typing.final
@@ -246,6 +532,16 @@ class Quat:
         # Returns
 
         - `PyResult<Self>` - Returns a quaternion that would rotate vector from onto to
+        """
+    def to_tuple(
+        self,
+    ) -> tuple[builtins.float, builtins.float, builtins.float, builtins.float]:
+        r"""
+        Convert this quat to a 4 component tuple
+
+        # Returns
+
+        - `(float, float, float, float)` - XYZW tuple
         """
     def __mul__(self, rhs: typing.Any) -> typing.Union[Quat, Vec3]:
         r"""
@@ -309,6 +605,14 @@ class Vec3:
         y: typing.Optional[builtins.float] = None,
         z: typing.Optional[builtins.float] = None,
     ) -> Vec3: ...
+    def to_tuple(self) -> tuple[builtins.float, builtins.float, builtins.float]:
+        r"""
+        Convert this vector to a 3 component tuple
+
+        # Returns
+
+        - `(float, float, float)` - XYZ tuple
+        """
     def __add__(self, rhs: typing.Any) -> Vec3: ...
     def __radd__(self, lhs: typing.Any) -> Vec3: ...
     def __sub__(self, rhs: typing.Any) -> Vec3: ...

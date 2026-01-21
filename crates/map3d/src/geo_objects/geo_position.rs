@@ -1,4 +1,5 @@
 use crate::{geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*};
+use either::Either;
 use glam::{self, swizzles::*};
 use pyglam;
 use pyo3::prelude::*;
@@ -133,6 +134,28 @@ impl GeoPosition {
         let new_lat_lon = ecef2lla(&new_ecef).xy();
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
+
+    fn __add__(&self, rhs: Either<GeoVector, pyglam::DVec3>) -> PyResult<GeoPosition> {
+        match rhs {
+            Either::Left(vec) => Ok(self + vec),
+            Either::Right(vec) => Ok(GeoPosition::from_ecef(&(self.ecef + vec))),
+        }
+    }
+    fn __radd__(&self, rhs: Either<GeoVector, pyglam::DVec3>) -> PyResult<GeoPosition> {
+        self.__add__(rhs)
+    }
+    fn __sub__(
+        &self,
+        rhs: Either<GeoVector, GeoPosition>,
+    ) -> PyResult<Either<GeoVector, GeoPosition>> {
+        match rhs {
+            Either::Left(vec) => Ok(Either::Right(self - vec)),
+            Either::Right(vec) => Ok(Either::Left(self - vec)),
+        }
+    }
+    fn __rsub__(&self, lhs: GeoPosition) -> PyResult<GeoVector> {
+        Ok(lhs - self)
+    }
 }
 
 impl Debug for GeoPosition {
@@ -180,13 +203,22 @@ dvec3_adds_with_geopos!(glam::DVec3, &GeoPosition);
 dvec3_adds_with_geopos!(&glam::DVec3, &GeoPosition);
 
 /// Subtracting two GeoPositions results in a GeoVector starting at RHS -> LHS
-impl Sub for GeoPosition {
-    type Output = GeoVector;
+macro_rules! geo_pos_subs_with_geopos {
+    ($a:ty, $b:ty) => {
+        impl Sub<$a> for $b {
+            type Output = GeoVector;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        GeoVector::from_ecef(&(self.ecef - rhs.ecef), rhs.lla())
-    }
+            fn sub(self, rhs: $a) -> Self::Output {
+                GeoVector::from_ecef(&(self.ecef - rhs.ecef), rhs.lla())
+            }
+        }
+    };
 }
+geo_pos_subs_with_geopos!(GeoPosition, GeoPosition);
+geo_pos_subs_with_geopos!(&GeoPosition, GeoPosition);
+geo_pos_subs_with_geopos!(GeoPosition, &GeoPosition);
+geo_pos_subs_with_geopos!(&GeoPosition, &GeoPosition);
+
 /// Subtracting a GeoVector from a GeoPosition results in a new GeoPosition
 macro_rules! geo_vec_subs_with_geopos {
     ($a:ty, $b:ty) => {
