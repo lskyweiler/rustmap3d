@@ -1,10 +1,10 @@
-'''
+"""
 rustmap3d also has a higher-level API that allows you to construct geo objects that are easier to work with
-'''
+"""
 
-import rustmap3d
 import math
 
+import rustmap3d
 
 # Construct a GeoPosition from either global or local coordinates
 reference = rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0))
@@ -20,19 +20,19 @@ reference.ned_to(pos)
 reference.enu_to(pos)
 
 # Operations
-vec = pos - reference  #> GeoVector
-new_pos = reference + vec  #> GeoPosition
+vec = pos - reference  # > GeoVector
+new_pos = reference + vec  # > GeoPosition
 
 vel = rustmap3d.GeoVelocity.from_dir_speed(rustmap3d.DVec3(1.0, 0.0, 0.0), 100.0)
 dt = 1.0
-pos = reference + vel * dt  #> GeoPosition
+pos = reference + vel * dt  # > GeoPosition
 
 rotation = rustmap3d.GeoOrientation.from_ecef_euler(rustmap3d.DVec3(0.0, math.pi, 0.0))
 vec = rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(100.0, 0, 0.0), reference)
 vec = rotation * vec
 
 # Orientations
-rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0., 0., 1), math.pi)
-rot.forward()  #> ecef x axis
-rot.left() #> ecef y axis
-rot.up() #> ecef y axis
+rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0.0, 0.0, 1), math.pi)
+rot.forward()  # > ecef x axis
+rot.left()  # > ecef y axis
+rot.up()  # > ecef y axis

@@ -1,5 +1,6 @@
-import rustmap3d
 import numpy as np
+
+import rustmap3d
 
 
 class TestGeoVector:

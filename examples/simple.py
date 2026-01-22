@@ -4,7 +4,6 @@ Example of the low-level, simple API modelled after pymap3d and matlab
 
 import rustmap3d
 
-
 # wgs84 geodetic conversions
 x, y, z = rustmap3d.lla2ecef(0.0, 0.0, 100.0)
 lat, lon, alt = rustmap3d.ecef2lla(x, y, z)
