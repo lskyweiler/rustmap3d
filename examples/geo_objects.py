@@ -1,3 +1,7 @@
+'''
+rustmap3d also has a higher-level API that allows you to construct geo objects that are easier to work with
+'''
+
 import rustmap3d
 import math
 
