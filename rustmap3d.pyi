@@ -186,6 +186,16 @@ class GeoOrientation:
         - `to` (`&GeoPosition`) - Ending geo position
         """
     @staticmethod
+    def from_axis_angle(ecef_axis: DVec3, angle: builtins.float) -> GeoOrientation:
+        r"""
+        Create an orientation from an ECEF Axis and angle in radians
+
+        # Arguments
+
+        - `ecef_axis` (`&DVec3`) - ECEF unit vector
+        - `angle` (`f64`) - Angle in radians
+        """
+    @staticmethod
     def from_ecef_euler(ecef_321_rad: DVec3) -> GeoOrientation:
         r"""
         Construct an orientation from ecef euler angles
@@ -387,6 +397,21 @@ class GeoPosition:
         # Arguments
 
         - `ned_m` (`&DVec3`) - North, East, Down vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+        """
+    @staticmethod
+    def from_aer(
+        aer_ddm: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from a local az, el, range vector in deg,deg,meters relative to a reference location
+
+        # Arguments
+
+        - `aer_ddm` (`&DVec3`) - Azimuth, Elevation, Range in deg,deg,meters
         - `reference` (`EitherGeoPosOrLLATup`) - Reference location
         """
     def alt(self) -> builtins.float: ...

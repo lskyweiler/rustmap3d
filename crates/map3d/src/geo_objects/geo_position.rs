@@ -85,6 +85,19 @@ impl GeoPosition {
             ecef: ned2ecef(ned_m.into_dvec3(), reference).into(),
         }
     }
+    /// Construct a GeoPosition from a local az, el, range vector in deg,deg,meters relative to a reference location
+    ///
+    /// # Arguments
+    ///
+    /// - `aer_ddm` (`&DVec3`) - Azimuth, Elevation, Range in deg,deg,meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+    ///
+    #[staticmethod]
+    pub fn from_aer(aer_ddm: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+        Self {
+            ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
+        }
+    }
 
     #[getter]
     fn get_ecef(&self) -> pyglam::DVec3 {

@@ -71,6 +71,18 @@ impl GeoOrientation {
         let ecef_rot = pyglam::DQuat::from_rotation_arc(from_.ecef().into(), to.ecef().into());
         Self::from_ecef(&ecef_rot)
     }
+    /// Create an orientation from an ECEF Axis and angle in radians
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ecef_axis` (`&DVec3`) - ECEF unit vector
+    /// - `angle` (`f64`) - Angle in radians
+    /// 
+    #[staticmethod]
+    pub fn from_axis_angle(ecef_axis: &pyglam::DVec3, angle: f64) -> Self {
+        let body2ecef = pyglam::DQuat::from_axis_angle(ecef_axis, angle);
+        Self::from_ecef(&body2ecef)
+    }
     /// Construct an orientation from ecef euler angles
     /// enu is the euler radians around east, north, up in a 3-2-1 sequence
     ///
