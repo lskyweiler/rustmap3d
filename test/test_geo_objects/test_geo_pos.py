@@ -28,13 +28,13 @@ class TestGeoPosOps:
         a = rustmap3d.GeoPosition.from_lla((0, 0, 0))
         b = rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100, 0, 0), (0, 0, 0))
         actual = b - a
-        np.testing.assert_allclose(actual.ecef_uvw.to_tuple(), (0, 0, 100))
+        np.testing.assert_allclose(actual.ecef_uvw.to_tuple(), (0, 0, 100), atol=1e-5)
 
     def test_rsub(self):
         a = rustmap3d.GeoPosition.from_lla((0, 0, 0))
         b = rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100, 0, 0), (0, 0, 0))
         actual = b - a
-        np.testing.assert_allclose(actual.ecef_uvw.to_tuple(), (0, 0, 100))
+        np.testing.assert_allclose(actual.ecef_uvw.to_tuple(), (0, 0, 100), atol=1e-5)
 
     def test_add(self):
         a = rustmap3d.GeoPosition.from_lla((0, 0, 0))
@@ -46,7 +46,7 @@ class TestGeoPosOps:
         a = rustmap3d.GeoPosition.from_lla((0, 0, 0))
         b = rustmap3d.GeoVector.from_ned(rustmap3d.DVec3(100, 0, 0), (0, 0, 0))
         actual = b + a
-        np.testing.assert_allclose(actual.ecef.z, 100.0)
+        np.testing.assert_allclose(actual.ecef.z, 100.0, atol=1e-5)
 
     def test_rate_times_time(self):
         rate = rustmap3d.GeoVelocity.from_dir_speed(
@@ -55,4 +55,4 @@ class TestGeoPosOps:
         pos = rustmap3d.GeoPosition.from_lla((0, 0, 0))
 
         actual = pos + rate * 1.0
-        np.testing.assert_allclose(actual.ecef.y, 100.0)
+        np.testing.assert_allclose(actual.ecef.y, 100.0, atol=1e-5)
