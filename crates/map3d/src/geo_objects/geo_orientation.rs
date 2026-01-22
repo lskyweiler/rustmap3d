@@ -83,8 +83,7 @@ impl GeoOrientation {
         let body2ecef = pyglam::DQuat::from_axis_angle(ecef_axis, angle);
         Self::from_ecef(&body2ecef)
     }
-    /// Construct an orientation from ecef euler angles
-    /// enu is the euler radians around east, north, up in a 3-2-1 sequence
+    /// Construct an orientation from ecef euler angles in a 3-2-1 sequence
     ///
     /// # Arguments
     ///
@@ -100,7 +99,7 @@ impl GeoOrientation {
         Self::from_ecef(&ecef_rot.into())
     }
     /// Construct a GeoOrientation from a local ned coordinate frame
-    /// enu is the euler radians around north, east, down in a 3-2-1 sequence
+    /// ned is the euler radians around north, east, down in a 3-2-1 sequence
     ///
     /// # Arguments
     ///
@@ -177,7 +176,7 @@ impl GeoOrientation {
     ///
     /// # Arguments
     ///
-    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Refernce location
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     /// # Returns
     ///
@@ -214,6 +213,7 @@ impl GeoOrientation {
     }
 
     /// Multiply this orientation with either a GeoPosition or a GeoOrientation
+    /// 
     /// Multiplying two orientations together results in a combined rotation
     /// Multiplying a position and an orientation results in the transformation of that vector in the orientation's frame
     ///

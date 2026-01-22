@@ -12,7 +12,8 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 use std::ops::{Add, Div, Mul, Sub};
 
-/// Represents a 3D velocity vector in Geo space
+/// Represents a 3D velocity vector in geo space
+/// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone)]
 #[gen_stub_pyclass]
 #[pyclass]
@@ -126,7 +127,7 @@ impl GeoVelocity {
     ///
     /// - `reference` (`GeoPosition`) - enu reference frame
     ///
-    pub fn enu(&self, reference: GeoPosition) -> pyglam::DVec3 {
+    pub fn enu(&self, reference: &GeoPosition) -> pyglam::DVec3 {
         ecef_uvw2enu(&self.get_ecef_uvw(), &reference.lla()).into()
     }
     /// Get this velocity in a local ned frame in m/s
@@ -135,7 +136,7 @@ impl GeoVelocity {
     ///
     /// - `reference` (`GeoPosition`) - ned reference frame
     ///
-    pub fn ned(&self, reference: GeoPosition) -> pyglam::DVec3 {
+    pub fn ned(&self, reference: &GeoPosition) -> pyglam::DVec3 {
         ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
 

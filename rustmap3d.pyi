@@ -198,8 +198,7 @@ class GeoOrientation:
     @staticmethod
     def from_ecef_euler(ecef_321_rad: DVec3) -> GeoOrientation:
         r"""
-        Construct an orientation from ecef euler angles
-        enu is the euler radians around east, north, up in a 3-2-1 sequence
+        Construct an orientation from ecef euler angles in a 3-2-1 sequence
 
         # Arguments
 
@@ -214,7 +213,7 @@ class GeoOrientation:
     ) -> GeoOrientation:
         r"""
         Construct a GeoOrientation from a local ned coordinate frame
-        enu is the euler radians around north, east, down in a 3-2-1 sequence
+        ned is the euler radians around north, east, down in a 3-2-1 sequence
 
         # Arguments
 
@@ -291,7 +290,7 @@ class GeoOrientation:
 
         # Arguments
 
-        - `reference` (`tuple[float, float, float] | GeoPosition`) - Refernce location
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
 
         # Returns
 
@@ -326,6 +325,7 @@ class GeoOrientation:
     ) -> typing.Union[GeoVector, GeoOrientation]:
         r"""
         Multiply this orientation with either a GeoPosition or a GeoOrientation
+
         Multiplying two orientations together results in a combined rotation
         Multiplying a position and an orientation results in the transformation of that vector in the orientation's frame
 
@@ -523,7 +523,8 @@ class GeoVector:
 @typing.final
 class GeoVelocity:
     r"""
-    Represents a 3D velocity vector in Geo space
+    Represents a 3D velocity vector in geo space
+    Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
     """
     @property
     def ecef_uvw(self) -> DVec3:
