@@ -1,4 +1,4 @@
-use crate::{traits::*, transforms::*};
+use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*};
 use pyglam;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
@@ -22,33 +22,33 @@ impl GeoVector {
 #[pymethods]
 impl GeoVector {
     #[staticmethod]
-    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
+    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef_uvw: ecef_uvw.clone(),
-            lla_ref: lla_ref.into_lat_lon_triple(),
+            lla_ref: reference.into_lat_lon_triple(),
         }
     }
     #[staticmethod]
-    pub fn from_enu(enu: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
-        let lla_ref = lla_ref.into_lat_lon_triple();
+    pub fn from_enu(enu: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+        let lla_ref = reference.into_lat_lon_triple();
         Self {
             ecef_uvw: enu2ecef_uvw(enu, &lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
     #[staticmethod]
-    pub fn from_ned(ned: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
-        let lla_ref = lla_ref.into_lat_lon_triple();
+    pub fn from_ned(ned: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+        let lla_ref = reference.into_lat_lon_triple();
         Self {
-            ecef_uvw: ned2ecef_uvw(ned, &lla_ref).into(),
+            ecef_uvw: ned2ecef_uvw(ned, lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
     #[staticmethod]
-    pub fn from_aer(aer: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
-        let lla_ref = lla_ref.into_lat_lon_triple();
+    pub fn from_aer(aer: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+        let lla_ref = reference.into_lat_lon_triple();
         Self {
-            ecef_uvw: aer2ecef_uvw(aer, &lla_ref).into(),
+            ecef_uvw: aer2ecef_uvw(aer, lla_ref).into(),
             lla_ref: lla_ref,
         }
     }
@@ -130,24 +130,28 @@ mod test_geo_vector {
 
         #[test]
         fn test_from_ecef() {
-            let actual = GeoVector::from_ecef(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_ecef(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.).into_either());
             assert!(actual
                 .ecef_uvw()
                 .abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
         }
         #[test]
         fn test_from_enu() {
-            let actual = GeoVector::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.).into_either());
             assert!(actual.enu().abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
         }
         #[test]
         fn test_from_ned() {
-            let actual = GeoVector::from_ned(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_ned(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.).into_either());
             assert!(actual.ned().abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-10));
         }
         #[test]
         fn test_from_aer() {
-            let actual = GeoVector::from_aer(&pyglam::dvec3(100., 0., 100.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_aer(&pyglam::dvec3(100., 0., 100.), (0., 0., 0.).into_either());
             assert!(actual.aer().abs_diff_eq(glam::dvec3(100., 0., 100.), 1e-10));
         }
     }
@@ -157,7 +161,8 @@ mod test_geo_vector {
 
         #[test]
         fn test_cardinals() {
-            let actual = GeoVector::from_ecef(&pyglam::dvec3(100., 50., -100.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_ecef(&pyglam::dvec3(100., 50., -100.), (0., 0., 0.).into_either());
 
             almost::equal_with(actual.north(), -100., 1e-10);
             almost::equal_with(actual.south(), 100., 1e-10);
@@ -170,13 +175,15 @@ mod test_geo_vector {
         #[test]
         fn test_angles() {
             // vector due east
-            let actual = GeoVector::from_ecef(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_ecef(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.).into_either());
             almost::equal_with(actual.azimuth(), 90., 1e-10);
         }
 
         #[test]
         fn test_length() {
-            let actual = GeoVector::from_ecef(&pyglam::dvec3(-100., 0., 0.), (0., 0., 0.));
+            let actual =
+                GeoVector::from_ecef(&pyglam::dvec3(-100., 0., 0.), (0., 0., 0.).into_either());
             almost::equal_with(actual.length(), 100., 1e-10);
         }
     }

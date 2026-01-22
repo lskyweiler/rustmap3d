@@ -9,6 +9,8 @@ use std::{
     ops::{Add, Sub},
 };
 
+pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
+
 /// Represents a position on the earth
 #[derive(Clone)]
 #[gen_stub_pyclass]
@@ -33,26 +35,54 @@ impl GeoPosition {
 #[gen_stub_pymethods]
 #[pymethods]
 impl GeoPosition {
+    /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
+    ///
+    /// # Arguments
+    ///
+    /// - `ecef` (`DVec3`) - ECEF location in meters
+    ///
     #[staticmethod]
-    pub fn from_ecef(ecef: &pyglam::DVec3) -> Self {
-        Self { ecef: ecef.clone() }
-    }
-    #[staticmethod]
-    pub fn from_lla(lla: (f64, f64, f64)) -> Self {
+    pub fn from_ecef(ecef_m: &pyglam::DVec3) -> Self {
         Self {
-            ecef: lla2ecef(lla).into(),
+            ecef: ecef_m.clone(),
         }
     }
+    /// Construct a GeoPosition from a WGS84 Latitude, Longitude, Altitude in deg,deg,meters
+    ///
+    /// # Arguments
+    ///
+    /// - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
+    ///
     #[staticmethod]
-    pub fn from_enu(enu: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
+    pub fn from_lla(lla_ddm: (f64, f64, f64)) -> Self {
         Self {
-            ecef: enu2ecef(enu.into_dvec3(), lla_ref).into(),
+            ecef: lla2ecef(lla_ddm).into(),
         }
     }
+    /// Construct a GeoPosition from a local east, north, up vector in meters relative to a reference location
+    ///
+    /// # Arguments
+    ///
+    /// - `enu_m` (`&DVec3`) - East, North, Up vector in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+    ///
     #[staticmethod]
-    pub fn from_ned(ned: &pyglam::DVec3, lla_ref: (f64, f64, f64)) -> Self {
+    pub fn from_enu(enu_m: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
-            ecef: ned2ecef(ned.into_dvec3(), lla_ref).into(),
+            ecef: enu2ecef(enu_m.into_dvec3(), reference).into(),
+        }
+    }
+    /// Construct a GeoPosition from a local north, east, down vector in meters relative to a reference location
+    ///
+    /// # Arguments
+    ///
+    /// - `ned_m` (`&DVec3`) - North, East, Down vector in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+    ///
+    #[staticmethod]
+    pub fn from_ned(ned_m: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+        Self {
+            ecef: ned2ecef(ned_m.into_dvec3(), reference).into(),
         }
     }
 
@@ -135,6 +165,10 @@ impl GeoPosition {
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
 
+    fn __repr__(&self) -> String {
+        format!("<GeoPosition @ {}>", self.lat_lon_dms())
+    }
+
     fn __add__(&self, rhs: Either<GeoVector, pyglam::DVec3>) -> PyResult<GeoPosition> {
         match rhs {
             Either::Left(vec) => Ok(self + vec),
@@ -160,7 +194,7 @@ impl GeoPosition {
 
 impl Debug for GeoPosition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.lat_lon_dms())
+        write!(f, "{}", self.__repr__())
     }
 }
 
@@ -209,7 +243,7 @@ macro_rules! geo_pos_subs_with_geopos {
             type Output = GeoVector;
 
             fn sub(self, rhs: $a) -> Self::Output {
-                GeoVector::from_ecef(&(self.ecef - rhs.ecef), rhs.lla())
+                GeoVector::from_ecef(&(self.ecef - rhs.ecef), rhs.into_either())
             }
         }
     };
@@ -300,14 +334,16 @@ mod test_geo_pos {
         }
         #[test]
         fn test_from_enu() {
-            let actual = GeoPosition::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.));
+            let actual =
+                GeoPosition::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.).into_either());
             assert!(actual
                 .ecef()
                 .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.), 1e-10));
         }
         #[test]
         fn test_from_ned() {
-            let actual = GeoPosition::from_ned(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.));
+            let actual =
+                GeoPosition::from_ned(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.).into_either());
             assert!(actual
                 .ecef()
                 .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.), 1e-10));
@@ -412,7 +448,8 @@ mod test_geo_pos {
             #[test]
             fn test_pos_vec_sub() {
                 let lhs = GeoPosition::from_lla((0., 0., 0.));
-                let rhs = GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.));
+                let rhs =
+                    GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
                 let actual = lhs - rhs;
 
                 assert!(actual
@@ -441,7 +478,8 @@ mod test_geo_pos {
             #[test]
             fn test_pos_vec_add() {
                 let lhs = GeoPosition::from_lla((0., 0., 0.));
-                let rhs = GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.));
+                let rhs =
+                    GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
                 let actual = lhs.clone() + rhs.clone();
                 let actual_ref = &lhs + rhs;
 

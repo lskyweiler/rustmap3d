@@ -1,4 +1,11 @@
-use crate::{geo_objects::geo_position::GeoPosition, transforms::*};
+use crate::{
+    geo_objects::{
+        geo_position::{EitherGeoPosOrLLATup, GeoPosition},
+        geo_vector::GeoVector,
+    },
+    traits::IntoEitherLLATupOrGeoPos,
+    transforms::*,
+};
 use either::Either;
 use pyglam;
 use pyo3::prelude::*;
@@ -65,14 +72,19 @@ impl GeoOrientation {
         Self::from_ecef(&ecef_rot)
     }
     /// Construct an orientation from ecef euler angles
+    /// enu is the euler radians around east, north, up in a 3-2-1 sequence
     ///
     /// # Arguments
     ///
     /// - `ecef_321` (`&pyglam`) - Euler angles in radians in ecef frame
     #[staticmethod]
-    pub fn from_ecef_euler(ecef_321: &pyglam::DVec3) -> Self {
-        let ecef_rot =
-            glam::DQuat::from_euler(glam::EulerRot::XYZ, ecef_321.x, ecef_321.y, ecef_321.z);
+    pub fn from_ecef_euler(ecef_321_rad: &pyglam::DVec3) -> Self {
+        let ecef_rot = glam::DQuat::from_euler(
+            glam::EulerRot::XYZ,
+            ecef_321_rad.x,
+            ecef_321_rad.y,
+            ecef_321_rad.z,
+        );
         Self::from_ecef(&ecef_rot.into())
     }
     /// Construct a GeoOrientation from a local ned coordinate frame
@@ -81,14 +93,20 @@ impl GeoOrientation {
     /// # Arguments
     ///
     /// - `ned_321` (`&pyglam`) - NED euler angles in radians
-    /// - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_ned_euler(ned_321: &pyglam::DVec3, reference_pos: &GeoPosition) -> Self {
-        let ref_lla = reference_pos.lla();
-        let ned_quat =
-            glam::DQuat::from_euler(glam::EulerRot::XYZ, ned_321.x, ned_321.y, ned_321.z);
-        let body2ecef = ned2ecef_quat(ref_lla) * ned_quat;
+    pub fn from_ned_euler(
+        ned_321_rad: &pyglam::DVec3,
+        reference: EitherGeoPosOrLLATup,
+    ) -> Self {
+        let ned_quat = glam::DQuat::from_euler(
+            glam::EulerRot::XYZ,
+            ned_321_rad.x,
+            ned_321_rad.y,
+            ned_321_rad.z,
+        );
+        let body2ecef = ned2ecef_quat(reference) * ned_quat;
         Self::from_ecef(&body2ecef.into())
     }
     /// Construct a GeoOrientation from a local enu coordinate frame
@@ -97,14 +115,35 @@ impl GeoOrientation {
     /// # Arguments
     ///
     /// - `enu_321` (`&pyglam`) - ENU euler angles in radians
-    /// - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location euler angles are in relation to
     ///
     #[staticmethod]
-    pub fn from_enu_euler(enu_321: &pyglam::DVec3, reference_pos: &GeoPosition) -> Self {
-        let ref_lla = reference_pos.lla();
+    pub fn from_enu_euler(enu_321: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let enu_quat =
             glam::DQuat::from_euler(glam::EulerRot::XYZ, enu_321.x, enu_321.y, enu_321.z);
-        let body2ecef = enu2ecef_quat(ref_lla) * enu_quat;
+        let body2ecef = enu2ecef_quat(reference) * enu_quat;
+        Self::from_ecef(&body2ecef.into())
+    }
+    /// Construct a orientation aligned with the ENU frame at the given reference location
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
+    ///
+    #[staticmethod]
+    pub fn from_enu_frame(reference: EitherGeoPosOrLLATup) -> Self {
+        let body2ecef = ecef2enu_quat(reference);
+        Self::from_ecef(&body2ecef.into())
+    }
+    /// Construct a orientation aligned with the NED frame at the given reference location
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
+    ///
+    #[staticmethod]
+    pub fn from_ned_frame(reference: EitherGeoPosOrLLATup) -> Self {
+        let body2ecef = ecef2ned_quat(reference);
         Self::from_ecef(&body2ecef.into())
     }
 
@@ -112,30 +151,28 @@ impl GeoOrientation {
     ///
     /// # Arguments
     ///
-    /// - `reference` (`&GeoPosition`) - Reference location to compute heading in relation to
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
     ///
     /// # Returns
     ///
     /// - `f64` - Heading angle in degrees
     ///
-    pub fn heading(&self, reference: &GeoPosition) -> f64 {
-        let lla = reference.lla();
-        return ecef_quat2heading(&self.ecef_rot.into(), &glam::dvec2(lla.0, lla.1));
+    pub fn heading(&self, reference: EitherGeoPosOrLLATup) -> f64 {
+        return ecef_quat2heading(&self.ecef_rot.into(), reference);
     }
 
     /// Express this bodies orientation in a local enu frame
     ///
     /// # Arguments
     ///
-    /// - `reference` (`&GeoPosition`) - Refernce location
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Refernce location
     ///
     /// # Returns
     ///
     /// - `pyglam::DQuat` - body 2 local enu rotation
     ///
-    pub fn as_enu(&self, reference: &GeoPosition) -> pyglam::DQuat {
-        let lla = reference.lla();
-        let ecef2enu = ecef2enu_quat(lla);
+    pub fn as_enu(&self, reference: EitherGeoPosOrLLATup) -> pyglam::DQuat {
+        let ecef2enu = ecef2enu_quat(reference);
         return ecef2enu * self.ecef_rot;
     }
 
@@ -164,12 +201,24 @@ impl GeoOrientation {
         (-self.dcm().col(0)).into()
     }
 
+    /// Multiply this orientation with either a GeoPosition or a GeoOrientation
+    /// Multiplying two orientations together results in a combined rotation
+    /// Multiplying a position and an orientation results in the transformation of that vector in the orientation's frame
+    ///
+    /// # Arguments
+    ///
+    /// - `rhs` (`Either<GeoVector, GeoOrientation>`) - Either a GeoVector to transform or a GeoOrientation
+    ///
+    /// # Returns
+    ///
+    /// - `PyResult<Either<GeoVector, GeoOrientation>>` - Either a transformed GeoVector or a combined GeoOrientation
+    ///
     fn __mul__(
         &self,
-        rhs: Either<GeoPosition, GeoOrientation>,
-    ) -> PyResult<Either<GeoPosition, GeoOrientation>> {
+        rhs: Either<GeoVector, GeoOrientation>,
+    ) -> PyResult<Either<GeoVector, GeoOrientation>> {
         match rhs {
-            Either::Left(pos) => Ok(Either::Left(self * pos)),
+            Either::Left(vec) => Ok(Either::Left(self * vec)),
             Either::Right(rot) => Ok(Either::Right(self * rot)),
         }
     }
@@ -178,18 +227,18 @@ impl GeoOrientation {
 macro_rules! ops_with_geo_pos {
     ($a:ty, $b:ty) => {
         impl Mul<$a> for $b {
-            type Output = GeoPosition;
+            type Output = GeoVector;
             fn mul(self, rhs: $a) -> Self::Output {
-                let new_vel = self.ecef() * rhs.ecef();
-                GeoPosition::from_ecef(&new_vel)
+                let new_vel = self.ecef() * rhs.ecef_uvw();
+                GeoVector::from_ecef(&new_vel, (0., 0., 0.).into_either())
             }
         }
     };
 }
-ops_with_geo_pos!(GeoPosition, GeoOrientation);
-ops_with_geo_pos!(&GeoPosition, GeoOrientation);
-ops_with_geo_pos!(GeoPosition, &GeoOrientation);
-ops_with_geo_pos!(&GeoPosition, &GeoOrientation);
+ops_with_geo_pos!(GeoVector, GeoOrientation);
+ops_with_geo_pos!(&GeoVector, GeoOrientation);
+ops_with_geo_pos!(GeoVector, &GeoOrientation);
+ops_with_geo_pos!(&GeoVector, &GeoOrientation);
 
 macro_rules! ops_with_self {
     ($a:ty, $b:ty) => {

@@ -46,3 +46,12 @@ class TestGeoPosOps:
         b = rustmap3d.GeoVector.from_ned(rustmap3d.DVec3(100, 0, 0), (0, 0, 0))
         actual = b + a
         np.testing.assert_allclose(actual.ecef.z, 100.0)
+
+    def test_rate_times_time(self):
+        rate = rustmap3d.GeoVelocity.from_dir_speed(
+            rustmap3d.DVec3(0.0, 1.0, 0.0), 100.0
+        )
+        pos = rustmap3d.GeoPosition.from_lla((0, 0, 0))
+
+        actual = pos + rate * 1.0
+        np.testing.assert_allclose(actual.ecef.y, 100.0)

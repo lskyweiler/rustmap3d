@@ -1,5 +1,9 @@
 use crate::{
-    geo_objects::{geo_position::GeoPosition, geo_vector::GeoVector},
+    geo_objects::{
+        geo_position::{EitherGeoPosOrLLATup, GeoPosition},
+        geo_vector::GeoVector,
+    },
+    traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
 };
 use either::Either;
@@ -61,12 +65,11 @@ impl GeoVelocity {
     /// # Arguments
     ///
     /// - `enu_mps` (`&DVec3`) - Local enu velocity in meters/second
-    /// - `reference` (`&GeoPosition`) - ENU reference location
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_enu(enu_mps: &pyglam::DVec3, reference: &GeoPosition) -> GeoVelocity {
-        let lla = reference.lla();
-        let ecef = enu2ecef_uvw(enu_mps, &lla);
+    pub fn from_enu(enu_mps: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
+        let ecef = enu2ecef_uvw(enu_mps, reference);
         GeoVelocity {
             dir_ecef: ecef.normalize().into(),
             speed: ecef.length(),
@@ -77,12 +80,11 @@ impl GeoVelocity {
     /// # Arguments
     ///
     /// - `ned_mps` (`&DVec3`) - Local ned velocity in meters/second
-    /// - `reference` (`&GeoPosition`) - NED reference location
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_ned(ned_mps: &pyglam::DVec3, reference: &GeoPosition) -> GeoVelocity {
-        let lla = reference.lla();
-        let ecef = ned2ecef_uvw(ned_mps, &lla);
+    pub fn from_ned(ned_mps: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
+        let ecef = ned2ecef_uvw(ned_mps, reference);
         GeoVelocity {
             dir_ecef: ecef.normalize().into(),
             speed: ecef.length(),
@@ -204,7 +206,7 @@ macro_rules! geo_vel_mul_time {
             type Output = GeoVector;
             fn mul(self, time_s: $a) -> Self::Output {
                 let delta_pos = self.get_ecef_uvw() * time_s;
-                GeoVector::from_ecef(&delta_pos, (0., 0., 0.))
+                GeoVector::from_ecef(&delta_pos, (0., 0., 0.).into_either())
             }
         }
     };

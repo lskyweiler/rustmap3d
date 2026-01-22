@@ -186,16 +186,22 @@ class GeoOrientation:
         - `to` (`&GeoPosition`) - Ending geo position
         """
     @staticmethod
-    def from_ecef_euler(ecef_321: DVec3) -> GeoOrientation:
+    def from_ecef_euler(ecef_321_rad: DVec3) -> GeoOrientation:
         r"""
         Construct an orientation from ecef euler angles
+        enu is the euler radians around east, north, up in a 3-2-1 sequence
 
         # Arguments
 
         - `ecef_321` (`&pyglam`) - Euler angles in radians in ecef frame
         """
     @staticmethod
-    def from_ned_euler(ned_321: DVec3, reference_pos: GeoPosition) -> GeoOrientation:
+    def from_ned_euler(
+        ned_321_rad: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoOrientation:
         r"""
         Construct a GeoOrientation from a local ned coordinate frame
         enu is the euler radians around north, east, down in a 3-2-1 sequence
@@ -203,10 +209,15 @@ class GeoOrientation:
         # Arguments
 
         - `ned_321` (`&pyglam`) - NED euler angles in radians
-        - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
         """
     @staticmethod
-    def from_enu_euler(enu_321: DVec3, reference_pos: GeoPosition) -> GeoOrientation:
+    def from_enu_euler(
+        enu_321: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoOrientation:
         r"""
         Construct a GeoOrientation from a local enu coordinate frame
         enu is the euler radians around east, north, up in a 3-2-1 sequence
@@ -214,27 +225,63 @@ class GeoOrientation:
         # Arguments
 
         - `enu_321` (`&pyglam`) - ENU euler angles in radians
-        - `reference_pos` (`&GeoPosition`) - Reference location euler angles are in relation to
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location euler angles are in relation to
         """
-    def heading(self, reference: GeoPosition) -> builtins.float:
+    @staticmethod
+    def from_enu_frame(
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoOrientation:
+        r"""
+        Construct a orientation aligned with the ENU frame at the given reference location
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
+        """
+    @staticmethod
+    def from_ned_frame(
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoOrientation:
+        r"""
+        Construct a orientation aligned with the NED frame at the given reference location
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
+        """
+    def heading(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.float:
         r"""
         Gets the heading direction (clockwise off north) in degrees for the body's forward vector
 
         # Arguments
 
-        - `reference` (`&GeoPosition`) - Reference location to compute heading in relation to
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
 
         # Returns
 
         - `f64` - Heading angle in degrees
         """
-    def as_enu(self, reference: GeoPosition) -> DQuat:
+    def as_enu(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> DQuat:
         r"""
         Express this bodies orientation in a local enu frame
 
         # Arguments
 
-        - `reference` (`&GeoPosition`) - Refernce location
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Refernce location
 
         # Returns
 
@@ -264,6 +311,22 @@ class GeoOrientation:
         r"""
         Get the back (negative x axis) for this orientation in the ecef frame
         """
+    def __mul__(
+        self, rhs: typing.Union[GeoVector, GeoOrientation]
+    ) -> typing.Union[GeoVector, GeoOrientation]:
+        r"""
+        Multiply this orientation with either a GeoPosition or a GeoOrientation
+        Multiplying two orientations together results in a combined rotation
+        Multiplying a position and an orientation results in the transformation of that vector in the orientation's frame
+
+        # Arguments
+
+        - `rhs` (`Either<GeoVector, GeoOrientation>`) - Either a GeoVector to transform or a GeoOrientation
+
+        # Returns
+
+        - `PyResult<Either<GeoVector, GeoOrientation>>` - Either a transformed GeoVector or a combined GeoOrientation
+        """
 
 @typing.final
 class GeoPosition:
@@ -277,19 +340,55 @@ class GeoPosition:
     @property
     def lla(self) -> tuple[builtins.float, builtins.float, builtins.float]: ...
     @staticmethod
-    def from_ecef(ecef: DVec3) -> GeoPosition: ...
+    def from_ecef(ecef_m: DVec3) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
+
+        # Arguments
+
+        - `ecef` (`DVec3`) - ECEF location in meters
+        """
     @staticmethod
     def from_lla(
-        lla: tuple[builtins.float, builtins.float, builtins.float],
-    ) -> GeoPosition: ...
+        lla_ddm: tuple[builtins.float, builtins.float, builtins.float],
+    ) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from a WGS84 Latitude, Longitude, Altitude in deg,deg,meters
+
+        # Arguments
+
+        - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
+        """
     @staticmethod
     def from_enu(
-        enu: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
-    ) -> GeoPosition: ...
+        enu_m: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from a local east, north, up vector in meters relative to a reference location
+
+        # Arguments
+
+        - `enu_m` (`&DVec3`) - East, North, Up vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+        """
     @staticmethod
     def from_ned(
-        ned: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
-    ) -> GeoPosition: ...
+        ned_m: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from a local north, east, down vector in meters relative to a reference location
+
+        # Arguments
+
+        - `ned_m` (`&DVec3`) - North, East, Down vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference location
+        """
     def alt(self) -> builtins.float: ...
     def set_alt(self, alt_m: builtins.float) -> None:
         r"""
@@ -313,6 +412,7 @@ class GeoPosition:
         r"""
         Rotate the geo position by an ecef rotation, but preserve the starting altitude
         """
+    def __repr__(self) -> builtins.str: ...
     def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
     def __radd__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
     def __sub__(
@@ -334,19 +434,31 @@ class GeoVector:
     def ecef_uvw(self, value: DVec3) -> None: ...
     @staticmethod
     def from_ecef(
-        ecef_uvw: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+        ecef_uvw: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
     ) -> GeoVector: ...
     @staticmethod
     def from_enu(
-        enu: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+        enu: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
     ) -> GeoVector: ...
     @staticmethod
     def from_ned(
-        ned: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+        ned: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
     ) -> GeoVector: ...
     @staticmethod
     def from_aer(
-        aer: DVec3, lla_ref: tuple[builtins.float, builtins.float, builtins.float]
+        aer: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
     ) -> GeoVector: ...
     def length(self) -> builtins.float:
         r"""
@@ -431,24 +543,34 @@ class GeoVelocity:
         - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
         """
     @staticmethod
-    def from_enu(enu_mps: DVec3, reference: GeoPosition) -> GeoVelocity:
+    def from_enu(
+        enu_mps: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoVelocity:
         r"""
         Construct a velocity from a local enu velocity vector in meters/second
 
         # Arguments
 
         - `enu_mps` (`&DVec3`) - Local enu velocity in meters/second
-        - `reference` (`&GeoPosition`) - ENU reference location
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
         """
     @staticmethod
-    def from_ned(ned_mps: DVec3, reference: GeoPosition) -> GeoVelocity:
+    def from_ned(
+        ned_mps: DVec3,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> GeoVelocity:
         r"""
         Construct a velocity from a local ned velocity vector in meters/second
 
         # Arguments
 
         - `ned_mps` (`&DVec3`) - Local ned velocity in meters/second
-        - `reference` (`&GeoPosition`) - NED reference location
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
         """
     def enu(self, reference: GeoPosition) -> DVec3:
         r"""
@@ -496,12 +618,30 @@ class GeoVelocity:
     def __rmul__(
         self, rhs: typing.Union[GeoVelocity, builtins.float]
     ) -> typing.Union[GeoVelocity, GeoVector]: ...
-    def __add__(self, rhs: GeoVelocity) -> GeoVelocity: ...
-    def __sub__(self, rhs: GeoVelocity) -> GeoVelocity: ...
-    def __div__(self, rhs: GeoVelocity) -> GeoVelocity: ...
-    def __radd__(self, lhs: GeoVelocity) -> GeoVelocity: ...
-    def __rsub__(self, lhs: GeoVelocity) -> GeoVelocity: ...
-    def __rdiv__(self, lhs: GeoVelocity) -> GeoVelocity: ...
+    def __add__(self, rhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise addition of velocity
+        """
+    def __sub__(self, rhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise subtraction of velocity
+        """
+    def __div__(self, rhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise division of velocity
+        """
+    def __radd__(self, lhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise addition of velocity
+        """
+    def __rsub__(self, lhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise subtraction of velocity
+        """
+    def __rdiv__(self, lhs: GeoVelocity) -> GeoVelocity:
+        r"""
+        Component-wise division of velocity
+        """
 
 @typing.final
 class Quat:

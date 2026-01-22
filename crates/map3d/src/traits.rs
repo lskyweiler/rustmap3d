@@ -1,3 +1,5 @@
+use crate::geo_objects::geo_position::GeoPosition;
+use either::Either;
 use glam;
 use pyglam;
 
@@ -91,5 +93,74 @@ impl IntoLatLonTriple for (f64, f64, f64) {
 impl IntoLatLonTriple for &(f64, f64, f64) {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
         (self.0, self.1, self.2)
+    }
+}
+pub trait IntoEitherLLATupOrGeoPos {
+    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition>;
+    fn into_lla_tuple(self) -> (f64, f64, f64);
+    fn into_geo_pos(self) -> GeoPosition;
+}
+
+impl IntoEitherLLATupOrGeoPos for (f64, f64, f64) {
+    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+        Either::Left(self)
+    }
+    fn into_lla_tuple(self) -> (f64, f64, f64) {
+        self
+    }
+    fn into_geo_pos(self) -> GeoPosition {
+        GeoPosition::from_lla(self)
+    }
+}
+impl IntoEitherLLATupOrGeoPos for &(f64, f64, f64) {
+    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+        Either::Left(*self)
+    }
+    fn into_lla_tuple(self) -> (f64, f64, f64) {
+        *self
+    }
+    fn into_geo_pos(self) -> GeoPosition {
+        GeoPosition::from_lla(*self)
+    }
+}
+impl IntoEitherLLATupOrGeoPos for GeoPosition {
+    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+        Either::Right(self.clone())
+    }
+    fn into_lla_tuple(self) -> (f64, f64, f64) {
+        self.lla()
+    }
+    fn into_geo_pos(self) -> GeoPosition {
+        self
+    }
+}
+impl IntoEitherLLATupOrGeoPos for &GeoPosition {
+    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+        Either::Right(self.clone())
+    }
+    fn into_lla_tuple(self) -> (f64, f64, f64) {
+        self.lla()
+    }
+    fn into_geo_pos(self) -> GeoPosition {
+        self.clone()
+    }
+}
+impl IntoLatLonTriple for Either<(f64, f64, f64), GeoPosition> {
+    fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
+        match self {
+            Either::Left(tup) => *tup,
+            Either::Right(pos) => pos.lla(),
+        }
+    }
+}
+impl IntoLatLonTuple for Either<(f64, f64, f64), GeoPosition> {
+    fn into_lat_lon_tuple(&self) -> (f64, f64) {
+        match self {
+            Either::Left(tup) => (tup.0, tup.1),
+            Either::Right(pos) => {
+                let lla = pos.lla();
+                (lla.0, lla.1)
+            }
+        }
     }
 }
