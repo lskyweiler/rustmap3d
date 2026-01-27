@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 import rustmap3d
 
 
@@ -10,7 +11,7 @@ class TestMach:
 
     def test_mach_neg(self):
         with pytest.raises(ValueError):
-            rustmap3d.mach(343, -10.)
+            rustmap3d.mach(343, -10.0)
 
     def test_mach_larger(self):
         with pytest.raises(ValueError):
