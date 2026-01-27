@@ -870,3 +870,28 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
 pub fn ll2dms(lat_d: f64, lon_d: f64) -> (String, String) {
     return map3d::ll2dms((lat_d, lon_d));
 }
+
+/// Compute the mach number at a given altitude
+/// https://en.wikipedia.org/wiki/Mach_number
+///
+/// # Arguments
+///
+/// - `speed_mps` (`f64`) - Speed in meters/second
+/// - `alt_m` (`f64`) - altitude in meters
+///
+/// # Returns
+///
+/// - `f64` - Mach number as a float
+/// 
+/// # Raises
+/// 
+/// - `ValueError` if the given altitude is out of the domain of the lookup table
+///
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn mach(speed_mps: f64, alt_m: f64) -> PyResult<f64> {
+    match map3d::mach::mach(speed_mps, alt_m) {
+        Ok(m) => Ok(m),
+        Err(e) => Err(PyValueError::new_err(format!("{:?}", e))),
+    }
+}

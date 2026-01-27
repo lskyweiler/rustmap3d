@@ -172,6 +172,8 @@ class GeoOrientation:
         r"""
         Construct an orientation from a body2ecef quaternion
 
+        This does not check that the input quaternion is normalized
+
         # Arguments
 
         - `body2ecef` (`&pyglam::DQuat`) - Quaternion rotating a body coordinate frame into the ecef frame
@@ -249,7 +251,7 @@ class GeoOrientation:
         ],
     ) -> GeoOrientation:
         r"""
-        Construct a orientation aligned with the ENU frame at the given reference location
+        Construct an orientation aligned with the ENU frame at the given reference location
 
         # Arguments
 
@@ -262,7 +264,7 @@ class GeoOrientation:
         ],
     ) -> GeoOrientation:
         r"""
-        Construct a orientation aligned with the NED frame at the given reference location
+        Construct an orientation aligned with the NED frame at the given reference location
 
         # Arguments
 
@@ -1574,6 +1576,25 @@ def lla2ned(
     # Returns
 
     * `ned` - Vector represented in NED coordinates [meters].
+    """
+
+def mach(speed_mps: builtins.float, alt_m: builtins.float) -> builtins.float:
+    r"""
+    Compute the mach number at a given altitude
+    https://en.wikipedia.org/wiki/Mach_number
+
+    # Arguments
+
+    - `speed_mps` (`f64`) - Speed in meters/second
+    - `alt_m` (`f64`) - altitude in meters
+
+    # Returns
+
+    - `f64` - Mach number as a float
+
+    # Raises
+
+    - `ValueError` if the given altitude is out of the domain of the lookup table
     """
 
 def ned2aer(
