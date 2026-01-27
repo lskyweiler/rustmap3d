@@ -2,6 +2,7 @@
 # ruff: noqa: E501, F401
 
 import builtins
+import enum
 import typing
 
 @typing.final
@@ -196,45 +197,50 @@ class GeoOrientation:
         - `angle` (`f64`) - Angle in radians
         """
     @staticmethod
-    def from_ecef_euler(ecef_321_rad: DVec3) -> GeoOrientation:
+    def from_ecef_euler(ecef_rad: DVec3, order: EulerRot = ...) -> GeoOrientation:
         r"""
-        Construct an orientation from ecef euler angles in a 3-2-1 sequence
+        Construct an orientation from ecef euler angles from a given euler rotation sequence
 
         # Arguments
 
-        - `ecef_321` (`&pyglam`) - Euler angles in radians in ecef frame
+        - `ecef_rad` (`&DVec3`) - Euler angles in radians in ecef frame
+        - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
         """
     @staticmethod
     def from_ned_euler(
-        ned_321_rad: DVec3,
+        ned_rad: DVec3,
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
+        order: EulerRot = ...,
     ) -> GeoOrientation:
         r"""
         Construct a GeoOrientation from a local ned coordinate frame
-        ned is the euler radians around north, east, down in a 3-2-1 sequence
+        ned is the euler radians around north, east, down in an euler sequence
 
         # Arguments
 
-        - `ned_321` (`&pyglam`) - NED euler angles in radians
+        - `ned_rad` (`&DVec3`) - NED euler angles in radians
         - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+        - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
         """
     @staticmethod
     def from_enu_euler(
-        enu_321: DVec3,
+        enu_rad: DVec3,
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
+        order: EulerRot = ...,
     ) -> GeoOrientation:
         r"""
         Construct a GeoOrientation from a local enu coordinate frame
-        enu is the euler radians around east, north, up in a 3-2-1 sequence
+        enu is the euler radians around east, north, up in an euler sequence
 
         # Arguments
 
-        - `enu_321` (`&pyglam`) - ENU euler angles in radians
+        - `enu_rad` (`&DVec3`) - ENU euler angles in radians
         - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location euler angles are in relation to
+        - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
         """
     @staticmethod
     def from_enu_frame(
@@ -261,6 +267,20 @@ class GeoOrientation:
         # Arguments
 
         - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
+        """
+    def to_ecef_euler(
+        self, order: EulerRot
+    ) -> tuple[builtins.float, builtins.float, builtins.float]:
+        r"""
+        Convert this quaternion into euler angles around the ecef axis using the given rotation sequence
+
+        # Arguments
+
+        - `order` (`EulerRot`) - Rotation sequence for the resulting euler angles
+
+        # Returns
+
+        - `euler_angles` (f64, f64, f64) - x, y, z euler angle rotations in radians
         """
     def heading(
         self,
@@ -296,29 +316,17 @@ class GeoOrientation:
 
         - `pyglam::DQuat` - body 2 local enu rotation
         """
-    def forward(self) -> DVec3:
+    def x_axis(self) -> DVec3:
         r"""
-        Get the forward (positive x axis) for this orientation in the ecef frame
+        Get the positive x axis for this orientation in the ecef frame
         """
-    def left(self) -> DVec3:
+    def y_axis(self) -> DVec3:
         r"""
-        Get the left (positive y axis) for this orientation in the ecef frame
+        Get the positive y axis for this orientation in the ecef frame
         """
-    def up(self) -> DVec3:
+    def z_axis(self) -> DVec3:
         r"""
-        Get the up (positive z axis) for this orientation in the ecef frame
-        """
-    def right(self) -> DVec3:
-        r"""
-        Get the right (negative y axis) for this orientation in the ecef frame
-        """
-    def down(self) -> DVec3:
-        r"""
-        Get the down (negative z axis) for this orientation in the ecef frame
-        """
-    def back(self) -> DVec3:
-        r"""
-        Get the back (negative x axis) for this orientation in the ecef frame
+        Get the positive z axis for this orientation in the ecef frame
         """
     def __mul__(
         self, rhs: typing.Union[GeoVector, GeoOrientation]
@@ -823,6 +831,119 @@ class Vec3:
     def length(self) -> builtins.float: ...
     def dot(self, rhs: typing.Any) -> builtins.float: ...
     def cross(self, rhs: typing.Any) -> Vec3: ...
+
+@typing.final
+class EulerRot(enum.Enum):
+    r"""
+    Euler rotation sequences.
+
+    The three elemental rotations may be extrinsic (rotations about the axes xyz of the original
+    coordinate system, which is assumed to remain motionless), or intrinsic (rotations about the
+    axes of the rotating coordinate system XYZ, solidary with the moving body, which changes its
+    orientation after each elemental rotation).
+
+    Follows glam convention: https://docs.rs/glam/latest/glam/enum.EulerRot.html
+
+    euler_rot = i * j * k  #> EulerRot.XYZ given (i, j, k) euler angles
+    euler_Rot = k * j * i  #> EulerRot::XYZEx given (i, j, k) euler angles
+    """
+
+    ZYX = ...
+    r"""
+    Intrinsic three-axis rotation ZYX
+    """
+    ZXY = ...
+    r"""
+    Intrinsic three-axis rotation ZXY
+    """
+    YXZ = ...
+    r"""
+    Intrinsic three-axis rotation YXZ
+    """
+    YZX = ...
+    r"""
+    Intrinsic three-axis rotation YZX
+    """
+    XYZ = ...
+    r"""
+    Intrinsic three-axis rotation XYZ
+    """
+    XZY = ...
+    r"""
+    Intrinsic three-axis rotation XZY
+    """
+    ZYZ = ...
+    r"""
+    Intrinsic two-axis rotation ZYZ
+    """
+    ZXZ = ...
+    r"""
+    Intrinsic two-axis rotation ZXZ
+    """
+    YXY = ...
+    r"""
+    Intrinsic two-axis rotation YXY
+    """
+    YZY = ...
+    r"""
+    Intrinsic two-axis rotation YZY
+    """
+    XYX = ...
+    r"""
+    Intrinsic two-axis rotation XYX
+    """
+    XZX = ...
+    r"""
+    Intrinsic two-axis rotation XZX
+    """
+    ZYXEx = ...
+    r"""
+    Extrinsic three-axis rotation ZYX
+    """
+    ZXYEx = ...
+    r"""
+    Extrinsic three-axis rotation ZXY
+    """
+    YXZEx = ...
+    r"""
+    Extrinsic three-axis rotation YXZ
+    """
+    YZXEx = ...
+    r"""
+    Extrinsic three-axis rotation YZX
+    """
+    XYZEx = ...
+    r"""
+    Extrinsic three-axis rotation XYZ
+    """
+    XZYEx = ...
+    r"""
+    Extrinsic three-axis rotation XZY
+    """
+    ZYZEx = ...
+    r"""
+    Extrinsic two-axis rotation ZYZ
+    """
+    ZXZEx = ...
+    r"""
+    Extrinsic two-axis rotation ZXZ
+    """
+    YXYEx = ...
+    r"""
+    Extrinsic two-axis rotation YXY
+    """
+    YZYEx = ...
+    r"""
+    Extrinsic two-axis rotation YZY
+    """
+    XYXEx = ...
+    r"""
+    Extrinsic two-axis rotation XYX
+    """
+    XZXEx = ...
+    r"""
+    Extrinsic two-axis rotation XZX
+    """
 
 def aer2ecef(
     a_d: builtins.float,
