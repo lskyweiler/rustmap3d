@@ -10,9 +10,8 @@ import rustmap3d
 reference = rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0))
 rustmap3d.GeoPosition.from_enu(rustmap3d.DVec3(100.0, 0.0, 0.0), reference)
 rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100.0, 0.0, 0.0), reference)
-pos = rustmap3d.GeoPosition.from_aer(
-    rustmap3d.DVec3(90.0, 0.0, 100.0), (0.0, 0.0, 0.0)
-)  # all reference locations accept LLA tuples or GeoPositions for reference locations
+# all reference locations accept LLA tuples or GeoPositions for reference locations
+pos = rustmap3d.GeoPosition.from_aer(rustmap3d.DVec3(90.0, 0.0, 100.0), (0.0, 0.0, 0.0))
 
 # Conversions
 reference.aer_to(pos)
@@ -33,6 +32,6 @@ vec = rotation * vec
 
 # Orientations
 rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0.0, 0.0, 1), math.pi)
-rot.forward()  # > ecef x axis
-rot.left()  # > ecef y axis
-rot.up()  # > ecef y axis
+rot.x_axis()
+rot.y_axis()
+rot.z_axis()
