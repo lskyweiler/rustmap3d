@@ -1,6 +1,8 @@
-import rustmap3d
 import math
+
 import numpy as np
+
+import rustmap3d
 
 
 class TestGeoOrientation:

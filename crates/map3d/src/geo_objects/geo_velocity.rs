@@ -3,12 +3,13 @@ use crate::{
         geo_position::{EitherGeoPosOrLLATup, GeoPosition},
         geo_vector::GeoVector,
     },
+    mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
 };
 use either::Either;
 use pyglam;
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyValueError, prelude::*};
 use pyo3_stub_gen::derive::*;
 use std::ops::{Add, Div, Mul, Sub};
 
@@ -28,6 +29,23 @@ impl GeoVelocity {
     }
     pub fn direction_mut(&mut self) -> &mut glam::DVec3 {
         return &mut self.dir_ecef;
+    }
+
+    /// Computes the mach number for this velocity at a given geo position
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`&GeoPosition`) - Position to compute mach
+    ///
+    /// # Returns
+    ///
+    /// - `f64` - Mach number as an index
+    ///
+    pub fn mach(
+        &self,
+        reference: &GeoPosition,
+    ) -> Result<f64, mach::OutOfBoundsAtmosphericLookupError> {
+        mach::mach(self.speed, reference.alt())
     }
 }
 
@@ -150,9 +168,12 @@ impl GeoVelocity {
     ///
     /// - `f64` - Mach number as an index
     ///
-    pub fn mach(&self, reference: &GeoPosition) -> f64 {
-        let _alt = reference.alt();
-        return self.speed / 343.; // todo: lookup up speed of sound at alt
+    #[pyo3(name = "mach")]  // we already have mach function, but need a python specific one
+    fn py_mach(&self, reference: &GeoPosition) -> PyResult<f64> {
+        match self.mach(reference) {
+            Ok(m) => Ok(m),
+            Err(e) => Err(PyValueError::new_err(format!("{:?}", e))),
+        }
     }
 
     /// Multiply this GeoVelocity with either another GeoVelocity or time

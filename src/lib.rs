@@ -51,6 +51,8 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
         m.add_function(wrap_pyfunction!(angle_between, m)?)?;
 
+        m.add_function(wrap_pyfunction!(mach, m)?)?;
+
         m.add_function(wrap_pyfunction!(vincenty_direct, m)?)?;
         m.add_function(wrap_pyfunction!(vincenty_inverse, m)?)?;
     }
