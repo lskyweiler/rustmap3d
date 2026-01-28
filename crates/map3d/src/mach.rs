@@ -1,3 +1,4 @@
+use crate::utils;
 use std::fmt;
 
 mod atm_consts {
@@ -32,6 +33,31 @@ impl fmt::Display for OutOfBoundsAtmosphericLookupError {
     }
 }
 
+/// Get the lower and upper indices from the alt table and compute the mixing value t for lerping
+/// 
+/// # Arguments
+/// 
+/// - `alt_m` (`f64`) - altitude to lookup indices from
+/// 
+/// # Returns
+/// 
+/// - `Result<(usize, usize, f64), OutOfBoundsAtmosphericLookupError>` - lower bound, upper bound, and t
+/// 
+fn get_table_idx(alt_m: f64) -> Result<(usize, usize, f64), OutOfBoundsAtmosphericLookupError> {
+    if alt_m < atm_consts::ALTITUDES[0] || alt_m > *atm_consts::ALTITUDES.last().unwrap() {
+        return Err(OutOfBoundsAtmosphericLookupError { alt_m: alt_m });
+    }
+    let min_alt = atm_consts::ALTITUDES.first().unwrap();
+    let max_alt = atm_consts::ALTITUDES.last().unwrap();
+    let normed = (alt_m - min_alt) / (max_alt - min_alt);
+    let i0 = ((normed * atm_consts::ALTITUDES.len() as f64).floor() as usize)
+        .min(atm_consts::ALTITUDES.len() - 2);
+    let i1 = i0 + 1;
+    let t = (alt_m - atm_consts::ALTITUDES[i0])
+        / (atm_consts::ALTITUDES[i1] - atm_consts::ALTITUDES[i0]);
+    Ok((i0, i1, t))
+}
+
 /// Compute the mach number at a given altitude
 /// https://en.wikipedia.org/wiki/Mach_number
 ///
@@ -63,13 +89,15 @@ pub fn mach(speed_mps: f64, alt_m: f64) -> Result<f64, OutOfBoundsAtmosphericLoo
 /// - `f64` - speed of sound in meters
 ///
 pub fn speed_of_sound(alt_m: f64) -> Result<f64, OutOfBoundsAtmosphericLookupError> {
-    if alt_m < atm_consts::ALTITUDES[0] || alt_m > *atm_consts::ALTITUDES.last().unwrap() {
-        return Err(OutOfBoundsAtmosphericLookupError { alt_m: alt_m });
-    }
+    let (i0, i1, t) = get_table_idx(alt_m)?;
 
-    let partition = atm_consts::ALTITUDES.partition_point(|a: &f64| a <= &alt_m);
-    let idx = (partition - 1).max(0).min(atm_consts::ALTITUDES.len() - 1);
-    Ok(atm_consts::SPEED_OF_SOUNDS[idx])
+    // speed of sound and alt lookup are the same size, so dont need to check anything
+    let sos = utils::lerp(
+        atm_consts::SPEED_OF_SOUNDS[i0],
+        atm_consts::SPEED_OF_SOUNDS[i1],
+        t,
+    );
+    Ok(sos)
 }
 
 #[cfg(test)]
@@ -77,13 +105,31 @@ mod test_mach {
     use super::*;
 
     #[test]
+    fn test_table_idx() {
+        let (i0, i1, t) = get_table_idx(2.1e3).unwrap();
+        assert_eq!(i0, 1);
+        assert_eq!(i1, 2);
+        almost::equal_with(t, 0.05, 1e-6);
+    }
+
+    #[test]
     fn test_mach_in_bounds() {
         let actual = mach(343., 0.).unwrap();
-        almost::equal_with(actual, 1.0079341757272995, 1e-6);
+        almost::equal_with(actual, 1.0079341757272995, 1e-10);
+    }
+    #[test]
+    fn test_mach_lerped() {
+        let actual = mach(343., 2.1e3).unwrap();
+        almost::equal_with(actual, 1.0328058897035575, 1e-10);
+    }
+    #[test]
+    fn test_mach_last_in_table() {
+        let actual = mach(343., 8.600e04).unwrap();
+        almost::equal_with(actual, 1.2513681138270702, 1e-10);
     }
     #[test]
     fn test_mach_gt_bounds() {
-        let actual = mach(343., 100e4);
+        let actual = mach(343., 8.601e04);
         assert!(actual.is_err());
     }
     #[test]
