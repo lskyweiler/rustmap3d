@@ -128,6 +128,7 @@ impl GeoPosition {
         let lla_a = self.lla();
         let lla_b = to_point.lla();
 
+        // inputs to this should never be invalid since we're sending geo positions
         let (_, bearing, _) =
             vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
 
@@ -147,6 +148,7 @@ impl GeoPosition {
         let lla_a = self.lla();
         let lla_b = from_point.lla();
 
+        // inputs to this should never be invalid since we're sending geo positions
         let (_, _, bearing) =
             vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
         return utils::wrap_to_0_360(bearing);
@@ -161,8 +163,36 @@ impl GeoPosition {
         ecef2ned(&self.ecef, &from_point.lla()).into()
     }
 
-    pub fn distance(&self, other: &GeoPosition) -> f64 {
-        (self.ecef - other.ecef).length()
+    /// Compute the euclidean distance between two geo positions in meters
+    /// 
+    /// # Arguments
+    /// 
+    /// - `to_point` (`&GeoPosition`) - Distance to this point
+    /// 
+    /// # Returns
+    /// 
+    /// - `f64` - Euclidean distance in meters
+    /// 
+    pub fn dist_euclidean(&self, to_point: &GeoPosition) -> f64 {
+        (self.ecef - to_point.ecef).length()
+    }
+
+    /// Compute the ellipsoidal distance between two geo positions in meters
+    /// 
+    /// # Arguments
+    /// 
+    /// - `to_point` (`&GeoPosition`) - Distance to this point
+    /// 
+    /// # Returns
+    /// 
+    /// - `f64` - Elliptical distance in meters
+    /// 
+    fn dist_ellipsoidal(&self, to_point: &GeoPosition) -> f64 {
+        let lla_a = self.lla();
+        let lla_b = to_point.lla();
+        // inputs to this should never be invalid since we're sending geo positions
+        let (range, _, _) = vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
+        range
     }
 
     pub fn lat_lon_dms(&self) -> String {
@@ -431,7 +461,7 @@ mod test_geo_pos {
         let a = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
         let b = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
 
-        almost::equal_with(a.distance(&b), 100., 1e-10);
+        almost::equal_with(a.dist_euclidean(&b), 100., 1e-10);
     }
 
     mod test_ops {

@@ -441,7 +441,30 @@ class GeoPosition:
     def enu_from(self, from_point: GeoPosition) -> DVec3: ...
     def aer_from(self, from_point: GeoPosition) -> DVec3: ...
     def ned_from(self, from_point: GeoPosition) -> DVec3: ...
-    def distance(self, other: GeoPosition) -> builtins.float: ...
+    def dist_euclidean(self, to_point: GeoPosition) -> builtins.float:
+        r"""
+        Compute the euclidean distance between two geo positions in meters
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - Distance to this point
+
+        # Returns
+
+        - `f64` - Euclidean distance in meters
+        """
+    def dist_ellipsoidal(self, to_point: GeoPosition) -> builtins.float:
+        r"""
+        Compute the ellipsoidal distance between two geo positions in meters
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - Distance to this point
+
+        # Returns
+
+        - `f64` - Elliptical distance in meters
+        """
     def lat_lon_dms(self) -> builtins.str: ...
     def rotate_lat_lon(self, ecef_rot: DQuat) -> None:
         r"""
