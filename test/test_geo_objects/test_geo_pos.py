@@ -15,7 +15,7 @@ class TestGeoPosition:
     def test_distance(self):
         a = rustmap3d.GeoPosition.from_lla((0, 0, 0))
         b = rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100, 0, 0), (0, 0, 0))
-        actual = a.distance(b)
+        actual = a.dist_euclidean(b)
         np.testing.assert_allclose(actual, 100.0, atol=1e-5)
 
     def test_lla_dms(self):
