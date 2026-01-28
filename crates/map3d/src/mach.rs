@@ -62,7 +62,7 @@ fn get_table_idx(alt_m: f64) -> Result<(usize, usize, f64), OutOfBoundsAtmospher
 /// https://en.wikipedia.org/wiki/Mach_number
 ///
 /// This is an approximation that uses a speed of sound lookup table for altitudes [0m, 86000m]
-/// Out of bounds altitudes will be clamped to the ends of the table
+/// Out of bounds altitudes will return an Err type
 ///
 /// # Arguments
 ///
@@ -79,7 +79,8 @@ pub fn mach(speed_mps: f64, alt_m: f64) -> Result<f64, OutOfBoundsAtmosphericLoo
 }
 
 /// Get the speed of sound at a given altitude
-///
+/// Out of bounds altitudes will return an Err type
+/// 
 /// # Arguments
 ///
 /// - `alt_m` (`f64`) - MSL altitude in meters
