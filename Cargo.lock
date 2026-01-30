@@ -823,7 +823,7 @@ dependencies = [
 [[package]]
 name = "pyglam"
 version = "0.1.1"
-source = "git+https://github.com/lskyweiler/pyglam?branch=hotfix%2Fpyo3bump#fdbe750ba2b8db05405423fafafdeab42b35e0b8"
+source = "git+https://github.com/lskyweiler/pyglam#51c5236e4c9e9b56ba2b9e8f44a082ff63bf6e5d"
 dependencies = [
  "either",
  "env_logger",
