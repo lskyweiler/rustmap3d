@@ -1,5 +1,4 @@
-use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*};
-use pyglam;
+use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 
@@ -8,12 +7,12 @@ use pyo3_stub_gen::derive::*;
 #[gen_stub_pyclass]
 #[pyclass]
 pub struct GeoVector {
-    ecef_uvw: pyglam::DVec3,
+    ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
 }
 
 impl GeoVector {
-    pub fn ecef_uvw(&self) -> &pyglam::DVec3 {
+    pub fn ecef_uvw(&self) -> &DVec3 {
         &self.ecef_uvw
     }
 }
@@ -22,14 +21,14 @@ impl GeoVector {
 #[pymethods]
 impl GeoVector {
     #[staticmethod]
-    pub fn from_ecef(ecef_uvw: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_ecef(ecef_uvw: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef_uvw: ecef_uvw.clone(),
             lla_ref: reference.into_lat_lon_triple(),
         }
     }
     #[staticmethod]
-    pub fn from_enu(enu: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_enu(enu: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {
             ecef_uvw: enu2ecef_uvw(enu, &lla_ref).into(),
@@ -37,7 +36,7 @@ impl GeoVector {
         }
     }
     #[staticmethod]
-    pub fn from_ned(ned: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_ned(ned: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {
             ecef_uvw: ned2ecef_uvw(ned, lla_ref).into(),
@@ -45,7 +44,7 @@ impl GeoVector {
         }
     }
     #[staticmethod]
-    pub fn from_aer(aer: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_aer(aer: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {
             ecef_uvw: aer2ecef_uvw(aer, lla_ref).into(),
@@ -66,28 +65,28 @@ impl GeoVector {
     ///
     /// # Returns
     ///
-    /// - `pyglam::DVec3` - Absolute ecef position in meters
+    /// - `DVec3` - Absolute ecef position in meters
     ///
-    pub fn ecef(&self) -> pyglam::DVec3 {
+    pub fn ecef(&self) -> DVec3 {
         self.ecef_uvw + lla2ecef(self.lla_ref)
     }
     /// Gets this vector in the ECEF frame in meters
     #[getter]
-    fn get_ecef_uvw(&self) -> pyglam::DVec3 {
+    fn get_ecef_uvw(&self) -> DVec3 {
         self.ecef_uvw
     }
     #[setter]
-    fn set_ecef_uvw(&mut self, ecef_uvw: pyglam::DVec3) {
+    fn set_ecef_uvw(&mut self, ecef_uvw: DVec3) {
         self.ecef_uvw = ecef_uvw;
     }
 
-    pub fn enu(&self) -> pyglam::DVec3 {
+    pub fn enu(&self) -> DVec3 {
         ecef_uvw2enu(&self.ecef_uvw, &self.lla_ref).into()
     }
-    pub fn ned(&self) -> pyglam::DVec3 {
+    pub fn ned(&self) -> DVec3 {
         ecef_uvw2ned(&self.ecef_uvw, &self.lla_ref).into()
     }
-    pub fn aer(&self) -> pyglam::DVec3 {
+    pub fn aer(&self) -> DVec3 {
         ecef_uvw2aer(&self.ecef_uvw, &self.lla_ref).into()
     }
 

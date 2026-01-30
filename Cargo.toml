@@ -24,7 +24,7 @@ version = "0.2.3"
 map3d = { path = "crates/map3d" }
 pymap3d = { path = "crates/pymap3d" }
 
-pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
+pyglam = { git = "https://github.com/lskyweiler/pyglam", branch="hotfix/pyo3bump" }
 
 either = "1.15"
 glam = "~0.30"
@@ -33,7 +33,7 @@ pyo3 = { version = "~0.27", features = [
     "extension-module",
     "generate-import-lib",
 ] }
-pyo3-stub-gen = { version = "~0.17", default-features = false, features = [
+pyo3-stub-gen = { version = "~0.18", default-features = false, features = [
     "either",
 ] }
 

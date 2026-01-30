@@ -6,9 +6,9 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
+    DVec3
 };
 use either::Either;
-use pyglam;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use pyo3_stub_gen::derive::*;
 use std::ops::{Add, Div, Mul, Sub};
@@ -19,7 +19,7 @@ use std::ops::{Add, Div, Mul, Sub};
 #[gen_stub_pyclass]
 #[pyclass]
 pub struct GeoVelocity {
-    dir_ecef: pyglam::DVec3,
+    dir_ecef: DVec3,
     speed: f64,
 }
 
@@ -60,7 +60,7 @@ impl GeoVelocity {
     /// - `speed_mps` (`f64`) - speed in meters per second
     ///
     #[staticmethod]
-    pub fn from_dir_speed(ecef_dir: &pyglam::DVec3, speed_mps: f64) -> Self {
+    pub fn from_dir_speed(ecef_dir: &DVec3, speed_mps: f64) -> Self {
         return GeoVelocity {
             dir_ecef: ecef_dir.normalize().into(),
             speed: speed_mps.into(),
@@ -73,7 +73,7 @@ impl GeoVelocity {
     /// - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
     ///
     #[staticmethod]
-    pub fn from_ecef_uvw(ecef_uvw_mps: &pyglam::DVec3) -> Self {
+    pub fn from_ecef_uvw(ecef_uvw_mps: &DVec3) -> Self {
         return GeoVelocity {
             dir_ecef: ecef_uvw_mps.normalize().into(),
             speed: ecef_uvw_mps.length(),
@@ -87,7 +87,7 @@ impl GeoVelocity {
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_enu(enu_mps: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
+    pub fn from_enu(enu_mps: &DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
         let ecef = enu2ecef_uvw(enu_mps, reference);
         GeoVelocity {
             dir_ecef: ecef.normalize().into(),
@@ -102,7 +102,7 @@ impl GeoVelocity {
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_ned(ned_mps: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
+    pub fn from_ned(ned_mps: &DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
         let ecef = ned2ecef_uvw(ned_mps, reference);
         GeoVelocity {
             dir_ecef: ecef.normalize().into(),
@@ -117,7 +117,7 @@ impl GeoVelocity {
     /// - `DVec3` - ECEF velocity in m/s
     ///
     #[getter]
-    pub fn get_ecef_uvw(&self) -> pyglam::DVec3 {
+    pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
     }
     /// Gets the speed of this velocity in m/s
@@ -131,11 +131,11 @@ impl GeoVelocity {
     }
     /// Get this velocity's direction in the ecef frame
     #[getter]
-    pub fn get_direction(&self) -> pyglam::DVec3 {
+    pub fn get_direction(&self) -> DVec3 {
         return self.dir_ecef;
     }
     #[setter]
-    pub fn set_direction(&mut self, dir_ecef: &pyglam::DVec3) {
+    pub fn set_direction(&mut self, dir_ecef: &DVec3) {
         self.dir_ecef = dir_ecef.to_owned();
     }
 
@@ -145,7 +145,7 @@ impl GeoVelocity {
     ///
     /// - `reference` (`GeoPosition`) - enu reference frame
     ///
-    pub fn enu(&self, reference: &GeoPosition) -> pyglam::DVec3 {
+    pub fn enu(&self, reference: &GeoPosition) -> DVec3 {
         ecef_uvw2enu(&self.get_ecef_uvw(), &reference.lla()).into()
     }
     /// Get this velocity in a local ned frame in m/s
@@ -154,7 +154,7 @@ impl GeoVelocity {
     ///
     /// - `reference` (`GeoPosition`) - ned reference frame
     ///
-    pub fn ned(&self, reference: &GeoPosition) -> pyglam::DVec3 {
+    pub fn ned(&self, reference: &GeoPosition) -> DVec3 {
         ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
 
