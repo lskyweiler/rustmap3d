@@ -20,36 +20,38 @@ members = ["crates/*"]
 edition = "2021"
 version = "0.2.3"
 
+[workspace.dependencies]
+map3d = { path = "crates/map3d" }
+pymap3d = { path = "crates/pymap3d" }
+
+pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
+
+either = "1.15"
+glam = "~0.30"
+pyo3 = { version = "~0.27", features = [
+    "either",
+    "extension-module",
+    "generate-import-lib",
+] }
+pyo3-stub-gen = { version = "~0.17", default-features = false, features = [
+    "either",
+] }
+
 [lib]
 # rlib is required to generate py-stubs
 crate-type = ["cdylib", "rlib"]
 doctest = false
 
 [dependencies]
-map3d = { path = "crates/map3d" }
-pymap3d = { path = "crates/pymap3d" }
-
-pyo3 = { version = "~0.27", features = [
-    "extension-module",
-    "generate-import-lib",
-] }
-glam = { version = "~0.30", features = ["approx"] }
+map3d.workspace = true
+pymap3d.workspace = true
+pyo3.workspace = true
+glam.workspace = true
 
 # bin/stub_gen deps
 env_logger = "~0.11"
-pyo3-stub-gen = { version = "~0.17", default-features = false }
-pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
-
-[workspace.dependencies]
-map3d = { path = "crates/map3d" }
-pyglam = { "git" = "https://github.com/lskyweiler/pyglam" }
-
-either = "1.15"
-glam = "~0.30"
-pyo3 = { version = "~0.27", features = ["either"] }
-pyo3-stub-gen = { version = "~0.17", default-features = false, features = [
-    "either",
-] }
+pyo3-stub-gen.workspace = true
+pyglam.workspace = true
 
 [profile.release]
 # https://github.com/johnthagen/min-sized-rust
