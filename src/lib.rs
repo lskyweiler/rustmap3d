@@ -62,11 +62,8 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<map3d::geo_objects::geo_orientation::GeoOrientation>()?;
         m.add_class::<map3d::geo_objects::geo_velocity::GeoVelocity>()?;
         m.add_class::<map3d::geo_objects::geo_orientation::EulerRot>()?;
-    }
-    {
-        // re-export vecs so that we can use them here
-        m.add_class::<pyglam::DVec3>()?;
-        m.add_class::<pyglam::DQuat>()?;
+        m.add_class::<map3d::DVec3>()?;
+        m.add_class::<map3d::DQuat>()?;
     }
 
     Ok(())

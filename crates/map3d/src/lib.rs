@@ -18,3 +18,5 @@ pub mod utils;
 
 pub mod geo_objects;
 pub mod mach;
+
+pub use pyglam::{DQuat, DVec3, dquat, dvec3};

@@ -1,7 +1,8 @@
-use crate::{geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*};
+use crate::{
+    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3,
+};
 use either::Either;
 use glam::{self, swizzles::*};
-use pyglam;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 use std::{
@@ -17,14 +18,14 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 #[pyclass]
 pub struct GeoPosition {
     /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
-    ecef: pyglam::DVec3,
+    ecef: DVec3,
 }
 
 impl GeoPosition {
-    pub fn ecef(&self) -> &pyglam::DVec3 {
+    pub fn ecef(&self) -> &DVec3 {
         &self.ecef
     }
-    pub fn ecef_mut(&mut self) -> &mut pyglam::DVec3 {
+    pub fn ecef_mut(&mut self) -> &mut DVec3 {
         return &mut self.ecef;
     }
     pub fn lla(&self) -> (f64, f64, f64) {
@@ -42,7 +43,7 @@ impl GeoPosition {
     /// - `ecef` (`DVec3`) - ECEF location in meters
     ///
     #[staticmethod]
-    pub fn from_ecef(ecef_m: &pyglam::DVec3) -> Self {
+    pub fn from_ecef(ecef_m: &DVec3) -> Self {
         Self {
             ecef: ecef_m.clone(),
         }
@@ -67,7 +68,7 @@ impl GeoPosition {
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_enu(enu_m: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_enu(enu_m: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: enu2ecef(enu_m.into_dvec3(), reference).into(),
         }
@@ -80,7 +81,7 @@ impl GeoPosition {
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_ned(ned_m: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_ned(ned_m: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: ned2ecef(ned_m.into_dvec3(), reference).into(),
         }
@@ -93,18 +94,18 @@ impl GeoPosition {
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
     #[staticmethod]
-    pub fn from_aer(aer_ddm: &pyglam::DVec3, reference: EitherGeoPosOrLLATup) -> Self {
+    pub fn from_aer(aer_ddm: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
         }
     }
 
     #[getter]
-    fn get_ecef(&self) -> pyglam::DVec3 {
+    fn get_ecef(&self) -> DVec3 {
         self.ecef
     }
     #[setter]
-    fn set_ecef(&mut self, ecef: pyglam::DVec3) {
+    fn set_ecef(&mut self, ecef: DVec3) {
         self.ecef = ecef
     }
     #[getter]
@@ -134,13 +135,13 @@ impl GeoPosition {
 
         return utils::wrap_to_0_360(bearing);
     }
-    pub fn enu_to(&self, to_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn enu_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2enu(&to_point.ecef, &self.lla()).into()
     }
-    pub fn aer_to(&self, to_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn aer_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2aer(&to_point.ecef, &self.lla()).into()
     }
-    pub fn ned_to(&self, to_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn ned_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2ned(&to_point.ecef, &self.lla()).into()
     }
 
@@ -153,45 +154,46 @@ impl GeoPosition {
             vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
         return utils::wrap_to_0_360(bearing);
     }
-    pub fn enu_from(&self, from_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn enu_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2enu(&self.ecef, &from_point.lla()).into()
     }
-    pub fn aer_from(&self, from_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn aer_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2aer(&self.ecef, &from_point.lla()).into()
     }
-    pub fn ned_from(&self, from_point: &GeoPosition) -> pyglam::DVec3 {
+    pub fn ned_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2ned(&self.ecef, &from_point.lla()).into()
     }
 
     /// Compute the euclidean distance between two geo positions in meters
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `to_point` (`&GeoPosition`) - Distance to this point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `f64` - Euclidean distance in meters
-    /// 
+    ///
     pub fn dist_euclidean(&self, to_point: &GeoPosition) -> f64 {
         (self.ecef - to_point.ecef).length()
     }
 
     /// Compute the ellipsoidal distance between two geo positions in meters
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `to_point` (`&GeoPosition`) - Distance to this point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `f64` - Elliptical distance in meters
-    /// 
+    ///
     fn dist_ellipsoidal(&self, to_point: &GeoPosition) -> f64 {
         let lla_a = self.lla();
         let lla_b = to_point.lla();
         // inputs to this should never be invalid since we're sending geo positions
-        let (range, _, _) = vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
+        let (range, _, _) =
+            vincenty_inverse(lla_a.0, lla_a.1, lla_b.0, lla_b.1, 1e-10, 200).unwrap();
         range
     }
 
@@ -212,13 +214,13 @@ impl GeoPosition {
         format!("<GeoPosition @ {}>", self.lat_lon_dms())
     }
 
-    fn __add__(&self, rhs: Either<GeoVector, pyglam::DVec3>) -> PyResult<GeoPosition> {
+    fn __add__(&self, rhs: Either<GeoVector, DVec3>) -> PyResult<GeoPosition> {
         match rhs {
             Either::Left(vec) => Ok(self + vec),
             Either::Right(vec) => Ok(GeoPosition::from_ecef(&(self.ecef + vec))),
         }
     }
-    fn __radd__(&self, rhs: Either<GeoVector, pyglam::DVec3>) -> PyResult<GeoPosition> {
+    fn __radd__(&self, rhs: Either<GeoVector, DVec3>) -> PyResult<GeoPosition> {
         self.__add__(rhs)
     }
     fn __sub__(
@@ -353,7 +355,7 @@ impl From<GeoVector> for GeoPosition {
 #[cfg(test)]
 mod test_geo_pos {
     use super::*;
-    use crate::wgs84;
+    use crate::{wgs84, dvec3};
 
     mod test_constructors {
         use crate::wgs84;
@@ -362,8 +364,7 @@ mod test_geo_pos {
 
         #[test]
         fn test_from_ecef() {
-            let actual =
-                GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
+            let actual = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
             assert!(actual
                 .ecef()
                 .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.), 1e-10));
@@ -377,16 +378,14 @@ mod test_geo_pos {
         }
         #[test]
         fn test_from_enu() {
-            let actual =
-                GeoPosition::from_enu(&pyglam::dvec3(100., 0., 0.), (0., 0., 0.).into_either());
+            let actual = GeoPosition::from_enu(&dvec3(100., 0., 0.), (0., 0., 0.).into_either());
             assert!(actual
                 .ecef()
                 .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.), 1e-10));
         }
         #[test]
         fn test_from_ned() {
-            let actual =
-                GeoPosition::from_ned(&pyglam::dvec3(0., 100., 0.), (0., 0., 0.).into_either());
+            let actual = GeoPosition::from_ned(&dvec3(0., 100., 0.), (0., 0., 0.).into_either());
             assert!(actual
                 .ecef()
                 .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.), 1e-10));
@@ -399,7 +398,7 @@ mod test_geo_pos {
         #[test]
         fn test_to() {
             let a = GeoPosition::from_lla((0., 0., 0.));
-            let b = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
+            let b = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
 
             assert!(a.enu_to(&b).abs_diff_eq(glam::dvec3(100., 0., 0.), 1e-6));
             assert!(a.ned_to(&b).abs_diff_eq(glam::dvec3(0., 100., 0.), 1e-6));
@@ -409,7 +408,7 @@ mod test_geo_pos {
         #[test]
         fn test_from() {
             let a = GeoPosition::from_lla((0., 0., 0.));
-            let b = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
+            let b = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
 
             assert!(a.enu_from(&b).abs_diff_eq(glam::dvec3(-100., 0., 0.), 1e-2));
             assert!(a.ned_from(&b).abs_diff_eq(glam::dvec3(0., -100., 0.), 1e-2));
@@ -426,16 +425,14 @@ mod test_geo_pos {
 
         #[test]
         fn test_lla() {
-            let actual =
-                GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
+            let actual = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
             almost::equal_with(actual.lla().0, 0., 1e-5);
             almost::equal_with(actual.lla().1, 0., 1e-5);
             almost::equal_with(actual.lla().2, 0., 1e-5);
         }
         #[test]
         fn test_set_alt() {
-            let mut actual =
-                GeoPosition::from_ecef(&pyglam::dvec3(0., wgs84::EARTH_SEMI_MAJOR_AXIS, 0.)); // vector straight up at 90lon
+            let mut actual = GeoPosition::from_ecef(&dvec3(0., wgs84::EARTH_SEMI_MAJOR_AXIS, 0.)); // vector straight up at 90lon
             actual.set_alt(1000.);
 
             assert!(actual.ecef().abs_diff_eq(
@@ -447,7 +444,7 @@ mod test_geo_pos {
         #[test]
         fn test_rot_alt() {
             let mut actual = GeoPosition::from_lla((0., 0., 100.));
-            let rot = pyglam::DQuat::from_axis_angle(&pyglam::dvec3(0., 0., 1.), f64::consts::PI);
+            let rot = pyglam::DQuat::from_axis_angle(&dvec3(0., 0., 1.), f64::consts::PI);
             actual.rotate_lat_lon(&rot);
 
             almost::equal_with(actual.lla().0, 0., 1e-5);
@@ -458,8 +455,8 @@ mod test_geo_pos {
 
     #[test]
     fn test_distance() {
-        let a = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
-        let b = GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
+        let a = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 0., 0.));
+        let b = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 100., 0.));
 
         almost::equal_with(a.dist_euclidean(&b), 100., 1e-10);
     }
@@ -472,8 +469,7 @@ mod test_geo_pos {
             #[test]
             fn test_pos_pos_sub() {
                 let rhs = GeoPosition::from_lla((0., 0., 0.));
-                let lhs =
-                    GeoPosition::from_ecef(&pyglam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 1000., 0.));
+                let lhs = GeoPosition::from_ecef(&dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 1000., 0.));
                 let actual = lhs - rhs;
 
                 let actual_enu = actual.enu();
@@ -491,8 +487,7 @@ mod test_geo_pos {
             #[test]
             fn test_pos_vec_sub() {
                 let lhs = GeoPosition::from_lla((0., 0., 0.));
-                let rhs =
-                    GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
+                let rhs = GeoVector::from_ecef(&dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
                 let actual = lhs - rhs;
 
                 assert!(actual
@@ -521,8 +516,7 @@ mod test_geo_pos {
             #[test]
             fn test_pos_vec_add() {
                 let lhs = GeoPosition::from_lla((0., 0., 0.));
-                let rhs =
-                    GeoVector::from_ecef(&pyglam::dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
+                let rhs = GeoVector::from_ecef(&dvec3(0., 1000., 0.), (0., 0., 0.).into_either());
                 let actual = lhs.clone() + rhs.clone();
                 let actual_ref = &lhs + rhs;
 

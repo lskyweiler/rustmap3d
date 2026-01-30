@@ -5,9 +5,9 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
+    DQuat, DVec3
 };
 use either::Either;
-use pyglam;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 use std::ops::Mul;
@@ -16,7 +16,7 @@ use std::ops::Mul;
 #[gen_stub_pyclass]
 #[pyclass]
 pub struct GeoOrientation {
-    ecef_rot: pyglam::DQuat,
+    ecef_rot: DQuat,
 }
 
 /// Euler rotation sequences.
@@ -119,10 +119,10 @@ impl Into<glam::EulerRot> for EulerRot {
 }
 
 impl GeoOrientation {
-    pub fn ecef(&self) -> &pyglam::DQuat {
+    pub fn ecef(&self) -> &DQuat {
         return &self.ecef_rot;
     }
-    pub fn ecef_mut(&mut self) -> &mut pyglam::DQuat {
+    pub fn ecef_mut(&mut self) -> &mut DQuat {
         return &mut self.ecef_rot;
     }
 
@@ -131,7 +131,7 @@ impl GeoOrientation {
         glam::DMat3::from_quat(self.ecef_rot.into())
     }
 
-    pub fn set_ecef(&mut self, body2ecef: &pyglam::DQuat) {
+    pub fn set_ecef(&mut self, body2ecef: &DQuat) {
         self.ecef_rot = body2ecef.clone()
     }
 }
@@ -143,7 +143,7 @@ impl GeoOrientation {
     #[staticmethod]
     pub fn from_identity() -> Self {
         return Self {
-            ecef_rot: pyglam::DQuat::new(glam::DQuat::IDENTITY),
+            ecef_rot: DQuat::new(glam::DQuat::IDENTITY),
         };
     }
     /// Construct an orientation from a body2ecef quaternion
@@ -152,10 +152,10 @@ impl GeoOrientation {
     ///
     /// # Arguments
     ///
-    /// - `body2ecef` (`&pyglam::DQuat`) - Quaternion rotating a body coordinate frame into the ecef frame
+    /// - `body2ecef` (`&DQuat`) - Quaternion rotating a body coordinate frame into the ecef frame
     ///
     #[staticmethod]
-    pub fn from_ecef(body2ecef: &pyglam::DQuat) -> Self {
+    pub fn from_ecef(body2ecef: &DQuat) -> Self {
         Self {
             ecef_rot: body2ecef.clone(),
         }
@@ -169,7 +169,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     pub fn from_geo_rotation_arc(from_: &GeoPosition, to: &GeoPosition) -> Self {
-        let ecef_rot = pyglam::DQuat::from_rotation_arc(from_.ecef().into(), to.ecef().into());
+        let ecef_rot = DQuat::from_rotation_arc(from_.ecef().into(), to.ecef().into());
         Self::from_ecef(&ecef_rot)
     }
     /// Create an orientation from an ECEF Axis and angle in radians
@@ -180,8 +180,8 @@ impl GeoOrientation {
     /// - `angle` (`f64`) - Angle in radians
     /// 
     #[staticmethod]
-    pub fn from_axis_angle(ecef_axis: &pyglam::DVec3, angle: f64) -> Self {
-        let body2ecef = pyglam::DQuat::from_axis_angle(ecef_axis, angle);
+    pub fn from_axis_angle(ecef_axis: &DVec3, angle: f64) -> Self {
+        let body2ecef = DQuat::from_axis_angle(ecef_axis, angle);
         Self::from_ecef(&body2ecef)
     }
     /// Construct an orientation from ecef euler angles from a given euler rotation sequence
@@ -193,7 +193,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     #[pyo3(signature = (ecef_rad, order = EulerRot::XYZEx))]
-    pub fn from_ecef_euler(ecef_rad: &pyglam::DVec3, order: EulerRot) -> Self {
+    pub fn from_ecef_euler(ecef_rad: &DVec3, order: EulerRot) -> Self {
         let ecef_rot = glam::DQuat::from_euler(
             order.into(),
             ecef_rad.x,
@@ -214,7 +214,7 @@ impl GeoOrientation {
     #[staticmethod]
     #[pyo3(signature = (ned_rad, reference, order = EulerRot::XYZEx))]
     pub fn from_ned_euler(
-        ned_rad: &pyglam::DVec3,
+        ned_rad: &DVec3,
         reference: EitherGeoPosOrLLATup,
         order: EulerRot,
     ) -> Self {
@@ -238,7 +238,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     #[pyo3(signature = (enu_rad, reference, order = EulerRot::XYZEx))]
-    pub fn from_enu_euler(enu_rad: &pyglam::DVec3, reference: EitherGeoPosOrLLATup, order: EulerRot) -> Self {
+    pub fn from_enu_euler(enu_rad: &DVec3, reference: EitherGeoPosOrLLATup, order: EulerRot) -> Self {
         let enu_quat =
             glam::DQuat::from_euler(order.into(), enu_rad.x, enu_rad.y, enu_rad.z);
         let body2ecef = enu2ecef_quat(reference) * enu_quat;
@@ -303,23 +303,23 @@ impl GeoOrientation {
     ///
     /// # Returns
     ///
-    /// - `pyglam::DQuat` - body 2 local enu rotation
+    /// - `DQuat` - body 2 local enu rotation
     ///
-    pub fn as_enu(&self, reference: EitherGeoPosOrLLATup) -> pyglam::DQuat {
+    pub fn as_enu(&self, reference: EitherGeoPosOrLLATup) -> DQuat {
         let ecef2enu = ecef2enu_quat(reference);
         return ecef2enu * self.ecef_rot;
     }
 
     /// Get the positive x axis for this orientation in the ecef frame
-    pub fn x_axis(&self) -> pyglam::DVec3 {
+    pub fn x_axis(&self) -> DVec3 {
         self.dcm().col(0).into()
     }
     /// Get the positive y axis for this orientation in the ecef frame
-    pub fn y_axis(&self) -> pyglam::DVec3 {
+    pub fn y_axis(&self) -> DVec3 {
         self.dcm().col(1).into()
     }
     /// Get the positive z axis for this orientation in the ecef frame
-    pub fn z_axis(&self) -> pyglam::DVec3 {
+    pub fn z_axis(&self) -> DVec3 {
         self.dcm().col(2).into()
     }
 
