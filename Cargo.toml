@@ -24,7 +24,7 @@ version = "0.2.3"
 map3d = { path = "crates/map3d" }
 pymap3d = { path = "crates/pymap3d" }
 
-pyglam = { git = "https://github.com/lskyweiler/pyglam" }
+pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "refactor/pub" }
 
 either = "1.15"
 glam = "~0.30"
