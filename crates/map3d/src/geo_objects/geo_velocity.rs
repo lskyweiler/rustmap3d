@@ -6,18 +6,22 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DVec3
+    DVec3,
 };
 use either::Either;
 use pyo3::{exceptions::PyValueError, prelude::*};
+#[cfg(not(feature = "py_bevy"))]
 use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py_bevy")]
+use simple_py_bevy::prelude::*;
 use std::ops::{Add, Div, Mul, Sub};
 
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone)]
-#[gen_stub_pyclass]
-#[pyclass]
+#[cfg_attr(not(feature = "py_bevy"), pyclass)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
+#[cfg_attr(feature = "py_bevy", simple_pyclass)]
 pub struct GeoVelocity {
     dir_ecef: DVec3,
     speed: f64,
@@ -49,8 +53,9 @@ impl GeoVelocity {
     }
 }
 
-#[gen_stub_pymethods]
-#[pymethods]
+#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoVelocity {
     /// Construct a velocity from an ecef unit direction and speed
     ///
@@ -168,7 +173,7 @@ impl GeoVelocity {
     ///
     /// - `f64` - Mach number as an index
     ///
-    #[pyo3(name = "mach")]  // we already have mach function, but need a python specific one
+    #[pyo3(name = "mach")] // we already have mach function, but need a python specific one
     fn py_mach(&self, reference: &GeoPosition) -> PyResult<f64> {
         match self.mach(reference) {
             Ok(m) => Ok(m),

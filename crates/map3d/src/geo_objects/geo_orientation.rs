@@ -9,12 +9,16 @@ use crate::{
 };
 use either::Either;
 use pyo3::prelude::*;
+#[cfg(not(feature = "py_bevy"))]
 use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py_bevy")]
+use simple_py_bevy::prelude::*;
 use std::ops::Mul;
 
 #[derive(Clone)]
-#[gen_stub_pyclass]
-#[pyclass]
+#[cfg_attr(not(feature = "py_bevy"), pyclass)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
+#[cfg_attr(feature = "py_bevy", simple_pyclass)]
 pub struct GeoOrientation {
     ecef_rot: DQuat,
 }
@@ -31,8 +35,9 @@ pub struct GeoOrientation {
 /// euler_rot = i * j * k  #> EulerRot.XYZ given (i, j, k) euler angles
 /// euler_Rot = k * j * i  #> EulerRot::XYZEx given (i, j, k) euler angles
 /// 
-#[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int)]
+#[cfg_attr(not(feature = "py_bevy"), pyclass(eq, eq_int))]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass_enum)]
+#[cfg_attr(feature = "py_bevy", simple_pyclass)]
 #[derive(PartialEq, Clone, Debug)]
 pub enum EulerRot {
     /// Intrinsic three-axis rotation ZYX
@@ -136,8 +141,9 @@ impl GeoOrientation {
     }
 }
 
-#[gen_stub_pymethods]
-#[pymethods]
+#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoOrientation {
     /// Create an identity ecef orientation
     #[staticmethod]

@@ -4,7 +4,10 @@ use crate::{
 use either::Either;
 use glam::{self, swizzles::*};
 use pyo3::prelude::*;
+#[cfg(not(feature = "py_bevy"))]
 use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py_bevy")]
+use simple_py_bevy::prelude::*;
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
@@ -14,8 +17,9 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 
 /// Represents a position on the earth
 #[derive(Clone)]
-#[gen_stub_pyclass]
-#[pyclass]
+#[cfg_attr(not(feature = "py_bevy"), pyclass)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
+#[cfg_attr(feature = "py_bevy", simple_pyclass)]
 pub struct GeoPosition {
     /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
     ecef: DVec3,
@@ -33,8 +37,9 @@ impl GeoPosition {
     }
 }
 
-#[gen_stub_pymethods]
-#[pymethods]
+#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), pymethods)]
+#[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoPosition {
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
