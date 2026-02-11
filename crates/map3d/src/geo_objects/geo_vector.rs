@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 #[cfg(not(feature = "py_bevy"))]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py_bevy")]
-use simple_py_bevy::prelude::*;
+use simple_py_bevy::*;
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy)]
