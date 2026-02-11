@@ -25,6 +25,7 @@ map3d = { path = "crates/map3d" }
 pymap3d = { path = "crates/pymap3d" }
 
 pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "feat/py-bevy" }
+bevy = "~0.17"
 
 either = "1.15"
 glam = "~0.30"
@@ -32,6 +33,7 @@ pyo3 = { version = "~0.27", features = [
     "either",
     "extension-module",
     "generate-import-lib",
+    "multiple-pymethods"
 ] }
 pyo3-stub-gen = { version = "~0.18", default-features = false, features = [
     "either",

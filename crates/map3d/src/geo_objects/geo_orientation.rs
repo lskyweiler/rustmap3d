@@ -5,7 +5,7 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DQuat, DVec3
+    DQuat, DVec3,
 };
 use either::Either;
 use pyo3::prelude::*;
@@ -18,8 +18,9 @@ use std::ops::Mul;
 #[derive(Clone)]
 #[cfg_attr(not(feature = "py_bevy"), pyclass)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
-#[cfg_attr(feature = "py_bevy", simple_pyclass)]
+#[cfg_attr(feature = "py_bevy", py_bevy_component)]
 pub struct GeoOrientation {
+    #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DQuatRef, skip))]
     ecef_rot: DQuat,
 }
 
@@ -29,12 +30,12 @@ pub struct GeoOrientation {
 /// coordinate system, which is assumed to remain motionless), or intrinsic (rotations about the
 /// axes of the rotating coordinate system XYZ, solidary with the moving body, which changes its
 /// orientation after each elemental rotation).
-/// 
+///
 /// Follows glam convention: https://docs.rs/glam/latest/glam/enum.EulerRot.html
-/// 
+///
 /// euler_rot = i * j * k  #> EulerRot.XYZ given (i, j, k) euler angles
 /// euler_Rot = k * j * i  #> EulerRot::XYZEx given (i, j, k) euler angles
-/// 
+///
 #[cfg_attr(not(feature = "py_bevy"), pyclass(eq, eq_int))]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass_enum)]
 #[cfg_attr(feature = "py_bevy", simple_pyclass)]
@@ -141,7 +142,7 @@ impl GeoOrientation {
     }
 }
 
-#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(feature = "py_bevy", py_bevy_methods)]
 #[cfg_attr(not(feature = "py_bevy"), pymethods)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoOrientation {
@@ -153,7 +154,7 @@ impl GeoOrientation {
         };
     }
     /// Construct an orientation from a body2ecef quaternion
-    /// 
+    ///
     /// This does not check that the input quaternion is normalized
     ///
     /// # Arguments
@@ -179,12 +180,12 @@ impl GeoOrientation {
         Self::from_ecef(&ecef_rot)
     }
     /// Create an orientation from an ECEF Axis and angle in radians
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `ecef_axis` (`&DVec3`) - ECEF unit vector
     /// - `angle` (`f64`) - Angle in radians
-    /// 
+    ///
     #[staticmethod]
     pub fn from_axis_angle(ecef_axis: &DVec3, angle: f64) -> Self {
         let body2ecef = DQuat::from_axis_angle(ecef_axis, angle);
@@ -200,12 +201,7 @@ impl GeoOrientation {
     #[staticmethod]
     #[pyo3(signature = (ecef_rad, order = EulerRot::XYZEx))]
     pub fn from_ecef_euler(ecef_rad: &DVec3, order: EulerRot) -> Self {
-        let ecef_rot = glam::DQuat::from_euler(
-            order.into(),
-            ecef_rad.x,
-            ecef_rad.y,
-            ecef_rad.z,
-        );
+        let ecef_rot = glam::DQuat::from_euler(order.into(), ecef_rad.x, ecef_rad.y, ecef_rad.z);
         Self::from_ecef(&ecef_rot.into())
     }
     /// Construct a GeoOrientation from a local ned coordinate frame
@@ -224,12 +220,7 @@ impl GeoOrientation {
         reference: EitherGeoPosOrLLATup,
         order: EulerRot,
     ) -> Self {
-        let ned_quat = glam::DQuat::from_euler(
-            order.into(),
-            ned_rad.x,
-            ned_rad.y,
-            ned_rad.z,
-        );
+        let ned_quat = glam::DQuat::from_euler(order.into(), ned_rad.x, ned_rad.y, ned_rad.z);
         let body2ecef = ned2ecef_quat(reference) * ned_quat;
         Self::from_ecef(&body2ecef.into())
     }
@@ -244,9 +235,12 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     #[pyo3(signature = (enu_rad, reference, order = EulerRot::XYZEx))]
-    pub fn from_enu_euler(enu_rad: &DVec3, reference: EitherGeoPosOrLLATup, order: EulerRot) -> Self {
-        let enu_quat =
-            glam::DQuat::from_euler(order.into(), enu_rad.x, enu_rad.y, enu_rad.z);
+    pub fn from_enu_euler(
+        enu_rad: &DVec3,
+        reference: EitherGeoPosOrLLATup,
+        order: EulerRot,
+    ) -> Self {
+        let enu_quat = glam::DQuat::from_euler(order.into(), enu_rad.x, enu_rad.y, enu_rad.z);
         let body2ecef = enu2ecef_quat(reference) * enu_quat;
         Self::from_ecef(&body2ecef.into())
     }
@@ -274,13 +268,13 @@ impl GeoOrientation {
     }
 
     /// Convert this quaternion into euler angles around the ecef axis using the given rotation sequence
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `order` (`EulerRot`) - Rotation sequence for the resulting euler angles
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `euler_angles` (f64, f64, f64) - x, y, z euler angle rotations in radians
     ///
     pub fn to_ecef_euler(&self, order: EulerRot) -> (f64, f64, f64) {
@@ -330,7 +324,7 @@ impl GeoOrientation {
     }
 
     /// Multiply this orientation with either a GeoPosition or a GeoOrientation
-    /// 
+    ///
     /// Multiplying two orientations together results in a combined rotation
     /// Multiplying a position and an orientation results in the transformation of that vector in the orientation's frame
     ///

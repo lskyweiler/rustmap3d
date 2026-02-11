@@ -137,8 +137,7 @@ pub fn vincenty_direct(
 
     let phi2_term_1 = u1.sin() * coss + u1.cos() * sins * bearing_rad.cos();
     let phi2_term_2 = (u1.sin() * sins - u1.cos() * coss * bearing_rad.cos()).powi(2);
-    let phi2_term_3 =
-        (1.0 - wgs84::EARTH_FLATTENING_FACTOR) * (sina.powi(2) + phi2_term_2).sqrt();
+    let phi2_term_3 = (1.0 - wgs84::EARTH_FLATTENING_FACTOR) * (sina.powi(2) + phi2_term_2).sqrt();
     let phi2 = phi2_term_1.atan2(phi2_term_3);
 
     let lam =
@@ -166,8 +165,8 @@ pub fn vincenty_direct(
 /// * `lon_a_deg` - Longitude point A [[degrees]].
 /// * `lat_b_deg` - Latitude point A [[degrees]].
 /// * `lon_b_deg` - Longitude point A [[degrees]].
-/// * `atol` - Absolute tolerance used for convergence.  WHATS A GOOD DEFAULT? 
-/// * `max_iters` - Maximum possible number of iterations before early termination. WHATS A GOOD DEFAULT? 
+/// * `atol` - Absolute tolerance used for convergence.  WHATS A GOOD DEFAULT?
+/// * `max_iters` - Maximum possible number of iterations before early termination. WHATS A GOOD DEFAULT?
 ///
 /// # Returns
 ///

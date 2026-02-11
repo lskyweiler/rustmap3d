@@ -21,9 +21,11 @@ use std::ops::{Add, Div, Mul, Sub};
 #[derive(Clone)]
 #[cfg_attr(not(feature = "py_bevy"), pyclass)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
-#[cfg_attr(feature = "py_bevy", simple_pyclass)]
+#[cfg_attr(feature = "py_bevy", py_bevy_component)]
 pub struct GeoVelocity {
+    #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
     dir_ecef: DVec3,
+    #[pyo3(get, set)]
     speed: f64,
 }
 
@@ -53,7 +55,7 @@ impl GeoVelocity {
     }
 }
 
-#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(feature = "py_bevy", py_bevy_methods)]
 #[cfg_attr(not(feature = "py_bevy"), pymethods)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoVelocity {
@@ -125,15 +127,6 @@ impl GeoVelocity {
     pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
     }
-    /// Gets the speed of this velocity in m/s
-    #[getter]
-    pub fn get_speed(&self) -> f64 {
-        return self.speed;
-    }
-    #[setter]
-    pub fn set_speed(&mut self, speed: f64) {
-        self.speed = speed;
-    }
     /// Get this velocity's direction in the ecef frame
     #[getter]
     pub fn get_direction(&self) -> DVec3 {
@@ -162,7 +155,11 @@ impl GeoVelocity {
     pub fn ned(&self, reference: &GeoPosition) -> DVec3 {
         ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
+}
 
+// todo: figure out how to make these work with the ref macro
+#[pymethods]
+impl GeoVelocity {
     /// Computes the mach number for this velocity at a given geo position
     ///
     /// # Arguments

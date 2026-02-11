@@ -34,15 +34,15 @@ impl fmt::Display for OutOfBoundsAtmosphericLookupError {
 }
 
 /// Get the lower and upper indices from the alt table and compute the mixing value t for lerping
-/// 
+///
 /// # Arguments
-/// 
+///
 /// - `alt_m` (`f64`) - altitude to lookup indices from
-/// 
+///
 /// # Returns
-/// 
+///
 /// - `Result<(usize, usize, f64), OutOfBoundsAtmosphericLookupError>` - lower bound, upper bound, and t
-/// 
+///
 fn get_table_idx(alt_m: f64) -> Result<(usize, usize, f64), OutOfBoundsAtmosphericLookupError> {
     if alt_m < atm_consts::ALTITUDES[0] || alt_m > *atm_consts::ALTITUDES.last().unwrap() {
         return Err(OutOfBoundsAtmosphericLookupError { alt_m: alt_m });
@@ -80,7 +80,7 @@ pub fn mach(speed_mps: f64, alt_m: f64) -> Result<f64, OutOfBoundsAtmosphericLoo
 
 /// Get the speed of sound at a given altitude
 /// Out of bounds altitudes will return an Err type
-/// 
+///
 /// # Arguments
 ///
 /// - `alt_m` (`f64`) - MSL altitude in meters

@@ -10,8 +10,10 @@ use simple_py_bevy::*;
 #[derive(Clone, Copy)]
 #[cfg_attr(not(feature = "py_bevy"), pyclass)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
-#[cfg_attr(feature = "py_bevy", simple_pyclass)]
+#[cfg_attr(feature = "py_bevy", py_bevy_component)]
 pub struct GeoVector {
+    #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[pyo3(get, set)]
     ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
 }
@@ -22,7 +24,7 @@ impl GeoVector {
     }
 }
 
-#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(feature = "py_bevy", py_bevy_methods)]
 #[cfg_attr(not(feature = "py_bevy"), pymethods)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoVector {
@@ -75,15 +77,6 @@ impl GeoVector {
     ///
     pub fn ecef(&self) -> DVec3 {
         self.ecef_uvw + lla2ecef(self.lla_ref)
-    }
-    /// Gets this vector in the ECEF frame in meters
-    #[getter]
-    fn get_ecef_uvw(&self) -> DVec3 {
-        self.ecef_uvw
-    }
-    #[setter]
-    fn set_ecef_uvw(&mut self, ecef_uvw: DVec3) {
-        self.ecef_uvw = ecef_uvw;
     }
 
     pub fn enu(&self) -> DVec3 {

@@ -23,6 +23,7 @@ pyo3-stub-gen.workspace = true
 pyglam.workspace = true
 
 simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true }
+bevy = { workspace = true, optional = true }
 
 [dev-dependencies]
 rstest = "0.26"
@@ -33,4 +34,9 @@ name = "geobench"
 harness = false
 
 [features]
-py_bevy = ["dep:simple-py-bevy", "simple-py-bevy/pyo3"]
+py_bevy = [
+    "dep:simple-py-bevy",
+    "dep:bevy",
+    "simple-py-bevy/pyo3",
+    "pyglam/py_bevy",
+]

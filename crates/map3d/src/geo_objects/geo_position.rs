@@ -8,6 +8,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py_bevy")]
 use simple_py_bevy::*;
+
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
@@ -19,9 +20,11 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 #[derive(Clone)]
 #[cfg_attr(not(feature = "py_bevy"), pyclass)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
-#[cfg_attr(feature = "py_bevy", simple_pyclass)]
+#[cfg_attr(feature = "py_bevy", py_bevy_component)]
 pub struct GeoPosition {
     /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
+    #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[pyo3(get, set)]
     ecef: DVec3,
 }
 
@@ -37,7 +40,7 @@ impl GeoPosition {
     }
 }
 
-#[cfg_attr(feature = "py_bevy", simple_pymethods)]
+#[cfg_attr(feature = "py_bevy", py_bevy_methods)]
 #[cfg_attr(not(feature = "py_bevy"), pymethods)]
 #[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
 impl GeoPosition {
@@ -105,14 +108,6 @@ impl GeoPosition {
         }
     }
 
-    #[getter]
-    fn get_ecef(&self) -> DVec3 {
-        self.ecef
-    }
-    #[setter]
-    fn set_ecef(&mut self, ecef: DVec3) {
-        self.ecef = ecef
-    }
     #[getter]
     fn get_lla(&self) -> (f64, f64, f64) {
         self.lla()
@@ -360,7 +355,7 @@ impl From<GeoVector> for GeoPosition {
 #[cfg(test)]
 mod test_geo_pos {
     use super::*;
-    use crate::{wgs84, dvec3};
+    use crate::{dvec3, wgs84};
 
     mod test_constructors {
         use crate::wgs84;

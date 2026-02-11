@@ -882,9 +882,9 @@ pub fn ll2dms(lat_d: f64, lon_d: f64) -> (String, String) {
 /// # Returns
 ///
 /// - `f64` - Mach number as a float
-/// 
+///
 /// # Raises
-/// 
+///
 /// - `ValueError` if the given altitude is out of the domain of the lookup table
 ///
 #[gen_stub_pyfunction]
