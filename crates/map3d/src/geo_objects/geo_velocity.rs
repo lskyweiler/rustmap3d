@@ -24,6 +24,7 @@ use std::ops::{Add, Div, Mul, Sub};
 #[cfg_attr(feature = "py_bevy", py_bevy_component)]
 pub struct GeoVelocity {
     #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[pyo3(get, set)]
     dir_ecef: DVec3,
     #[pyo3(get, set)]
     speed: f64,
@@ -126,15 +127,6 @@ impl GeoVelocity {
     #[getter]
     pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
-    }
-    /// Get this velocity's direction in the ecef frame
-    #[getter]
-    pub fn get_direction(&self) -> DVec3 {
-        return self.dir_ecef;
-    }
-    #[setter]
-    pub fn set_direction(&mut self, dir_ecef: &DVec3) {
-        self.dir_ecef = dir_ecef.to_owned();
     }
 
     /// Get this velocity in a local enu frame in m/s
