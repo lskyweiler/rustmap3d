@@ -24,7 +24,6 @@ version = "0.2.3"
 map3d = { path = "crates/map3d" }
 pymap3d = { path = "crates/pymap3d" }
 
-pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "feat/py-bevy" }
 bevy = "~0.17"
 
 either = "1.15"
@@ -53,11 +52,11 @@ glam.workspace = true
 # bin/stub_gen deps
 env_logger = "~0.11"
 pyo3-stub-gen.workspace = true
-pyglam.workspace = true
+# pyglam.workspace = true
 
 [profile.release]
 # https://github.com/johnthagen/min-sized-rust
 strip = true # Automatically strip symbols from the binary.
 
 [features]
-py_bevy = ["map3d/py_bevy", "pyglam/py_bevy"]
+py-bevy = ["map3d/py-bevy"]

@@ -20,5 +20,5 @@ pub mod geo_objects;
 pub mod mach;
 
 pub use pyglam::{dquat, dvec3, DQuat, DVec3};
-#[cfg(feature = "py_bevy")]
+#[cfg(feature = "py-bevy")]
 pub use pyglam::{quat::DQuatRef, vec3::DVec3Ref};

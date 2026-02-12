@@ -1,18 +1,23 @@
 use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
-#[cfg(not(feature = "py_bevy"))]
 use pyo3::prelude::*;
-#[cfg(not(feature = "py_bevy"))]
 use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py_bevy")]
+#[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy)]
-#[cfg_attr(not(feature = "py_bevy"), pyclass)]
-#[cfg_attr(not(feature = "py_bevy"), gen_stub_pyclass)]
-#[cfg_attr(feature = "py_bevy", py_bevy_component)]
+#[pyclass]
+#[gen_stub_pyclass]
+#[cfg_attr(
+    feature = "py-bevy",
+    derive(
+        PyBevyCompRef,
+        PyStructRef,
+        bevy::prelude::Component
+    )
+)]
 pub struct GeoVector {
-    #[cfg_attr(feature = "py_bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
     #[pyo3(get, set)]
     ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
@@ -24,9 +29,9 @@ impl GeoVector {
     }
 }
 
-#[cfg_attr(feature = "py_bevy", py_bevy_methods)]
-#[cfg_attr(not(feature = "py_bevy"), pymethods)]
-#[cfg_attr(not(feature = "py_bevy"), gen_stub_pymethods)]
+#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
+#[pymethods]
+#[gen_stub_pymethods]
 impl GeoVector {
     #[staticmethod]
     pub fn from_ecef(ecef_uvw: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
