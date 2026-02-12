@@ -18,12 +18,12 @@ approx = "~0.5"
 rand_distr = "0.5.1"
 
 either.workspace = true
-pyo3.workspace = true
-pyo3-stub-gen.workspace = true
+pyo3 = { workspace = true, optional = true }
+pyo3-stub-gen = { workspace = true, optional = true }
 
 # simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true }
 # pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "feat/py-bevy" }
-simple-py-bevy = {path = "C:\\DEC\\am\\projects\\simple-py-bevy", optional = true  }
+simple-py-bevy = { path = "C:\\DEC\\am\\projects\\simple-py-bevy", optional = true }
 pyglam = { path = "C:\\DEC\\am\\projects\\pyglam" }
 
 bevy = { workspace = true, optional = true }
@@ -45,10 +45,8 @@ py-bevy = [
     "simple-py-bevy/py-bevy",
     "simple-py-bevy/py-ref",
     "pyglam/py-ref",
+    "pyo3",
 ]
 # only bevy functionality
-bevy = [
-    "dep:bevy",
-    "dep:serde",
-    "pyglam/bevy",
-]
+bevy = ["dep:bevy", "dep:serde", "pyglam/bevy"]
+pyo3 = ["dep:pyo3", "dep:pyo3-stub-gen"]

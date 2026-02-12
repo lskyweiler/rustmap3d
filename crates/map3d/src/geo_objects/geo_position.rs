@@ -1,15 +1,17 @@
 use crate::{
     geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3,
 };
-use either::Either;
-use glam::{self, swizzles::*};
-use pyo3::prelude::*;
-use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
-use simple_py_bevy::*;
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
+use either::Either;
+use glam::{self, swizzles::*};
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+#[cfg(feature = "pyo3")]
+use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py-bevy")]
+use simple_py_bevy::*;
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
@@ -19,23 +21,17 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
-#[pyclass]
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
 #[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
 #[cfg_attr(
     feature = "bevy",
-    derive(
-        Component,
-        Reflect,
-        serde::Deserialize,
-        serde::Serialize,
-    ),
+    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
     reflect(Component)
 )]
 pub struct GeoPosition {
     /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
     #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
-    #[pyo3(get, set)]
+    #[cfg_attr(feature = "pyo3", pyo3(get, set))]
     ecef: DVec3,
 }
 
@@ -52,8 +48,7 @@ impl GeoPosition {
 }
 
 #[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
-#[pymethods]
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
 impl GeoPosition {
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
@@ -61,7 +56,7 @@ impl GeoPosition {
     ///
     /// - `ecef` (`DVec3`) - ECEF location in meters
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_ecef(ecef_m: &DVec3) -> Self {
         Self {
             ecef: ecef_m.clone(),
@@ -73,7 +68,7 @@ impl GeoPosition {
     ///
     /// - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_lla(lla_ddm: (f64, f64, f64)) -> Self {
         Self {
             ecef: lla2ecef(lla_ddm).into(),
@@ -86,7 +81,7 @@ impl GeoPosition {
     /// - `enu_m` (`&DVec3`) - East, North, Up vector in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_enu(enu_m: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: enu2ecef(enu_m.into_dvec3(), reference).into(),
@@ -99,7 +94,7 @@ impl GeoPosition {
     /// - `ned_m` (`&DVec3`) - North, East, Down vector in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_ned(ned_m: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: ned2ecef(ned_m.into_dvec3(), reference).into(),
@@ -112,16 +107,11 @@ impl GeoPosition {
     /// - `aer_ddm` (`&DVec3`) - Azimuth, Elevation, Range in deg,deg,meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference location
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_aer(aer_ddm: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
         }
-    }
-
-    #[getter]
-    fn get_lla(&self) -> (f64, f64, f64) {
-        self.lla()
     }
     pub fn alt(&self) -> f64 {
         self.lla().2
@@ -199,7 +189,7 @@ impl GeoPosition {
     ///
     /// - `f64` - Elliptical distance in meters
     ///
-    fn dist_ellipsoidal(&self, to_point: &GeoPosition) -> f64 {
+    pub fn dist_ellipsoidal(&self, to_point: &GeoPosition) -> f64 {
         let lla_a = self.lla();
         let lla_b = to_point.lla();
         // inputs to this should never be invalid since we're sending geo positions
@@ -220,9 +210,14 @@ impl GeoPosition {
         let new_lat_lon = ecef2lla(&new_ecef).xy();
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
+}
 
+#[cfg(feature = "pyo3")]
+#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
+#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
+impl GeoPosition {
     fn __repr__(&self) -> String {
-        format!("<GeoPosition @ {}>", self.lat_lon_dms())
+        format!("{}", self)
     }
 
     fn __add__(&self, rhs: Either<GeoVector, DVec3>) -> PyResult<GeoPosition> {
@@ -246,11 +241,16 @@ impl GeoPosition {
     fn __rsub__(&self, lhs: GeoPosition) -> PyResult<GeoVector> {
         Ok(lhs - self)
     }
+
+    #[cfg_attr(feature = "pyo3", getter)]
+    fn get_lla(&self) -> (f64, f64, f64) {
+        self.lla()
+    }
 }
 
 impl Debug for GeoPosition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.__repr__())
+        write!(f, "{}", format!("<GeoPosition @ {}>", self.lat_lon_dms()))
     }
 }
 

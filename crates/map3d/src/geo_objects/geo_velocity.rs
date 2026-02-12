@@ -8,37 +8,34 @@ use crate::{
     transforms::*,
     DVec3,
 };
-use either::Either;
-use pyo3::{exceptions::PyValueError, prelude::*};
-use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
-use simple_py_bevy::*;
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
+#[cfg(feature = "pyo3")]
+use either::Either;
+#[cfg(feature = "pyo3")]
+use pyo3::{exceptions::PyValueError, prelude::*};
+#[cfg(feature = "pyo3")]
+use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py-bevy")]
+use simple_py_bevy::*;
 use std::ops::{Add, Div, Mul, Sub};
 
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone, Copy, Default, PartialEq)]
-#[pyclass]
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
 #[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
 #[cfg_attr(
     feature = "bevy",
-    derive(
-        Component,
-        Reflect,
-        serde::Deserialize,
-        serde::Serialize,
-    ),
+    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
     reflect(Component)
 )]
 pub struct GeoVelocity {
     #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
-    #[pyo3(get, set)]
+    #[cfg_attr(feature = "pyo3", pyo3(get, set))]
     dir_ecef: DVec3,
-    #[pyo3(get, set)]
+    #[cfg_attr(feature = "pyo3", pyo3(get, set))]
     speed: f64,
 }
 
@@ -69,8 +66,7 @@ impl GeoVelocity {
 }
 
 #[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
-#[pymethods]
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
 impl GeoVelocity {
     /// Construct a velocity from an ecef unit direction and speed
     ///
@@ -79,7 +75,7 @@ impl GeoVelocity {
     /// - `ecef_dir` (`&DVec3`) - Unit vector in ecef frame
     /// - `speed_mps` (`f64`) - speed in meters per second
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_dir_speed(ecef_dir: &DVec3, speed_mps: f64) -> Self {
         return GeoVelocity {
             dir_ecef: ecef_dir.normalize().into(),
@@ -92,7 +88,7 @@ impl GeoVelocity {
     ///
     /// - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_ecef_uvw(ecef_uvw_mps: &DVec3) -> Self {
         return GeoVelocity {
             dir_ecef: ecef_uvw_mps.normalize().into(),
@@ -106,7 +102,7 @@ impl GeoVelocity {
     /// - `enu_mps` (`&DVec3`) - Local enu velocity in meters/second
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_enu(enu_mps: &DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
         let ecef = enu2ecef_uvw(enu_mps, reference);
         GeoVelocity {
@@ -121,7 +117,7 @@ impl GeoVelocity {
     /// - `ned_mps` (`&DVec3`) - Local ned velocity in meters/second
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     ///
-    #[staticmethod]
+    #[cfg_attr(feature = "pyo3", staticmethod)]
     pub fn from_ned(ned_mps: &DVec3, reference: EitherGeoPosOrLLATup) -> GeoVelocity {
         let ecef = ned2ecef_uvw(ned_mps, reference);
         GeoVelocity {
@@ -136,7 +132,7 @@ impl GeoVelocity {
     ///
     /// - `DVec3` - ECEF velocity in m/s
     ///
-    #[getter]
+    #[cfg_attr(feature = "pyo3", getter)]
     pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
     }
@@ -159,7 +155,11 @@ impl GeoVelocity {
     pub fn ned(&self, reference: &GeoPosition) -> DVec3 {
         ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
-
+}
+#[cfg(feature = "pyo3")]
+#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
+#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
+impl GeoVelocity {
     /// Computes the mach number for this velocity at a given geo position
     ///
     /// # Arguments
@@ -223,6 +223,7 @@ impl GeoVelocity {
         Ok(lhs / self)
     }
 }
+
 macro_rules! geo_vel_mul_time {
     ($a:ty, $b:ty) => {
         impl Mul<$a> for $b {

@@ -21,7 +21,7 @@ edition = "2021"
 version = "0.2.3"
 
 [workspace.dependencies]
-map3d = { path = "crates/map3d" }
+map3d = { path = "crates/map3d", features = ["pyo3"] }
 pymap3d = { path = "crates/pymap3d" }
 
 bevy = "~0.17"
@@ -59,5 +59,6 @@ pyo3-stub-gen.workspace = true
 strip = true # Automatically strip symbols from the binary.
 
 [features]
-py-bevy = ["map3d/py-bevy"]
+py-bevy = ["map3d/py-bevy", "map3d/bevy", "map3d/pyo3"]
 bevy = ["map3d/bevy"]
+pyo3 = ["map3d/pyo3"]
