@@ -14,7 +14,7 @@ use pyo3_stub_gen::derive::*;
 use simple_py_bevy::*;
 use std::ops::Mul;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
 #[cfg_attr(
@@ -22,8 +22,12 @@ use std::ops::Mul;
     derive(
         PyBevyCompRef,
         PyStructRef,
-        bevy::prelude::Component
-    )
+        bevy::prelude::Component,
+        bevy::prelude::Reflect,
+        serde::Deserialize,
+        serde::Serialize,
+    ),
+    reflect(Component)
 )]
 pub struct GeoOrientation {
     #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DQuatRef))]

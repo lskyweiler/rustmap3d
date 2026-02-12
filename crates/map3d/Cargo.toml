@@ -27,6 +27,7 @@ simple-py-bevy = {path = "C:\\DEC\\am\\projects\\simple-py-bevy", optional = tru
 pyglam = { path = "C:\\DEC\\am\\projects\\pyglam" }
 
 bevy = { workspace = true, optional = true }
+serde = { version = "~1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 rstest = "0.26"
@@ -40,6 +41,7 @@ harness = false
 py-bevy = [
     "dep:simple-py-bevy",
     "dep:bevy",
+    "dep:serde",
     "simple-py-bevy/py-bevy",
     "simple-py-bevy/py-ref",
     "pyglam/py-ref",

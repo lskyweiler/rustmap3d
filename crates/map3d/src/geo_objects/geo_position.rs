@@ -5,17 +5,17 @@ use either::Either;
 use glam::{self, swizzles::*};
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
+#[cfg(feature = "py-bevy")]
+use simple_py_bevy::*;
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
 };
-#[cfg(feature = "py-bevy")]
-use simple_py_bevy::*;
 
 pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 
 /// Represents a position on the earth
-#[derive(Clone)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
 #[cfg_attr(
@@ -23,8 +23,12 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
     derive(
         PyBevyCompRef,
         PyStructRef,
-        bevy::prelude::Component
-    )
+        bevy::prelude::Component,
+        bevy::prelude::Reflect,
+        serde::Deserialize,
+        serde::Serialize,
+    ),
+    reflect(Component)
 )]
 pub struct GeoPosition {
     /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
@@ -285,6 +289,10 @@ dvec3_adds_with_geopos!(glam::DVec3, GeoPosition);
 dvec3_adds_with_geopos!(&glam::DVec3, GeoPosition);
 dvec3_adds_with_geopos!(glam::DVec3, &GeoPosition);
 dvec3_adds_with_geopos!(&glam::DVec3, &GeoPosition);
+dvec3_adds_with_geopos!(pyglam::DVec3, GeoPosition);
+dvec3_adds_with_geopos!(&pyglam::DVec3, GeoPosition);
+dvec3_adds_with_geopos!(pyglam::DVec3, &GeoPosition);
+dvec3_adds_with_geopos!(&pyglam::DVec3, &GeoPosition);
 
 /// Subtracting two GeoPositions results in a GeoVector starting at RHS -> LHS
 macro_rules! geo_pos_subs_with_geopos {
@@ -340,6 +348,10 @@ dvec3_subs_with_geopos!(glam::DVec3, GeoPosition);
 dvec3_subs_with_geopos!(&glam::DVec3, GeoPosition);
 dvec3_subs_with_geopos!(glam::DVec3, &GeoPosition);
 dvec3_subs_with_geopos!(&glam::DVec3, &GeoPosition);
+dvec3_subs_with_geopos!(pyglam::DVec3, GeoPosition);
+dvec3_subs_with_geopos!(&pyglam::DVec3, GeoPosition);
+dvec3_subs_with_geopos!(pyglam::DVec3, &GeoPosition);
+dvec3_subs_with_geopos!(&pyglam::DVec3, &GeoPosition);
 
 impl From<&GeoPosition> for GeoPosition {
     fn from(value: &GeoPosition) -> Self {

@@ -17,12 +17,20 @@ use std::ops::{Add, Div, Mul, Sub};
 
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
-#[derive(Clone)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
 #[cfg_attr(
     feature = "py-bevy",
-    derive(PyBevyCompRef, PyStructRef, bevy::prelude::Component)
+    derive(
+        PyBevyCompRef,
+        PyStructRef,
+        bevy::prelude::Component,
+        bevy::prelude::Reflect,
+        serde::Deserialize,
+        serde::Serialize,
+    ),
+    reflect(Component)
 )]
 pub struct GeoVelocity {
     #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]

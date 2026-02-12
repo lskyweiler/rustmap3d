@@ -5,7 +5,7 @@ use pyo3_stub_gen::derive::*;
 use simple_py_bevy::*;
 
 /// Represents a vector relative to a reference point
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
 #[cfg_attr(
@@ -13,8 +13,12 @@ use simple_py_bevy::*;
     derive(
         PyBevyCompRef,
         PyStructRef,
-        bevy::prelude::Component
-    )
+        bevy::prelude::Component,
+        bevy::prelude::Reflect,
+        serde::Deserialize,
+        serde::Serialize,
+    ),
+    reflect(Component)
 )]
 pub struct GeoVector {
     #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
