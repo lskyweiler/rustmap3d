@@ -13,6 +13,7 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+#[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use std::ops::{Add, Div, Mul, Sub};

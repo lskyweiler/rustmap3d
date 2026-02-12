@@ -12,6 +12,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+#[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use std::ops::Mul;
@@ -19,7 +20,7 @@ use std::ops::Mul;
 #[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
-#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef,))]
+#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
 #[cfg_attr(
     feature = "bevy",
     derive(
