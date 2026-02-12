@@ -13,6 +13,8 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+#[cfg(feature = "bevy")]
+use bevy::prelude::*;
 use std::ops::{Add, Div, Mul, Sub};
 
 /// Represents a 3D velocity vector in geo space
@@ -20,13 +22,12 @@ use std::ops::{Add, Div, Mul, Sub};
 #[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
+#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
 #[cfg_attr(
-    feature = "py-bevy",
+    feature = "bevy",
     derive(
-        PyBevyCompRef,
-        PyStructRef,
-        bevy::prelude::Component,
-        bevy::prelude::Reflect,
+        Component,
+        Reflect,
         serde::Deserialize,
         serde::Serialize,
     ),

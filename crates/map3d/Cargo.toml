@@ -38,11 +38,17 @@ name = "geobench"
 harness = false
 
 [features]
+# bevy and py ref functionality
 py-bevy = [
     "dep:simple-py-bevy",
-    "dep:bevy",
-    "dep:serde",
+    "bevy",
     "simple-py-bevy/py-bevy",
     "simple-py-bevy/py-ref",
     "pyglam/py-ref",
+]
+# only bevy functionality
+bevy = [
+    "dep:bevy",
+    "dep:serde",
+    "pyglam/bevy",
 ]

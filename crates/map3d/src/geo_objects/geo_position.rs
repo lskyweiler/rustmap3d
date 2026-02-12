@@ -7,6 +7,8 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+#[cfg(feature = "bevy")]
+use bevy::prelude::*;
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
@@ -18,13 +20,12 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 #[derive(Clone, Copy, Default, PartialEq)]
 #[pyclass]
 #[gen_stub_pyclass]
+#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
 #[cfg_attr(
-    feature = "py-bevy",
+    feature = "bevy",
     derive(
-        PyBevyCompRef,
-        PyStructRef,
-        bevy::prelude::Component,
-        bevy::prelude::Reflect,
+        Component,
+        Reflect,
         serde::Deserialize,
         serde::Serialize,
     ),

@@ -60,3 +60,4 @@ strip = true # Automatically strip symbols from the binary.
 
 [features]
 py-bevy = ["map3d/py-bevy"]
+bevy = ["map3d/bevy"]
