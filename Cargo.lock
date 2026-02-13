@@ -3337,6 +3337,7 @@ dependencies = [
  "criterion",
  "either",
  "glam",
+ "map3d_derive",
  "pyglam",
  "pyo3",
  "pyo3-stub-gen",
@@ -3345,6 +3346,14 @@ dependencies = [
  "rstest",
  "serde",
  "simple-py-bevy",
+]
+
+[[package]]
+name = "map3d_derive"
+version = "0.2.3"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

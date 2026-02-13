@@ -59,6 +59,11 @@ pyo3-stub-gen.workspace = true
 strip = true # Automatically strip symbols from the binary.
 
 [features]
-py-bevy = ["map3d/py-bevy", "map3d/bevy", "map3d/pyo3"]
-bevy = ["map3d/bevy"]
+# if you're building from here, you always want python functionality
+default = ["pyo3"]
+# generate python functions in geo_objects
 pyo3 = ["map3d/pyo3"]
+# generates generic bevy derives (reflect, serde)
+bevy = ["map3d/bevy"]
+# generates bevy ref structs
+py-bevy = ["map3d/py-bevy", "bevy", "pyo3"]

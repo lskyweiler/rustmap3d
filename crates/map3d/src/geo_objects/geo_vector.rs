@@ -1,31 +1,32 @@
 use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
+#[allow(unused_imports)]
+#[cfg(feature = "bevy")]
+use bevy::prelude::*;
+#[cfg(not(feature = "pyo3"))]
+use map3d_derive::*;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
-#[allow(unused_imports)]
-#[cfg(feature = "bevy")]
-use bevy::prelude::*;
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
-#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
+#[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
+#[cfg_attr(
+    all(feature = "py-bevy", feature = "pyo3"),
+    derive(PyBevyCompRef, PyStructRef)
+)]
 #[cfg_attr(
     feature = "bevy",
-    derive(
-        Component,
-        Reflect,
-        serde::Deserialize,
-        serde::Serialize,
-    ),
+    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
     reflect(Component)
 )]
 pub struct GeoVector {
-    #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DVec3Ref))]
-    #[cfg_attr(feature = "pyo3", pyo3(get, set))]
+    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[pyo3(get, set)]
     ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
 }
@@ -36,17 +37,21 @@ impl GeoVector {
     }
 }
 
-#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
+#[cfg_attr(
+    all(feature = "py-bevy", feature = "pyo3"),
+    py_bevy_methods,
+    py_ref_methods
+)]
 #[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
 impl GeoVector {
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_ecef(ecef_uvw: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
             ecef_uvw: ecef_uvw.clone(),
             lla_ref: reference.into_lat_lon_triple(),
         }
     }
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_enu(enu: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {
@@ -54,7 +59,7 @@ impl GeoVector {
             lla_ref: lla_ref,
         }
     }
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_ned(ned: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {
@@ -62,7 +67,7 @@ impl GeoVector {
             lla_ref: lla_ref,
         }
     }
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_aer(aer: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
         Self {

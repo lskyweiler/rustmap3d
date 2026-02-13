@@ -8,6 +8,9 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "rust-analyzer.cargo.features": [
-        "py-bevy"
-    ]
+        "py-bevy",
+        "pyo3",
+        "bevy"
+    ],
+    "rust-analyzer.cargo.noDefaultFeatures": true
 }

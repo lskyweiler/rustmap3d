@@ -18,18 +18,24 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+#[cfg(not(feature = "pyo3"))]
+use map3d_derive::*;
 use std::ops::Mul;
 
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
-#[cfg_attr(feature = "py-bevy", derive(PyBevyCompRef, PyStructRef))]
+#[cfg_attr(
+    all(feature = "py-bevy", feature = "pyo3"),
+    derive(PyBevyCompRef, PyStructRef)
+)]
 #[cfg_attr(
     feature = "bevy",
     derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
     reflect(Component)
 )]
+#[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
-    #[cfg_attr(feature = "py-bevy", py_bevy(get_ref = pyglam::DQuatRef))]
+    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DQuatRef))]
     ecef_rot: DQuat,
 }
 
@@ -149,11 +155,15 @@ impl GeoOrientation {
     }
 }
 
-#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
+#[cfg_attr(
+    all(feature = "py-bevy", feature = "pyo3"),
+    py_bevy_methods,
+    py_ref_methods
+)]
 #[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
 impl GeoOrientation {
     /// Create an identity ecef orientation
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_identity() -> Self {
         return Self {
             ecef_rot: DQuat::new(glam::DQuat::IDENTITY),
@@ -167,7 +177,7 @@ impl GeoOrientation {
     ///
     /// - `body2ecef` (`&DQuat`) - Quaternion rotating a body coordinate frame into the ecef frame
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_ecef(body2ecef: &DQuat) -> Self {
         Self {
             ecef_rot: body2ecef.clone(),
@@ -180,10 +190,11 @@ impl GeoOrientation {
     /// - `from_` (`&GeoPosition`) - Starting geo position
     /// - `to` (`&GeoPosition`) - Ending geo position
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_geo_rotation_arc(from_: &GeoPosition, to: &GeoPosition) -> Self {
-        let ecef_rot = DQuat::from_rotation_arc(from_.ecef().into(), to.ecef().into());
-        Self::from_ecef(&ecef_rot)
+        // pyglam::dquat is currently feature gated behind python. it would be nice to call that directly
+        let ecef_rot = glam::DQuat::from_rotation_arc(from_.ecef().into(), to.ecef().into());
+        Self::from_ecef(&ecef_rot.into())
     }
     /// Create an orientation from an ECEF Axis and angle in radians
     ///
@@ -192,10 +203,10 @@ impl GeoOrientation {
     /// - `ecef_axis` (`&DVec3`) - ECEF unit vector
     /// - `angle` (`f64`) - Angle in radians
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_axis_angle(ecef_axis: &DVec3, angle: f64) -> Self {
-        let body2ecef = DQuat::from_axis_angle(ecef_axis, angle);
-        Self::from_ecef(&body2ecef)
+        let body2ecef = glam::DQuat::from_axis_angle(ecef_axis.into(), angle);
+        Self::from_ecef(&body2ecef.into())
     }
     /// Construct an orientation from ecef euler angles from a given euler rotation sequence
     ///
@@ -204,8 +215,8 @@ impl GeoOrientation {
     /// - `ecef_rad` (`&DVec3`) - Euler angles in radians in ecef frame
     /// - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
-    #[cfg_attr(feature = "pyo3", pyo3(signature = (ecef_rad, order = EulerRot::XYZEx)))]
+    #[staticmethod]
+    #[pyo3(signature = (ecef_rad, order = EulerRot::XYZEx))]
     pub fn from_ecef_euler(ecef_rad: &DVec3, order: EulerRot) -> Self {
         let ecef_rot = glam::DQuat::from_euler(order.into(), ecef_rad.x, ecef_rad.y, ecef_rad.z);
         Self::from_ecef(&ecef_rot.into())
@@ -219,8 +230,8 @@ impl GeoOrientation {
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
     /// - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
-    #[cfg_attr(feature = "pyo3", pyo3(signature = (ned_rad, order = EulerRot::XYZEx)))]
+    #[staticmethod]
+    #[pyo3(signature = (ned_rad, reference, order = EulerRot::XYZEx))]
     pub fn from_ned_euler(
         ned_rad: &DVec3,
         reference: EitherGeoPosOrLLATup,
@@ -239,8 +250,8 @@ impl GeoOrientation {
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location euler angles are in relation to
     /// - `order` (`EulerRot`) - Euler angle rotation sequence. Defaults to a 3-2-1 sequence
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
-    #[cfg_attr(feature = "pyo3", pyo3(signature = (enu_rad, order = EulerRot::XYZEx)))]
+    #[staticmethod]
+    #[pyo3(signature = (enu_rad, reference, order = EulerRot::XYZEx))]
     pub fn from_enu_euler(
         enu_rad: &DVec3,
         reference: EitherGeoPosOrLLATup,
@@ -256,7 +267,7 @@ impl GeoOrientation {
     ///
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_enu_frame(reference: EitherGeoPosOrLLATup) -> Self {
         let body2ecef = ecef2enu_quat(reference);
         Self::from_ecef(&body2ecef.into())
@@ -267,7 +278,7 @@ impl GeoOrientation {
     ///
     /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference geo position
     ///
-    #[cfg_attr(feature = "pyo3", staticmethod)]
+    #[staticmethod]
     pub fn from_ned_frame(reference: EitherGeoPosOrLLATup) -> Self {
         let body2ecef = ecef2ned_quat(reference);
         Self::from_ecef(&body2ecef.into())
