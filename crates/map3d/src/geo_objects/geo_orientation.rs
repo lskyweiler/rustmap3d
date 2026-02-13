@@ -12,14 +12,14 @@ use crate::{
 use bevy::prelude::*;
 #[cfg(feature = "pyo3")]
 use either::Either;
+#[cfg(not(feature = "pyo3"))]
+use map3d_derive::*;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
-#[cfg(not(feature = "pyo3"))]
-use map3d_derive::*;
 use std::ops::Mul;
 
 #[derive(Clone, Copy, Default, PartialEq)]

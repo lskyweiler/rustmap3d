@@ -41,7 +41,7 @@ pub fn classattr(_attr: TokenStream, _item: TokenStream) -> TokenStream {
 #[cfg(not(feature = "pyo3"))]
 #[proc_macro_attribute]
 pub fn pyo3(_attr: TokenStream, _item: TokenStream) -> TokenStream {
-    dummy_pyo3::erase_input()
+    dummy_pyo3::strip_attributes(_item)
 }
 
 #[cfg(not(feature = "pyo3"))]
