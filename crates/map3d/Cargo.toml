@@ -28,6 +28,7 @@ pyglam = { path = "C:\\DEC\\am\\projects\\pyglam", default-features = false }
 
 bevy = { workspace = true, optional = true }
 serde = { version = "~1.0", features = ["derive"], optional = true }
+serde_json = { version ="~1.0" , optional = true}
 
 map3d_derive = { path = "../map3d_derive" }
 
@@ -43,7 +44,7 @@ harness = false
 # generate pyo3 functions at all
 pyo3 = ["dep:pyo3", "dep:pyo3-stub-gen", "pyglam/pyo3"]
 # only bevy functionality
-bevy = ["dep:bevy", "dep:serde", "pyglam/bevy"]
+bevy = ["dep:bevy", "dep:serde", "dep:serde_json", "pyglam/bevy"]
 # bevy and py ref functionality
 py-bevy = [
     "pyo3",

@@ -32,7 +32,7 @@ pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 )]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
     reflect(Component)
 )]
 pub struct GeoPosition {
@@ -558,6 +558,33 @@ mod test_geo_pos {
                     .ecef
                     .abs_diff_eq(glam::dvec3(wgs84::EARTH_SEMI_MAJOR_AXIS, 1000., 0.), 1e-6));
             }
+        }
+    }
+
+    #[cfg(feature = "bevy")]
+    mod test_serde {
+        use super::*;
+        use serde_json;
+
+        #[test]
+        fn test_deserialize() {
+            let json = r#"
+            {
+                "ecef": [
+                    119962.85915496295,
+                    -5189589.602611365,
+                    3693569.6778840856
+                ]
+            }"#;
+            let actual: GeoPosition = serde_json::from_str(json).unwrap();
+            almost::equal_with(actual.ecef.x, 119962.85915496295, 1e-10);
+        }
+
+        #[test]
+        fn test_serialize() {
+            let pos = GeoPosition::from_lla((0., 0., 0.));
+            let actual = serde_json::to_string(&pos);
+            assert!(actual.is_ok());
         }
     }
 }

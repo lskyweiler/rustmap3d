@@ -3345,6 +3345,7 @@ dependencies = [
  "rand_distr",
  "rstest",
  "serde",
+ "serde_json",
  "simple-py-bevy",
 ]
 
