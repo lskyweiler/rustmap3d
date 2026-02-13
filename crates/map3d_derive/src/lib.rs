@@ -40,8 +40,9 @@ pub fn classattr(_attr: TokenStream, _item: TokenStream) -> TokenStream {
 }
 #[cfg(not(feature = "pyo3"))]
 #[proc_macro_attribute]
-pub fn pyo3(_attr: TokenStream, _item: TokenStream) -> TokenStream {
-    dummy_pyo3::strip_attributes(_item)
+pub fn pyo3(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(item as syn::Item);
+    dummy_pyo3::strip_attributes(&ast)
 }
 
 #[cfg(not(feature = "pyo3"))]

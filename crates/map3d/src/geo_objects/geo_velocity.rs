@@ -13,12 +13,12 @@ use crate::{
 use bevy::prelude::*;
 #[cfg(feature = "pyo3")]
 use either::Either;
+#[cfg(not(feature = "pyo3"))]
+use map3d_derive::*;
 #[cfg(feature = "pyo3")]
 use pyo3::{exceptions::PyValueError, prelude::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
-#[cfg(not(feature = "pyo3"))]
-use map3d_derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
 use std::ops::{Add, Div, Mul, Sub};
@@ -46,11 +46,20 @@ pub struct GeoVelocity {
 }
 
 impl GeoVelocity {
+    pub fn speed(&self) -> &f64 {
+        &self.speed
+    }
     pub fn speed_mut(&mut self) -> &mut f64 {
-        return &mut self.speed;
+        &mut self.speed
+    }
+    pub fn set_speed(&mut self, speed: f64) {
+        self.speed = speed;
     }
     pub fn direction_mut(&mut self) -> &mut glam::DVec3 {
-        return &mut self.dir_ecef;
+        &mut self.dir_ecef
+    }
+    pub fn set_direction(&mut self, dir: glam::DVec3) {
+        self.dir_ecef = dir.into()
     }
 
     /// Computes the mach number for this velocity at a given geo position

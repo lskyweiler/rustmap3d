@@ -21,6 +21,16 @@ use std::{
 };
 
 pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
+impl Into<EitherGeoPosOrLLATup> for GeoPosition {
+    fn into(self) -> EitherGeoPosOrLLATup {
+        Either::Right(self)
+    }
+}
+impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
+    fn into(self) -> EitherGeoPosOrLLATup {
+        Either::Right(self.clone())
+    }
+}
 
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
