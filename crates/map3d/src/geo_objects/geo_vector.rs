@@ -44,6 +44,13 @@ impl GeoVector {
 )]
 #[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
 impl GeoVector {
+    /// Create a Vector from an ecef vector relative to a reference point
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ecef_uvw` (`&DVec3`) - Vector in ecef frame in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+    /// 
     #[staticmethod]
     pub fn from_ecef(ecef_uvw: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
@@ -51,6 +58,13 @@ impl GeoVector {
             lla_ref: reference.into_lat_lon_triple(),
         }
     }
+    /// Create a Vector from an enu vector relative to a reference point
+    /// 
+    /// # Arguments
+    /// 
+    /// - `enu` (`&DVec3`) - enu vector in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+    /// 
     #[staticmethod]
     pub fn from_enu(enu: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
@@ -59,6 +73,13 @@ impl GeoVector {
             lla_ref: lla_ref,
         }
     }
+    /// Create a Vector from an ned vector relative to a reference point
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ned` (`&DVec3`) - ned vector in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+    /// 
     #[staticmethod]
     pub fn from_ned(ned: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
@@ -67,6 +88,13 @@ impl GeoVector {
             lla_ref: lla_ref,
         }
     }
+    /// Create a Vector from an ned vector relative to a reference point
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ned` (`&DVec3`) - ned vector in meters
+    /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+    /// 
     #[staticmethod]
     pub fn from_aer(aer: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
@@ -95,31 +123,40 @@ impl GeoVector {
         self.ecef_uvw + lla2ecef(self.lla_ref)
     }
 
+    /// Get this vector as east north up relative to its reference
     pub fn enu(&self) -> DVec3 {
         ecef_uvw2enu(&self.ecef_uvw, &self.lla_ref).into()
     }
+    /// Get this vector as north east down relative to its reference
     pub fn ned(&self) -> DVec3 {
         ecef_uvw2ned(&self.ecef_uvw, &self.lla_ref).into()
     }
+    /// Get this vector as az el range relative to its reference
     pub fn aer(&self) -> DVec3 {
         ecef_uvw2aer(&self.ecef_uvw, &self.lla_ref).into()
     }
 
+    /// Get the distance in meters this vector goes north from its reference point
     pub fn north(&self) -> f64 {
         self.enu().y
     }
+    /// Get the distance in meters this vector goes south from its reference point
     pub fn south(&self) -> f64 {
         -self.enu().y
     }
+    /// Get the distance in meters this vector goes east from its reference point
     pub fn east(&self) -> f64 {
         self.enu().x
     }
+    /// Get the distance in meters this vector goes west from its reference point
     pub fn west(&self) -> f64 {
         -self.enu().x
     }
+    /// Get the distance in meters this vector goes away from earth from its reference point
     pub fn up(&self) -> f64 {
         self.enu().z
     }
+    /// Get the distance in meters this vector towards the earth from its reference point
     pub fn down(&self) -> f64 {
         self.ned().z
     }
