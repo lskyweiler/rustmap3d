@@ -353,6 +353,7 @@ impl GeoOrientation {
     ///
     /// - `PyResult<Either<GeoVector, GeoOrientation>>` - Either a transformed GeoVector or a combined GeoOrientation
     ///
+    #[cfg(feature = "pyo3")]
     fn __mul__(
         &self,
         rhs: Either<GeoVector, GeoOrientation>,

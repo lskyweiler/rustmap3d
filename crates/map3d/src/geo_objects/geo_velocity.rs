@@ -186,6 +186,7 @@ impl GeoVelocity {
     ///
     /// - `f64` - Mach number as an index
     ///
+    #[cfg(feature = "pyo3")]
     #[pyo3(name = "mach")] // we already have mach function, but need a python specific one
     fn py_mach(&self, reference: &GeoPosition) -> PyResult<f64> {
         match self.mach(reference) {
@@ -205,36 +206,44 @@ impl GeoVelocity {
     ///
     /// - `PyResult<Either<GeoVelocity, GeoVector>>` - Either a component-wise velocity multiply or a new GeoVector in meters
     ///
+    #[cfg(feature = "pyo3")]
     fn __mul__(&self, rhs: Either<GeoVelocity, f64>) -> PyResult<Either<GeoVelocity, GeoVector>> {
         match rhs {
             Either::Left(vel) => Ok(Either::Left(self * vel)),
             Either::Right(time_s) => Ok(Either::Right(self * time_s)),
         }
     }
+    #[cfg(feature = "pyo3")]
     fn __rmul__(&self, rhs: Either<GeoVelocity, f64>) -> PyResult<Either<GeoVelocity, GeoVector>> {
         self.__mul__(rhs)
     }
     /// Component-wise addition of velocity
+    #[cfg(feature = "pyo3")]
     fn __add__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(self + rhs)
     }
     /// Component-wise subtraction of velocity
+    #[cfg(feature = "pyo3")]
     fn __sub__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(self - rhs)
     }
     /// Component-wise division of velocity
+    #[cfg(feature = "pyo3")]
     fn __div__(&self, rhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(self / rhs)
     }
     /// Component-wise addition of velocity
+    #[cfg(feature = "pyo3")]
     fn __radd__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(self + lhs)
     }
     /// Component-wise subtraction of velocity
+    #[cfg(feature = "pyo3")]
     fn __rsub__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(lhs - self)
     }
     /// Component-wise division of velocity
+    #[cfg(feature = "pyo3")]
     fn __rdiv__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(lhs / self)
     }

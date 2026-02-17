@@ -158,6 +158,7 @@ impl GeoPosition {
     ///
     /// - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
     ///
+    #[cfg(feature = "pyo3")]
     #[getter]
     fn get_lla(&self) -> (f64, f64, f64) {
         self.lla()
@@ -379,12 +380,14 @@ impl GeoPosition {
     ///
     /// - `PyResult<Either<GeoVector, GeoPosition>>` - GeoVector or GeoPos
     ///
+    #[cfg(feature = "pyo3")]
     fn __sub__(&self, rhs: Either<GeoVector, GeoPosition>) -> Either<GeoVector, GeoPosition> {
         match rhs {
             Either::Left(vec) => Either::Right(self - vec),
             Either::Right(vec) => Either::Left(self - vec),
         }
     }
+    #[cfg(feature = "pyo3")]
     fn __rsub__(&self, lhs: GeoPosition) -> GeoVector {
         lhs - self
     }
