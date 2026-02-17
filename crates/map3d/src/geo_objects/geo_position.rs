@@ -47,7 +47,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
 )]
 #[repr(transparent)]
 pub struct GeoPosition {
-    /// Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
+    // Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
     #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
     #[pyo3(get, set)]
     ecef: DVec3,

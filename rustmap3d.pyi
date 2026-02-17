@@ -411,15 +411,9 @@ class GeoPosition:
     Represents a position on the earth
     """
     @property
-    def ecef(self) -> DVec3:
-        r"""
-        Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
-        """
+    def ecef(self) -> DVec3: ...
     @ecef.setter
-    def ecef(self, value: DVec3) -> None:
-        r"""
-        Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
-        """
+    def ecef(self, value: DVec3) -> None: ...
     @property
     def lla(self) -> tuple[builtins.float, builtins.float, builtins.float]:
         r"""
