@@ -528,7 +528,7 @@ pub fn rand_ecef() -> Vec3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn rand_orientation() -> QuatTup {
-    let quat = map3d::util::rand_orientation();
+    let quat = map3d::utils::rand_orientation();
     return quat_to_tuple(&quat);
 }
 
@@ -545,7 +545,7 @@ pub fn rand_orientation() -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ecef2enu_quat(lat_d, lon_d);
+    let quat = map3d::ecef2enu_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -562,7 +562,7 @@ pub fn ecef2enu_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::enu2ecef_quat(lat_d, lon_d);
+    let quat = map3d::enu2ecef_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -579,7 +579,7 @@ pub fn enu2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ecef2ned_quat(lat_d, lon_d);
+    let quat = map3d::ecef2ned_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -596,7 +596,7 @@ pub fn ecef2ned_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
-    let quat = map3d::ned2ecef_quat(lat_d, lon_d);
+    let quat = map3d::ned2ecef_quat((lat_d, lon_d));
     return quat_to_tuple(&quat);
 }
 
@@ -613,7 +613,7 @@ pub fn ned2ecef_quat(lat_d: f64, lon_d: f64) -> QuatTup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2enu_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ecef2enu_dcm(lat_d, lon_d);
+    let dcm = map3d::ecef2enu_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -630,7 +630,7 @@ pub fn ecef2enu_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn enu2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::enu2ecef_dcm(lat_d, lon_d);
+    let dcm = map3d::enu2ecef_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -647,7 +647,7 @@ pub fn enu2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ecef2ned_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ecef2ned_dcm(lat_d, lon_d);
+    let dcm = map3d::ecef2ned_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -664,7 +664,7 @@ pub fn ecef2ned_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ned2ecef_dcm(lat_d: f64, lon_d: f64) -> Mat3Tup {
-    let dcm = map3d::ned2ecef_dcm(lat_d, lon_d);
+    let dcm = map3d::ned2ecef_dcm((lat_d, lon_d));
     return mat3_to_tuple(&dcm);
 }
 
@@ -726,7 +726,9 @@ pub fn ecef_quat2heading(w: f64, x: f64, y: f64, z: f64, lat_ref_d: f64, lon_ref
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn angle_between(ax: f64, ay: f64, az: f64, bx: f64, by: f64, bz: f64) -> f64 {
-    return map3d::util::angle_between_vec3(&glam::dvec3(ax, ay, az), &glam::dvec3(bx, by, bz));
+    let a = glam::dvec3(ax, ay, az);
+    let b = glam::dvec3(bx, by, bz);
+    return a.angle_between(b);
 }
 
 /// Calculates the LLA location that is a fixed range and bearing from a reference LLA. This function uses an iterative
@@ -866,5 +868,30 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn ll2dms(lat_d: f64, lon_d: f64) -> (String, String) {
-    return map3d::ll2dms(lat_d, lon_d);
+    return map3d::ll2dms((lat_d, lon_d));
+}
+
+/// Compute the mach number at a given altitude
+/// https://en.wikipedia.org/wiki/Mach_number
+///
+/// # Arguments
+///
+/// - `speed_mps` (`f64`) - Speed in meters/second
+/// - `alt_m` (`f64`) - altitude in meters
+///
+/// # Returns
+///
+/// - `f64` - Mach number as a float
+///
+/// # Raises
+///
+/// - `ValueError` if the given altitude is out of the domain of the lookup table
+///
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn mach(speed_mps: f64, alt_m: f64) -> PyResult<f64> {
+    match map3d::mach::mach(speed_mps, alt_m) {
+        Ok(m) => Ok(m),
+        Err(e) => Err(PyValueError::new_err(format!("{:?}", e))),
+    }
 }

@@ -4,18 +4,38 @@ authors = [
     "Lucas Weiler <lucas.l.weiler@leidos.com>",
     "Andrew Molnar <andrew.b.molnar@leidos.com>",
 ]
-edition = "2021"
+description = "Python geodetic coordinate conversion library written in rust"
 keywords = ["geodetic", "engineering", "scientific", "gis"]
 license-file = "LICENSE"
+homepage = "https://github.com/lskyweiler/rustmap3d"
+repository = "https://github.com/lskyweiler/rustmap3d"
 readme = "README.md"
-version = "0.2.3"
+version.workspace = true
+edition.workspace = true
 
 [workspace]
 members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-version = "0.2.3"
+version = "0.3.0"
+
+[workspace.dependencies]
+map3d = { path = "crates/map3d", features = ["pyo3"] }
+pymap3d = { path = "crates/pymap3d" }
+
+bevy = "~0.17"
+
+either = "1.15"
+glam = "~0.30"
+pyo3 = { version = "~0.27", features = [
+    "either",
+    "extension-module",
+    "generate-import-lib",
+] }
+pyo3-stub-gen = { version = "~0.18", default-features = false, features = [
+    "either",
+] }
 
 [lib]
 # rlib is required to generate py-stubs
@@ -23,26 +43,25 @@ crate-type = ["cdylib", "rlib"]
 doctest = false
 
 [dependencies]
-map3d = { path = "crates/map3d" }
-pymap3d = { path = "crates/pymap3d" }
-
-pyo3 = { version = "~0.27", features = [
-    "extension-module",
-    "generate-import-lib",
-] }
-glam = "~0.30"
+map3d.workspace = true
+pymap3d.workspace = true
+pyo3.workspace = true
+glam.workspace = true
 
 # bin/stub_gen deps
 env_logger = "~0.11"
-pyo3-stub-gen = { version = "~0.17", default-features = false }
-
-[workspace.dependencies]
-map3d = { path = "crates/map3d" }
-
-glam = "~0.30"
-pyo3 = "~0.27"
-pyo3-stub-gen = { version = "~0.17", default-features = false }
+pyo3-stub-gen.workspace = true
 
 [profile.release]
 # https://github.com/johnthagen/min-sized-rust
 strip = true # Automatically strip symbols from the binary.
+
+[features]
+# if you're building from here, you always want python functionality
+default = ["pyo3"]
+# generate python functions in geo_objects
+pyo3 = ["map3d/pyo3"]
+# generates generic bevy derives (reflect, serde)
+bevy = ["map3d/bevy"]
+# generates bevy ref structs
+py-bevy = ["map3d/py-bevy", "bevy", "pyo3"]

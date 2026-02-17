@@ -2,11 +2,91 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-02-17
+
+### 🚀 Features
+
+- Moved all functions to use impl traits instead of concrete types
+- Moved IntoDVec3 trait to return owned vector for greater ergonomics
+- Added ref impls for conversion traits
+- Added geo objects
+- Integrated with pyglam
+- Exporting vecs to fix crate boundary issues
+- Added getters/setters in geopos
+- Added geo orientation and geo velocity
+- Added ops for velocity and orientation
+- Added EitherLLAOrGeoPos type for more ergonomic constructors
+- Added more convenience methods for pos/rot
+- Added euler rotation sequences to orientation with unit tests
+- Added mach number lookup table
+- Added separate ellipsoidal distance function to geopos
+- Added optional py_bevy support
+- Added bevy only trait
+- Added pyo3 feature to block compiling pyo3 at all
+- Working compiler features to turn off pyo3 completely from map3d
+- Fixed stub generation
+
+### 🐛 Bug Fixes
+
+- Pub export of traits
+- Fixed unit test floating point failure
+- Minor fix in geo example
+- Implemented lerping in speed of sound lookup
+- Updated pyglam pointer
+- Fixed pyglam pointer
+- Updated to work with latest py_bevy
+- Working integration with py_bevy macros
+- Minor get/set add to velocity
+- Updated to work with latest simple-py-bevy
+- Added serde and bevy derives
+- Fixed bug where #[pyo3] dummy attribute was not passing the token stream through
+- Fixed minor bug in pyo3 dummy derive
+- Minor stubs fix
+- Added pyo3 feature guards to functions that reference pyo3
+- Updated paths to pyglam and simple-py-bevy
+
+### 🚜 Refactor
+
+- Reorganized transforms into director
+- Reexporting pyglam objects in map3d
+
+### 📚 Documentation
+
+- Updated cargo tomls to be able to upload to crates.io
+- Updated readme with crates.io badge
+- Minor docstring fixes
+- Added docstrings and minor comments
+- Added map3d lib docstring
+- Minor docstring fixes
+- Added simple example and updated readme
+- Minor docstring update in mach
+- Added docstrings to all geo objects
+- Minor docstring update
+
+### 🧪 Testing
+
+- Fixed unit tests
+- Added serde tests for geopos
+
+### ⚙️ Miscellaneous Tasks
+
+- Ruff formatted and checked
+- Ruff formatted
+- Updated deps
+- Minor refactor of toml
+- Bumped pyglam in lock
+- Updated pyglam pointer
+- Fixed cargo warning
+
 ## [0.2.3] - 2026-01-12
 
 ### 🚀 Features
 
 - Added lla to/from relative coords and default parameters for vincenty functions
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.2.3
 
 ## [0.2.2] - 2026-01-09
 

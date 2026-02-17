@@ -1,16 +1,24 @@
-mod aer;
-mod eci;
-mod enu;
-mod lla;
-mod ned;
-pub mod util;
-mod vincenty;
-mod ecef;
+/*!
+map3d is a simple geodetic coordinate conversion library
+*/
 
-pub use aer::*;
-pub use eci::*;
-pub use enu::*;
-pub use lla::*;
-pub use ned::*;
+mod constants;
+pub use constants::*;
+
+mod traits;
+pub use traits::*;
+
+mod transforms;
+pub use transforms::*;
+
+mod vincenty;
 pub use vincenty::*;
-pub use ecef::*;
+
+pub mod utils;
+
+pub mod geo_objects;
+pub mod mach;
+
+pub use pyglam::{dquat, dvec3, DQuat, DVec3};
+#[cfg(feature = "py-bevy")]
+pub use pyglam::{quat::DQuatRef, vec3::DVec3Ref};

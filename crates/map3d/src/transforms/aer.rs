@@ -1,7 +1,14 @@
-use crate::enu;
+use crate::{
+    traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
+    transforms::enu,
+    utils,
+};
 use glam::{self, Vec3Swizzles};
 
 /// Converts ENU to AER.
+///
+/// Az Domain [0., 360.]
+/// El Domain [-90., 90.]
 ///
 /// # Arguments
 ///
@@ -10,10 +17,16 @@ use glam::{self, Vec3Swizzles};
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn enu2aer(enu: &glam::DVec3) -> glam::DVec3 {
-    let az = f64::atan2(enu.x, enu.y);
+pub fn enu2aer(enu: impl IntoDVec3) -> glam::DVec3 {
+    let enu = enu.into_dvec3();
+
+    let az = f64::atan2(enu.x, enu.y).to_degrees();
     let el = f64::atan2(enu.z, enu.xy().length());
-    let aer = glam::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), enu.length());
+
+    let az = utils::wrap_to_0_360(az);
+    let el = utils::wrap_to_pi(el).to_degrees();
+
+    let aer = glam::DVec3::new(az, el, enu.length());
     return aer;
 }
 
@@ -26,7 +39,9 @@ pub fn enu2aer(enu: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
+pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
+    let aer = aer.into_dvec3();
+
     let r = aer.z;
     let az = f64::to_radians(aer.x);
     let el = f64::to_radians(aer.y);
@@ -43,12 +58,12 @@ pub fn aer2enu(aer: &glam::DVec3) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ecef` - Absolute ECEF position [m, m, m]
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
 ///
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
+pub fn ecef2aer(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = enu::ecef2enu(ecef, lla_ref);
     return enu2aer(&enu);
 }
@@ -58,13 +73,13 @@ pub fn ecef2aer(ecef: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
 /// # Arguments
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame [[meters]].
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ecef_uvw2aer(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec3 {
-    let enu = enu::ecef_uvw2enu(ecef_uvw, lla_ref);
+pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
+    let enu = enu::ecef_uvw2enu(ecef_uvw, ll_ref);
     return enu2aer(&enu);
 }
 
@@ -73,28 +88,28 @@ pub fn ecef_uvw2aer(ecef_uvw: &glam::DVec3, lla_ref: &glam::DVec3) -> glam::DVec
 /// # Arguments
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn aer2ecef_uvw(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
+pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
     let enu = aer2enu(aer);
-    return enu::enu2ecef_uvw(&enu, &ref_lla);
+    return enu::enu2ecef_uvw(&enu, ll_ref);
 }
 /// Converts AER to Absolute ECEF.
 ///
 /// # Arguments
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-/// * `ref_lla` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
 ///
 /// # Returns
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
-pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
+pub fn aer2ecef(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = aer2enu(aer);
-    return enu::enu2ecef(&enu, &ref_lla);
+    return enu::enu2ecef(&enu, lla_ref);
 }
 
 /// Converts NED to AER.
@@ -106,10 +121,16 @@ pub fn aer2ecef(aer: &glam::DVec3, ref_lla: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-pub fn ned2aer(ned: &glam::DVec3) -> glam::DVec3 {
-    let az = f64::atan2(ned.y, ned.x);
+pub fn ned2aer(ned: impl IntoDVec3) -> glam::DVec3 {
+    let ned = ned.into_dvec3();
+
+    let az = f64::atan2(ned.y, ned.x).to_degrees();
     let el = f64::atan2(-ned.z, ned.xy().length());
-    let aer = glam::DVec3::new(f64::to_degrees(az), f64::to_degrees(el), ned.length());
+
+    let az = utils::wrap_to_0_360(az);
+    let el = utils::wrap_to_pi(el).to_degrees();
+
+    let aer = glam::DVec3::new(az, el, ned.length());
     return aer;
 }
 
@@ -122,7 +143,7 @@ pub fn ned2aer(ned: &glam::DVec3) -> glam::DVec3 {
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
-pub fn aer2ned(aer: &glam::DVec3) -> glam::DVec3 {
+pub fn aer2ned(aer: impl IntoDVec3) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return glam::DVec3::new(enu.y, enu.x, -enu.z);
 }
@@ -130,7 +151,6 @@ pub fn aer2ned(aer: &glam::DVec3) -> glam::DVec3 {
 #[cfg(test)]
 mod test_aer {
     use super::*;
-    use crate::util::assert_vecs_close;
     use rstest::*;
 
     #[rstest]
@@ -138,13 +158,14 @@ mod test_aer {
         let actual_aer = enu2aer(&glam::DVec3::new(1000., 100., 10000.));
         let expected_aer =
             glam::DVec3::new(84.28940686250037, 84.26111457290625, 10050.373127401788);
-        assert_vecs_close(&actual_aer, &expected_aer, 1e-6);
+
+        assert!(actual_aer.abs_diff_eq(expected_aer, 1e-6));
     }
     #[rstest]
     fn test_rae2enu() {
         let actual_enu = aer2enu(&glam::DVec3::new(15., 370., 123450.));
         let expected_enu =
             glam::DVec3::new(31465.800427043872, 117431.96589455023, 21436.8675329825);
-        assert_vecs_close(&actual_enu, &expected_enu, 1e-6);
+        assert!(actual_enu.abs_diff_eq(expected_enu, 1e-6));
     }
 }

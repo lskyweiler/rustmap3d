@@ -35,7 +35,7 @@ fn bench_geo(c: &mut Criterion) {
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
                 let point = map3d::rand_lla();
-                map3d::ecef2enu_quat(black_box(point.x), black_box(point.y));
+                map3d::ecef2enu_quat(black_box((point.x, point.y)));
             })
         },
     );
@@ -44,7 +44,7 @@ fn bench_geo(c: &mut Criterion) {
         |b: &mut criterion::Bencher<criterion::measurement::WallTime>| {
             b.iter(|| {
                 let point = map3d::rand_lla();
-                map3d::enu2ecef_quat(black_box(point.x), black_box(point.y));
+                map3d::enu2ecef_quat(black_box((point.x, point.y)));
             })
         },
     );
