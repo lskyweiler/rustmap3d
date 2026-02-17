@@ -498,7 +498,10 @@ class GeoPosition:
         - `aer_ddm` (`&DVec3`) - Azimuth, Elevation, Range in deg,deg,meters
         - `reference` (`EitherGeoPosOrLLATup`) - Reference location
         """
-    def alt(self) -> builtins.float: ...
+    def alt(self) -> builtins.float:
+        r"""
+        Get the MSL altitude in meters
+        """
     def set_alt(self, alt_m: builtins.float) -> None:
         r"""
         Sets the altitude of this position while preserving the lat/lon
@@ -647,7 +650,10 @@ class GeoPosition:
         r"""
         Rotate the geo position by an ecef rotation, but preserve the starting altitude
         """
-    def __repr__(self) -> builtins.str: ...
+    def __repr__(self) -> builtins.str:
+        r"""
+        Python __repr__ to pretty print the geo position as degrees.minutes.seconds
+        """
     def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition:
         r"""
         Adds a relative ecef vector to this position
