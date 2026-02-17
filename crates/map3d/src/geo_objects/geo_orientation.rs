@@ -23,14 +23,14 @@ use simple_py_bevy::*;
 use std::ops::Mul;
 
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
     reflect(Component)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
@@ -51,7 +51,7 @@ pub struct GeoOrientation {
 /// euler_rot = i * j * k  #> EulerRot.XYZ given (i, j, k) euler angles
 /// euler_Rot = k * j * i  #> EulerRot::XYZEx given (i, j, k) euler angles
 ///
-#[cfg_attr(feature = "pyo3", pyclass(eq, eq_int), gen_stub_pyclass_enum)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass_enum, pyclass(eq, eq_int))]
 #[derive(PartialEq, Clone, Debug)]
 pub enum EulerRot {
     /// Intrinsic three-axis rotation ZYX
@@ -160,7 +160,7 @@ impl GeoOrientation {
     py_bevy_methods,
     py_ref_methods
 )]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
+#[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoOrientation {
     /// Create an identity ecef orientation
     #[staticmethod]
@@ -339,12 +339,7 @@ impl GeoOrientation {
     pub fn z_axis(&self) -> DVec3 {
         self.dcm().col(2).into()
     }
-}
 
-#[cfg(feature = "pyo3")]
-#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
-impl GeoOrientation {
     /// Multiply this orientation with either a GeoPosition or a GeoOrientation
     ///
     /// Multiplying two orientations together results in a combined rotation

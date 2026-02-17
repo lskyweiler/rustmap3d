@@ -34,7 +34,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
 
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -43,7 +43,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
 #[cfg_attr(
     feature = "bevy",
     derive(Component, Reflect, serde::Deserialize, serde::Serialize),
-    reflect(Component, Clone),
+    reflect(Component, Clone)
 )]
 #[repr(transparent)]
 pub struct GeoPosition {
@@ -70,7 +70,7 @@ impl GeoPosition {
     py_bevy_methods,
     py_ref_methods
 )]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
+#[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoPosition {
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
@@ -135,6 +135,7 @@ impl GeoPosition {
             ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
         }
     }
+    /// Get the MSL altitude in meters
     pub fn alt(&self) -> f64 {
         self.lla().2
     }
@@ -147,19 +148,33 @@ impl GeoPosition {
         let lla = self.lla();
         self.ecef = lla2ecef((lla.0, lla.1, alt_m)).into();
     }
-    
-    /// Compute the bearing to another geoposition
-    /// 
-    /// This uses the vincenty inverse method
-    /// 
+    /// Gets the WGS84 Latitude, Longitude, and Altitude of this position
+    ///
     /// # Arguments
-    /// 
-    /// - `to_point` (`&GeoPosition`) - Target position
-    /// 
+    ///
+    /// - `&self` (`undefined`) - Describe this parameter.
+    ///
     /// # Returns
-    /// 
+    ///
+    /// - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
+    ///
+    #[getter]
+    fn get_lla(&self) -> (f64, f64, f64) {
+        self.lla()
+    }
+
+    /// Compute the bearing to another geoposition
+    ///
+    /// This uses the vincenty inverse method
+    ///
+    /// # Arguments
+    ///
+    /// - `to_point` (`&GeoPosition`) - Target position
+    ///
+    /// # Returns
+    ///
     /// - `f64` - Clockwise angle off true north in degrees
-    /// 
+    ///
     pub fn bearing_to(&self, to_point: &GeoPosition) -> f64 {
         let lla_a = self.lla();
         let lla_b = to_point.lla();
@@ -171,57 +186,57 @@ impl GeoPosition {
         return utils::wrap_to_0_360(bearing);
     }
     /// Compute the East, North, Up vector from this point to another geo vector
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `to_point` (`&GeoPosition`) - target geo point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - east north up vector relative to this, in (meters)
-    /// 
+    ///
     pub fn enu_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2enu(&to_point.ecef, &self.lla()).into()
     }
     /// Compute the Az, El, Range vector from this point to another geo vector
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `to_point` (`&GeoPosition`) - target geo point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - az, el, range as a 3 component vector in (deg, deg, m)
-    /// 
+    ///
     pub fn aer_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2aer(&to_point.ecef, &self.lla()).into()
     }
     /// Compute the North East Up vector from this point to another geo vector
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `to_point` (`&GeoPosition`) - target geo point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - north east up vector relative to this, in (meters)
-    /// 
+    ///
     pub fn ned_to(&self, to_point: &GeoPosition) -> DVec3 {
         ecef2ned(&to_point.ecef, &self.lla()).into()
     }
 
     /// Compute the bearing angle from another point to this one
-    /// 
+    ///
     /// This uses the vincenty inverse algorithm
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `from_point` (`&GeoPosition`) - Source point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `f64` - Clockwise angle off true north from the other point to this one
-    /// 
+    ///
     pub fn bearing_from(&self, from_point: &GeoPosition) -> f64 {
         let lla_a = self.lla();
         let lla_b = from_point.lla();
@@ -232,41 +247,41 @@ impl GeoPosition {
         return utils::wrap_to_0_360(bearing);
     }
     /// Compute the east north up vector from another point to this one
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `from_point` (`&GeoPosition`) - source point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - east north up vector in meters
-    /// 
+    ///
     pub fn enu_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2enu(&self.ecef, &from_point.lla()).into()
     }
     /// Compute the az el range vector from another point to this one
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `from_point` (`&GeoPosition`) - source point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - az el range in (deg, deg, meters)
-    /// 
+    ///
     pub fn aer_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2aer(&self.ecef, &from_point.lla()).into()
     }
     /// Compute the north east, down vector from another point to this one
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `from_point` (`&GeoPosition`) - source point
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `DVec3` - north east down in (meters)
-    /// 
+    ///
     pub fn ned_from(&self, from_point: &GeoPosition) -> DVec3 {
         ecef2ned(&self.ecef, &from_point.lla()).into()
     }
@@ -305,15 +320,15 @@ impl GeoPosition {
     }
 
     /// Get the lat lon of this point in degrees.minutes.seconds
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `&self` (`undefined`) - Describe this parameter.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `String` - Ex: "25:22:44.738N, "25:22:44.738E"
-    /// 
+    ///
     pub fn lat_lon_dms(&self) -> String {
         let ll = self.lla();
         return format!("{}, {}", dd2dms(ll.0, true), dd2dms(ll.1, false));
@@ -326,27 +341,22 @@ impl GeoPosition {
         let new_lat_lon = ecef2lla(&new_ecef).xy();
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
-}
 
-// Functions that only exist for python
-#[cfg(feature = "pyo3")]
-#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
-impl GeoPosition {
+    /// Python __repr__ to pretty print the geo position as degrees.minutes.seconds
     fn __repr__(&self) -> String {
         format!("{:?}", self)
     }
 
     /// Adds a relative ecef vector to this position
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `rhs` (`Either<GeoVector, DVec3>`) - Either a simple ecef_uvw vector or a GeoVector
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `PyResult<GeoPosition>` - New position
-    /// 
+    ///
     fn __add__(&self, rhs: Either<GeoVector, DVec3>) -> GeoPosition {
         match rhs {
             Either::Left(vec) => self + vec,
@@ -357,22 +367,19 @@ impl GeoPosition {
         self.__add__(rhs)
     }
     /// Subtract a relative ecef vector from this position
-    /// 
+    ///
     /// Subtracting a GeoPos from a GeoPos results in a GeoVector
     /// Subtracting a GeoVector from a GeoPos results in a new GeoPos
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `rhs` (`Either<GeoVector, GeoPosition>`) - Either another GeoPosition, or a GeoVector
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `PyResult<Either<GeoVector, GeoPosition>>` - GeoVector or GeoPos
-    /// 
-    fn __sub__(
-        &self,
-        rhs: Either<GeoVector, GeoPosition>,
-    ) -> Either<GeoVector, GeoPosition> {
+    ///
+    fn __sub__(&self, rhs: Either<GeoVector, GeoPosition>) -> Either<GeoVector, GeoPosition> {
         match rhs {
             Either::Left(vec) => Either::Right(self - vec),
             Either::Right(vec) => Either::Left(self - vec),
@@ -380,21 +387,6 @@ impl GeoPosition {
     }
     fn __rsub__(&self, lhs: GeoPosition) -> GeoVector {
         lhs - self
-    }
-
-    /// Gets the WGS84 Latitude, Longitude, and Altitude of this position
-    /// 
-    /// # Arguments
-    /// 
-    /// - `&self` (`undefined`) - Describe this parameter.
-    /// 
-    /// # Returns
-    /// 
-    /// - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
-    /// 
-    #[getter]
-    fn get_lla(&self) -> (f64, f64, f64) {
-        self.lla()
     }
 }
 

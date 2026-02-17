@@ -26,7 +26,7 @@ use std::ops::{Add, Div, Mul, Sub};
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass, gen_stub_pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -85,7 +85,7 @@ impl GeoVelocity {
     py_bevy_methods,
     py_ref_methods
 )]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
+#[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVelocity {
     /// Construct a velocity from an ecef unit direction and speed
     ///
@@ -175,11 +175,7 @@ impl GeoVelocity {
     pub fn ned(&self, reference: &GeoPosition) -> DVec3 {
         ecef_uvw2ned(&self.get_ecef_uvw(), &reference.lla()).into()
     }
-}
-#[cfg(feature = "pyo3")]
-#[cfg_attr(feature = "py-bevy", py_bevy_methods, py_ref_methods)]
-#[cfg_attr(feature = "pyo3", pymethods, gen_stub_pymethods)]
-impl GeoVelocity {
+
     /// Computes the mach number for this velocity at a given geo position
     ///
     /// # Arguments

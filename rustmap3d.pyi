@@ -186,6 +186,11 @@ class DVec3:
         y: typing.Optional[builtins.float] = None,
         z: typing.Optional[builtins.float] = None,
     ) -> DVec3: ...
+    @staticmethod
+    def rand_uv() -> DVec3:
+        r"""
+        Generates a random unit vector, normalized to 1.
+        """
     def to_tuple(self) -> tuple[builtins.float, builtins.float, builtins.float]:
         r"""
         Convert this vector to a 3 component tuple
@@ -406,11 +411,28 @@ class GeoPosition:
     Represents a position on the earth
     """
     @property
-    def ecef(self) -> DVec3: ...
+    def ecef(self) -> DVec3:
+        r"""
+        Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
+        """
     @ecef.setter
-    def ecef(self, value: DVec3) -> None: ...
+    def ecef(self, value: DVec3) -> None:
+        r"""
+        Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
+        """
     @property
-    def lla(self) -> tuple[builtins.float, builtins.float, builtins.float]: ...
+    def lla(self) -> tuple[builtins.float, builtins.float, builtins.float]:
+        r"""
+        Gets the WGS84 Latitude, Longitude, and Altitude of this position
+
+        # Arguments
+
+        - `&self` (`undefined`) - Describe this parameter.
+
+        # Returns
+
+        - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
+        """
     @staticmethod
     def from_ecef(ecef_m: DVec3) -> GeoPosition:
         r"""
@@ -485,14 +507,106 @@ class GeoPosition:
 
         - `alt_m` (`f64`) - New MSL altitude in meters
         """
-    def bearing_to(self, to_point: GeoPosition) -> builtins.float: ...
-    def enu_to(self, to_point: GeoPosition) -> DVec3: ...
-    def aer_to(self, to_point: GeoPosition) -> DVec3: ...
-    def ned_to(self, to_point: GeoPosition) -> DVec3: ...
-    def bearing_from(self, from_point: GeoPosition) -> builtins.float: ...
-    def enu_from(self, from_point: GeoPosition) -> DVec3: ...
-    def aer_from(self, from_point: GeoPosition) -> DVec3: ...
-    def ned_from(self, from_point: GeoPosition) -> DVec3: ...
+    def bearing_to(self, to_point: GeoPosition) -> builtins.float:
+        r"""
+        Compute the bearing to another geoposition
+
+        This uses the vincenty inverse method
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - Target position
+
+        # Returns
+
+        - `f64` - Clockwise angle off true north in degrees
+        """
+    def enu_to(self, to_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the East, North, Up vector from this point to another geo vector
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - target geo point
+
+        # Returns
+
+        - `DVec3` - east north up vector relative to this, in (meters)
+        """
+    def aer_to(self, to_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the Az, El, Range vector from this point to another geo vector
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - target geo point
+
+        # Returns
+
+        - `DVec3` - az, el, range as a 3 component vector in (deg, deg, m)
+        """
+    def ned_to(self, to_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the North East Up vector from this point to another geo vector
+
+        # Arguments
+
+        - `to_point` (`&GeoPosition`) - target geo point
+
+        # Returns
+
+        - `DVec3` - north east up vector relative to this, in (meters)
+        """
+    def bearing_from(self, from_point: GeoPosition) -> builtins.float:
+        r"""
+        Compute the bearing angle from another point to this one
+
+        This uses the vincenty inverse algorithm
+
+        # Arguments
+
+        - `from_point` (`&GeoPosition`) - Source point
+
+        # Returns
+
+        - `f64` - Clockwise angle off true north from the other point to this one
+        """
+    def enu_from(self, from_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the east north up vector from another point to this one
+
+        # Arguments
+
+        - `from_point` (`&GeoPosition`) - source point
+
+        # Returns
+
+        - `DVec3` - east north up vector in meters
+        """
+    def aer_from(self, from_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the az el range vector from another point to this one
+
+        # Arguments
+
+        - `from_point` (`&GeoPosition`) - source point
+
+        # Returns
+
+        - `DVec3` - az el range in (deg, deg, meters)
+        """
+    def ned_from(self, from_point: GeoPosition) -> DVec3:
+        r"""
+        Compute the north east, down vector from another point to this one
+
+        # Arguments
+
+        - `from_point` (`&GeoPosition`) - source point
+
+        # Returns
+
+        - `DVec3` - north east down in (meters)
+        """
     def dist_euclidean(self, to_point: GeoPosition) -> builtins.float:
         r"""
         Compute the euclidean distance between two geo positions in meters
@@ -517,17 +631,53 @@ class GeoPosition:
 
         - `f64` - Elliptical distance in meters
         """
-    def lat_lon_dms(self) -> builtins.str: ...
+    def lat_lon_dms(self) -> builtins.str:
+        r"""
+        Get the lat lon of this point in degrees.minutes.seconds
+
+        # Arguments
+
+        - `&self` (`undefined`) - Describe this parameter.
+
+        # Returns
+
+        - `String` - Ex: "25:22:44.738N, "25:22:44.738E"
+        """
     def rotate_lat_lon(self, ecef_rot: DQuat) -> None:
         r"""
         Rotate the geo position by an ecef rotation, but preserve the starting altitude
         """
     def __repr__(self) -> builtins.str: ...
-    def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
+    def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition:
+        r"""
+        Adds a relative ecef vector to this position
+
+        # Arguments
+
+        - `rhs` (`Either<GeoVector, DVec3>`) - Either a simple ecef_uvw vector or a GeoVector
+
+        # Returns
+
+        - `PyResult<GeoPosition>` - New position
+        """
     def __radd__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition: ...
     def __sub__(
         self, rhs: typing.Union[GeoVector, GeoPosition]
-    ) -> typing.Union[GeoVector, GeoPosition]: ...
+    ) -> typing.Union[GeoVector, GeoPosition]:
+        r"""
+        Subtract a relative ecef vector from this position
+
+        Subtracting a GeoPos from a GeoPos results in a GeoVector
+        Subtracting a GeoVector from a GeoPos results in a new GeoPos
+
+        # Arguments
+
+        - `rhs` (`Either<GeoVector, GeoPosition>`) - Either another GeoPosition, or a GeoVector
+
+        # Returns
+
+        - `PyResult<Either<GeoVector, GeoPosition>>` - GeoVector or GeoPos
+        """
     def __rsub__(self, lhs: GeoPosition) -> GeoVector: ...
 
 @typing.final
@@ -536,10 +686,7 @@ class GeoVector:
     Represents a vector relative to a reference point
     """
     @property
-    def ecef_uvw(self) -> DVec3:
-        r"""
-        Gets this vector in the ECEF frame in meters
-        """
+    def ecef_uvw(self) -> DVec3: ...
     @ecef_uvw.setter
     def ecef_uvw(self, value: DVec3) -> None: ...
     @staticmethod
@@ -548,28 +695,60 @@ class GeoVector:
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
-    ) -> GeoVector: ...
+    ) -> GeoVector:
+        r"""
+        Create a Vector from an ecef vector relative to a reference point
+
+        # Arguments
+
+        - `ecef_uvw` (`&DVec3`) - Vector in ecef frame in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+        """
     @staticmethod
     def from_enu(
         enu: DVec3,
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
-    ) -> GeoVector: ...
+    ) -> GeoVector:
+        r"""
+        Create a Vector from an enu vector relative to a reference point
+
+        # Arguments
+
+        - `enu` (`&DVec3`) - enu vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+        """
     @staticmethod
     def from_ned(
         ned: DVec3,
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
-    ) -> GeoVector: ...
+    ) -> GeoVector:
+        r"""
+        Create a Vector from an ned vector relative to a reference point
+
+        # Arguments
+
+        - `ned` (`&DVec3`) - ned vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+        """
     @staticmethod
     def from_aer(
         aer: DVec3,
         reference: typing.Union[
             tuple[builtins.float, builtins.float, builtins.float], GeoPosition
         ],
-    ) -> GeoVector: ...
+    ) -> GeoVector:
+        r"""
+        Create a Vector from an ned vector relative to a reference point
+
+        # Arguments
+
+        - `ned` (`&DVec3`) - ned vector in meters
+        - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
+        """
     def length(self) -> builtins.float:
         r"""
         Compute the length of this vector in meters
@@ -586,15 +765,42 @@ class GeoVector:
 
         - `DVec3` - Absolute ecef position in meters
         """
-    def enu(self) -> DVec3: ...
-    def ned(self) -> DVec3: ...
-    def aer(self) -> DVec3: ...
-    def north(self) -> builtins.float: ...
-    def south(self) -> builtins.float: ...
-    def east(self) -> builtins.float: ...
-    def west(self) -> builtins.float: ...
-    def up(self) -> builtins.float: ...
-    def down(self) -> builtins.float: ...
+    def enu(self) -> DVec3:
+        r"""
+        Get this vector as east north up relative to its reference
+        """
+    def ned(self) -> DVec3:
+        r"""
+        Get this vector as north east down relative to its reference
+        """
+    def aer(self) -> DVec3:
+        r"""
+        Get this vector as az el range relative to its reference
+        """
+    def north(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector goes north from its reference point
+        """
+    def south(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector goes south from its reference point
+        """
+    def east(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector goes east from its reference point
+        """
+    def west(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector goes west from its reference point
+        """
+    def up(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector goes away from earth from its reference point
+        """
+    def down(self) -> builtins.float:
+        r"""
+        Get the distance in meters this vector towards the earth from its reference point
+        """
     def azimuth(self) -> builtins.float:
         r"""
         Compute the clockwise angle off true north for this vector relative to its reference
@@ -612,6 +818,14 @@ class GeoVelocity:
     Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
     """
     @property
+    def dir_ecef(self) -> DVec3: ...
+    @dir_ecef.setter
+    def dir_ecef(self, value: DVec3) -> None: ...
+    @property
+    def speed(self) -> builtins.float: ...
+    @speed.setter
+    def speed(self, value: builtins.float) -> None: ...
+    @property
     def ecef_uvw(self) -> DVec3:
         r"""
         Get this velocity in ecef frame
@@ -620,20 +834,6 @@ class GeoVelocity:
 
         - `DVec3` - ECEF velocity in m/s
         """
-    @property
-    def speed(self) -> builtins.float:
-        r"""
-        Gets the speed of this velocity in m/s
-        """
-    @speed.setter
-    def speed(self, value: builtins.float) -> None: ...
-    @property
-    def direction(self) -> DVec3:
-        r"""
-        Get this velocity's direction in the ecef frame
-        """
-    @direction.setter
-    def direction(self, value: DVec3) -> None: ...
     @staticmethod
     def from_dir_speed(ecef_dir: DVec3, speed_mps: builtins.float) -> GeoVelocity:
         r"""
