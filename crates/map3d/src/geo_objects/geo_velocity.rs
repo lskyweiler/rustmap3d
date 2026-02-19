@@ -151,10 +151,20 @@ impl GeoVelocity {
     ///
     /// - `DVec3` - ECEF velocity in m/s
     ///
-    // #[cfg_attr(feature = "pyo3", getter)]
     #[getter]
     pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
+    }
+    /// Sets this velocity from an ecef uvw vector in m/s
+    ///
+    /// # Returns
+    ///
+    /// - `DVec3` - ECEF velocity in m/s
+    ///
+    #[setter]
+    pub fn set_ecef_uvw(&mut self, ecef_uvw_mps: &DVec3) {
+        self.dir_ecef = ecef_uvw_mps.normalize().into();
+        self.speed = ecef_uvw_mps.length();
     }
 
     /// Get this velocity in a local enu frame in m/s
