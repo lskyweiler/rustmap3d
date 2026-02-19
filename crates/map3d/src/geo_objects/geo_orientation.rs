@@ -35,7 +35,15 @@ use std::ops::Mul;
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DQuatRef))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DQuatRef, 
+                other_set_type = pyglam::DQuatRef
+            )
+        )
+    ]
     ecef_rot: DQuat,
 }
 

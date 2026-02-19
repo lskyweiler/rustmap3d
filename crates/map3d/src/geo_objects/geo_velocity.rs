@@ -38,7 +38,15 @@ use std::ops::{Add, Div, Mul, Sub};
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoVelocity {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DVec3Ref, 
+                other_set_type = pyglam::DVec3Ref
+            )
+        )
+    ]
     #[pyo3(get, set)]
     dir_ecef: DVec3,
     #[pyo3(get, set)]

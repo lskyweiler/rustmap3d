@@ -25,7 +25,15 @@ use simple_py_bevy::*;
     reflect(Component)
 )]
 pub struct GeoVector {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DVec3Ref, 
+                other_set_type = pyglam::DVec3Ref
+            )
+        )
+    ]
     #[pyo3(get, set)]
     ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
