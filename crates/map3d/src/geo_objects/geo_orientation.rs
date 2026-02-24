@@ -180,9 +180,9 @@ impl GeoOrientation {
     ///     ]
     /// }
     /// ```
-    #[cfg(feature = "serde")]
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
     #[staticmethod]
-    pub fn model_validate_json(json_str: &str) -> PyResult<Self> {
+    fn model_validate_json(json_str: &str) -> PyResult<Self> {
         match serde_json::from_str(json_str) {
             Ok(loaded) => Ok(loaded),
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
@@ -199,8 +199,8 @@ impl GeoOrientation {
     ///     ]
     /// }
     /// ```
-    #[cfg(feature = "serde")]
-    pub fn model_dump_json(&self) -> PyResult<String> {
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump_json(&self) -> PyResult<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
