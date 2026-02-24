@@ -25,6 +25,18 @@ class TestGeoOrientation:
         )
         np.testing.assert_allclose(actual.x_axis().to_tuple(), (0, 1, 0), atol=1e-10)
 
+    def test_dump_dict(self):
+        actual = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0, 0, math.pi / 2.0)
+        ).model_dump()
+        assert "ecef_rot" in actual.keys()
+
+    def test_load_dict(self):
+        dumped = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0, 0, math.pi / 2.0)
+        ).model_dump()
+        rustmap3d.GeoOrientation.model_validate(dumped)
+
     def test_dump(self):
         actual = rustmap3d.GeoOrientation.from_ecef_euler(
             rustmap3d.DVec3(0, 0, math.pi / 2.0)
@@ -32,4 +44,6 @@ class TestGeoOrientation:
         assert actual == '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}'
 
     def test_load(self):
-        rustmap3d.GeoOrientation.model_validate_json('{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}')
+        rustmap3d.GeoOrientation.model_validate_json(
+            '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}'
+        )

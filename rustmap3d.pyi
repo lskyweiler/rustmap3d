@@ -231,9 +231,34 @@ class GeoOrientation:
         }
         ```
         """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoOrientation:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
     def model_dump_json(self) -> builtins.str:
         r"""
         Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python json dict
         # Examples
 
         ```
@@ -466,9 +491,38 @@ class GeoPosition:
         }
         ```
         """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoPosition:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
+        """
     def model_dump_json(self) -> builtins.str:
         r"""
         Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
         # Examples
 
         ```
@@ -758,9 +812,40 @@ class GeoVector:
         }
         ```
         """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoVector:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
     def model_dump_json(self) -> builtins.str:
         r"""
         Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
         # Examples
 
         ```
@@ -941,9 +1026,36 @@ class GeoVelocity:
         }
         ```
         """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoVelocity:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
     def model_dump_json(self) -> builtins.str:
         r"""
         Dump to a json string
+        # Examples
+
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
         # Examples
 
         ```

@@ -5,7 +5,7 @@ use bevy::prelude::*;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError};
+use pyo3::{prelude::*, exceptions::PyValueError, types::PyDict};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -72,6 +72,23 @@ impl GeoVector {
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
         }
     }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
 
     /// Dump to a json string
     /// # Examples
@@ -92,6 +109,24 @@ impl GeoVector {
             Ok(s) => Ok(s),
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
         }
+    }
+    /// Dump to a python dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
     }
 
     /// Create a Vector from an ecef vector relative to a reference point

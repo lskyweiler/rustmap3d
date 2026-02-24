@@ -1,4 +1,6 @@
 use glam;
+#[cfg(feature = "pyo3")]
+use pyo3::{prelude::*, types::PyDict};
 use rand_distr::{Distribution, Normal};
 
 /// Linear interpolation between two values.
@@ -99,6 +101,30 @@ pub fn rand_point_on_sphere(radius: f64) -> glam::DVec3 {
             normal.sample(&mut rng),
         )
         .normalize());
+}
+
+/// Convert a json string to a python dict
+///
+/// Simply calls json.loads(json_str)
+///
+#[cfg(feature = "pyo3")]
+pub fn dump_to_pydict<'py>(py: Python<'py>, json_str: &str) -> PyResult<Py<PyAny>> {
+    let json_mod = py.import("json")?;
+    let get_module_callable = json_mod.getattr("loads")?;
+    let loaded = get_module_callable.call1((json_str,))?;
+    Ok(loaded.unbind())
+}
+/// Convert a json dict to a string
+///
+/// Simply calls json.dumps(json_dict)
+///
+#[cfg(feature = "pyo3")]
+pub fn pydict_to_dump<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<String> {
+    let json_mod = py.import("json")?;
+    let get_module_callable = json_mod.getattr("dumps")?;
+    let dumped = get_module_callable.call1((json_dict,))?;
+    let json_str: String = dumped.extract()?;
+    Ok(json_str)
 }
 
 /// Test utility to assert that two vector's components are close to equal

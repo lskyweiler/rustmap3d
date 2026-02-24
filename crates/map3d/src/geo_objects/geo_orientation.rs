@@ -15,7 +15,7 @@ use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError};
+use pyo3::{prelude::*, exceptions::PyValueError, types::PyDict};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -188,6 +188,20 @@ impl GeoOrientation {
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
         }
     }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
 
     /// Dump to a json string
     /// # Examples
@@ -205,6 +219,21 @@ impl GeoOrientation {
             Ok(s) => Ok(s),
             Err(what) => Err(PyValueError::new_err(format!("{}", what)))
         }
+    }
+    /// Dump to a python json dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
     }
 
     /// Create an identity ecef orientation
