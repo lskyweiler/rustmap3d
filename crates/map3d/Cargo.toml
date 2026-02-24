@@ -21,8 +21,8 @@ either.workspace = true
 pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
 
-simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true, version = "0.1.0" }
-pyglam = { git = "https://github.com/lskyweiler/pyglam", version = "0.1.2" }
+simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true, version = "0.2.0" }
+pyglam = { git = "https://github.com/lskyweiler/pyglam", version = "0.2.0" }
 
 bevy = { workspace = true, optional = true }
 serde = { version = "~1.0", features = ["derive"], optional = true }

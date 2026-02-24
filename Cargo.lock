@@ -3328,7 +3328,7 @@ dependencies = [
 
 [[package]]
 name = "map3d"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "almost",
  "approx",
@@ -3351,7 +3351,7 @@ dependencies = [
 
 [[package]]
 name = "map3d_derive"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "quote",
  "syn",
@@ -4272,7 +4272,7 @@ dependencies = [
 
 [[package]]
 name = "pyglam"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "bevy",
  "either",
@@ -4287,7 +4287,7 @@ dependencies = [
 
 [[package]]
 name = "pymap3d"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "glam",
  "map3d",
@@ -4731,7 +4731,7 @@ dependencies = [
 
 [[package]]
 name = "rustmap3d"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "env_logger",
  "glam",
@@ -4957,7 +4957,7 @@ checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 
 [[package]]
 name = "simple-py-bevy"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bevy",
  "pyo3",
@@ -4966,7 +4966,7 @@ dependencies = [
 
 [[package]]
 name = "simple_py_bevy_derive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "darling",
  "proc-macro2",
