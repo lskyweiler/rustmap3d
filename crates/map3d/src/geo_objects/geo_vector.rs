@@ -5,7 +5,7 @@ use bevy::prelude::*;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -19,9 +19,10 @@ use simple_py_bevy::*;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 pub struct GeoVector {
@@ -52,6 +53,47 @@ impl GeoVector {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVector {
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    #[staticmethod]
+    pub fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    pub fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
     /// Create a Vector from an ecef vector relative to a reference point
     /// 
     /// # Arguments

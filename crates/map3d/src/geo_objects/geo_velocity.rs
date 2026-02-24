@@ -31,9 +31,10 @@ use std::ops::{Add, Div, Mul, Sub};
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
@@ -95,6 +96,44 @@ impl GeoVelocity {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVelocity {
+
+        /// Load from a json string
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    #[staticmethod]
+    pub fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    pub fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
     /// Construct a velocity from an ecef unit direction and speed
     ///
     /// # Arguments

@@ -220,6 +220,31 @@ class DVec3:
 @typing.final
 class GeoOrientation:
     @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoOrientation:
+        r"""
+        Load from a json string
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    @staticmethod
     def from_identity() -> GeoOrientation:
         r"""
         Create an identity ecef orientation
@@ -426,6 +451,35 @@ class GeoPosition:
         # Returns
 
         - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
+        """
+    @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoPosition:
+        r"""
+        Load from a json string
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
         """
     @staticmethod
     def from_ecef(ecef_m: DVec3) -> GeoPosition:
@@ -690,6 +744,37 @@ class GeoVector:
     @ecef_uvw.setter
     def ecef_uvw(self, value: DVec3) -> None: ...
     @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoVector:
+        r"""
+        Load from a json string
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    @staticmethod
     def from_ecef(
         ecef_uvw: DVec3,
         reference: typing.Union[
@@ -833,6 +918,42 @@ class GeoVelocity:
         # Returns
 
         - `DVec3` - ECEF velocity in m/s
+        """
+    @ecef_uvw.setter
+    def ecef_uvw(self, value: DVec3) -> None:
+        r"""
+        Sets this velocity from an ecef uvw vector in m/s
+
+        # Returns
+
+        - `DVec3` - ECEF velocity in m/s
+        """
+    @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoVelocity:
+        r"""
+        Load from a json string
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
         """
     @staticmethod
     def from_dir_speed(ecef_dir: DVec3, speed_mps: builtins.float) -> GeoVelocity:

@@ -10,7 +10,7 @@ use glam::{self, swizzles::*};
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -40,9 +40,10 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
+    derive(Component, Reflect),
     reflect(Component, Clone)
 )]
 #[repr(transparent)]
@@ -80,6 +81,46 @@ impl GeoPosition {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoPosition {
+
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "ecef": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    #[staticmethod]
+    pub fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    pub fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
     /// # Arguments
@@ -702,10 +743,9 @@ mod test_geo_pos {
         }
     }
 
-    #[cfg(feature = "bevy")]
+    #[cfg(feature = "serde")]
     mod test_serde {
         use super::*;
-        use serde_json;
 
         #[test]
         fn test_deserialize() {
@@ -717,14 +757,14 @@ mod test_geo_pos {
                     3693569.6778840856
                 ]
             }"#;
-            let actual: GeoPosition = serde_json::from_str(json).unwrap();
+            let actual = GeoPosition::model_validate_json(json).unwrap();
             almost::equal_with(actual.ecef.x, 119962.85915496295, 1e-10);
         }
 
         #[test]
         fn test_serialize() {
             let pos = GeoPosition::from_lla((0., 0., 0.));
-            let actual = serde_json::to_string(&pos);
+            let actual = pos.model_dump_json();
             assert!(actual.is_ok());
         }
     }

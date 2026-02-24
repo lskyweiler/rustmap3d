@@ -15,7 +15,7 @@ use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -28,9 +28,10 @@ use std::ops::Mul;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
@@ -170,6 +171,42 @@ impl GeoOrientation {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoOrientation {
+
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    #[staticmethod]
+    pub fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(feature = "serde")]
+    pub fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+
     /// Create an identity ecef orientation
     #[staticmethod]
     pub fn from_identity() -> Self {
@@ -277,7 +314,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     pub fn from_enu_frame(reference: EitherGeoPosOrLLATup) -> Self {
-        let body2ecef = ecef2enu_quat(reference);
+        let body2ecef = enu2ecef_quat(reference);
         Self::from_ecef(&body2ecef.into())
     }
     /// Construct an orientation aligned with the NED frame at the given reference location
@@ -288,7 +325,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     pub fn from_ned_frame(reference: EitherGeoPosOrLLATup) -> Self {
-        let body2ecef = ecef2ned_quat(reference);
+        let body2ecef = ned2ecef_quat(reference);
         Self::from_ecef(&body2ecef.into())
     }
 

@@ -10,6 +10,7 @@
     "rust-analyzer.cargo.features": [
         // "py-bevy",
         "pyo3",
+        "serde",
         // "bevy"
     ],
     "rust-analyzer.cargo.noDefaultFeatures": true
