@@ -401,6 +401,21 @@ impl GeoOrientation {
         return ecef2enu * self.ecef_rot;
     }
 
+    /// Sets this rotation to face an ecef direction and orient up in an ecef direction
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
+    /// 
+    pub fn look_to(&mut self, ecef_direction: DVec3, ecef_up: DVec3) {
+        let right = ecef_up.cross(*ecef_direction);
+        let up = ecef_direction.cross(right);
+        let frame = glam::DMat3::from_cols(*ecef_direction, right, up);
+        let rot = glam::DQuat::from_mat3(&frame);
+        self.ecef_rot = rot.into();
+    }
+
     /// Get the positive x axis for this orientation in the ecef frame
     pub fn x_axis(&self) -> DVec3 {
         self.dcm().col(0).into()
