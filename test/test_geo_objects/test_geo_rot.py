@@ -42,7 +42,7 @@ class TestGeoOrientation:
             rustmap3d.DVec3(0, 0, math.pi / 2.0)
         ).model_dump_json()
         # assert actual == '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}
-        assert "ecef_rot" in actual  
+        assert "ecef_rot" in actual
 
     def test_load(self):
         rustmap3d.GeoOrientation.model_validate_json(
