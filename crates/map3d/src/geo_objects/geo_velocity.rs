@@ -6,10 +6,10 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DVec3,
-    utils,
-    validator_wrapper_fn
+    DVec3
 };
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn, utils};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;

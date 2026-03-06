@@ -1,9 +1,12 @@
-use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3, validator_wrapper_fn, utils};
+use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn, utils};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
+#[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
 use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]

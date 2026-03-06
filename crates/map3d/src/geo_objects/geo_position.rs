@@ -1,6 +1,8 @@
 use crate::{
-    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3, validator_wrapper_fn
+    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3
 };
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -9,6 +11,7 @@ use either::Either;
 use glam::{self, swizzles::*};
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
+#[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
 use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]
