@@ -218,7 +218,7 @@ class DVec3:
     def cross(self, rhs: typing.Any) -> DVec3: ...
 
 @typing.final
-class GeoOrientation:
+class GeoOrientation(typing.ForwardRef):
     @staticmethod
     def model_validate_json(json_str: builtins.str) -> GeoOrientation:
         r"""
@@ -482,7 +482,7 @@ class GeoOrientation:
         """
 
 @typing.final
-class GeoPosition:
+class GeoPosition(typing.ForwardRef):
     r"""
     Represents a position on the earth
     """
@@ -820,7 +820,7 @@ class GeoPosition:
     def __rsub__(self, lhs: GeoPosition) -> GeoVector: ...
 
 @typing.final
-class GeoVector:
+class GeoVector(typing.ForwardRef):
     r"""
     Represents a vector relative to a reference point
     """
@@ -1030,7 +1030,7 @@ class GeoVector:
         """
 
 @typing.final
-class GeoVelocity:
+class GeoVelocity(typing.ForwardRef):
     r"""
     Represents a 3D velocity vector in geo space
     Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it

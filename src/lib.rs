@@ -6,6 +6,8 @@ use pyo3_stub_gen::define_stub_info_gatherer;
 #[pymodule]
 fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
     {
+        m.gil_used(false)?;  // 3.14t support
+
         m.add_function(wrap_pyfunction!(ecef2lla, m)?)?;
         m.add_function(wrap_pyfunction!(lla2ecef, m)?)?;
 

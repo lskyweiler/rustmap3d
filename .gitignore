@@ -67,9 +67,6 @@ docs/_build/
 # VSCode
 # .vscode/
 
-# Pyenv
-.python-version
-
 target/
 
 .benchmarks/

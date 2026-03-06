@@ -36,7 +36,6 @@ dev = [
     "pymap3d",
     "numpy",
     "matplotlib",
-    "numba",
     'maturin[patchelf] ; platform_system != "Windows"',
 ]
 
