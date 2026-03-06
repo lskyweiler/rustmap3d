@@ -38,9 +38,13 @@ criterion = { version = "~0.8", features = ["html_reports"] }
 name = "geobench"
 harness = false
 
+[lib]
+doctest = false
+
 [features]
 # generate pyo3 functions at all
 pyo3 = ["dep:pyo3", "dep:pyo3-stub-gen", "pyglam/pyo3"]
+pydantic-serde = []
 serde = ["dep:serde", "dep:serde_json", "pyglam/serde"]
 # only bevy functionality
 bevy = ["dep:bevy", "serde", "pyglam/bevy"]

@@ -31,6 +31,7 @@ dev = [
     "pytest-benchmark[histogram]",
     "pylint",
     "maturin",
+    "pydantic",  # for pydantic integration tests
     # for benchmarks
     "pymap3d",
     "numpy",

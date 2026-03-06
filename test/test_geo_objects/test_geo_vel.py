@@ -1,4 +1,5 @@
 import numpy as np
+import pydantic
 
 import rustmap3d
 
@@ -31,3 +32,44 @@ class TestGeoVelocity:
             '{"dir_ecef":[1.0,0.0,0.0],"speed":100.0}'
         )
         np.testing.assert_allclose(actual.dir_ecef.x, 1.0)
+
+
+class MockModel(pydantic.BaseModel):
+    vel: rustmap3d.GeoVelocity
+
+
+class TestPydantic:
+    def test_model_dump(self):
+        model = MockModel(
+            vel=rustmap3d.GeoVelocity.from_dir_speed(rustmap3d.DVec3(1, 0, 0), 100.0)
+        )
+        dumped = model.model_dump(mode="json")
+        assert "vel" in dumped
+        assert "dir_ecef" in dumped["vel"]
+
+    def test_model_dump_json(self):
+        model = MockModel(
+            vel=rustmap3d.GeoVelocity.from_dir_speed(rustmap3d.DVec3(1, 0, 0), 100.0)
+        )
+        dumped = model.model_dump_json()
+        assert isinstance(dumped, str)
+        assert "vel" in dumped
+        assert "dir_ecef" in dumped
+
+    def test_model_validate(self):
+        model = MockModel(
+            vel=rustmap3d.GeoVelocity.from_dir_speed(rustmap3d.DVec3(1, 0, 0), 100.0)
+        )
+        dumped = model.model_dump(mode="json")
+        actual = MockModel.model_validate(dumped)
+        np.testing.assert_allclose(actual.vel.dir_ecef.to_tuple(), (1, 0, 0))
+        np.testing.assert_allclose(actual.vel.speed, 100.0)
+
+    def test_model_validate_json(self):
+        model = MockModel(
+            vel=rustmap3d.GeoVelocity.from_dir_speed(rustmap3d.DVec3(1, 0, 0), 100.0)
+        )
+        dumped = model.model_dump_json()
+        actual = MockModel.model_validate_json(dumped)
+        np.testing.assert_allclose(actual.vel.dir_ecef.to_tuple(), (1, 0, 0))
+        np.testing.assert_allclose(actual.vel.speed, 100.0)

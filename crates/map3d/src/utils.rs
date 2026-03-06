@@ -127,6 +127,79 @@ pub fn pydict_to_dump<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<S
     Ok(json_str)
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_pydantic_core_schema<'py>(
+    py: Python,
+    validator_py_fn: Py<PyAny>,
+    serializer_py_fn: Py<PyAny>,
+) -> PyResult<Py<PyAny>> {
+    use pyo3::types::IntoPyDict;
+    use std::collections::HashMap;
+
+    /*
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[typing.Any], handler: pydantic.GetCoreSchemaHandler
+    ) -> CoreSchema:
+        """
+        Generates the pydantic-core schema for this class.
+        """
+
+        # Define the schema: use a plain validator function
+        schema = core_schema.no_info_plain_validator_function(
+            GeoPosition.model_validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda v: {"ecef": [v.ecef.x, v.ecef.y, v.ecef.z]},
+                when_used="always",
+            ),
+        )
+        return schema
+    */
+
+    let pydantic_core_mod = py.import("pydantic_core")?;
+    let core_schema_mod = pydantic_core_mod.getattr("core_schema")?;
+
+    let serialization_fn = core_schema_mod.getattr("plain_serializer_function_ser_schema")?;
+    let ser_kwargs = HashMap::from([("when_used", "always")]).into_py_dict(py)?;
+    let serialization = serialization_fn.call((serializer_py_fn,), Some(&ser_kwargs))?;
+    let schema_fn = core_schema_mod.getattr("no_info_plain_validator_function")?;
+
+    let schema_kwargs = HashMap::from([("serialization", serialization)]).into_py_dict(py)?;
+    let schema = schema_fn.call((validator_py_fn,), Some(&schema_kwargs))?;
+
+    Ok(schema.unbind())
+}
+
+/// Generate a wrapper function around the given function that allows pydantic to call as a non-class method validator
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+#[macro_export]
+macro_rules! validator_wrapper_fn {
+    ($Obj:ident, $Name:literal) => {
+        #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+        #[pyfunction]
+        fn validate_obj<'py>(py: Python<'py>, obj: Py<PyAny>) -> PyResult<Py<PyAny>> {
+            use pyo3::IntoPyObjectExt;
+
+            if let Ok(dict) = obj.extract::<Py<PyDict>>(py) {
+                let validated = $Obj::model_validate(py, dict)?;
+                let validated_any = validated.into_py_any(py)?;
+                return Ok(validated_any);
+            } else if let Ok(validated) = obj.extract::<$Obj>(py) {
+                let validated_any = validated.into_py_any(py)?;
+                return Ok(validated_any);
+            }
+            let obj_type: Py<PyString> = obj
+                .getattr(py, "__class__")?
+                .getattr(py, "__name__")?
+                .extract(py)?;
+            Err(PyValueError::new_err(format!(
+                "Must either be a $Name object or dict. Got {}",
+                obj_type
+            )))
+        }
+    };
+}
+
 /// Test utility to assert that two vector's components are close to equal
 /// Panics if not close to equal.
 ///
