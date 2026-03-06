@@ -21,12 +21,12 @@ either.workspace = true
 pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
 
-simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true, version = "0.1.0" }
-pyglam = { git = "https://github.com/lskyweiler/pyglam", version = "0.1.2" }
+simple-py-bevy = { "git" = "https://github.com/lskyweiler/simple-py-bevy", optional = true }
+pyglam = { git = "https://github.com/lskyweiler/pyglam" }
 
 bevy = { workspace = true, optional = true }
 serde = { version = "~1.0", features = ["derive"], optional = true }
-serde_json = { version ="~1.0" , optional = true}
+serde_json = { version = "~1.0", optional = true }
 
 map3d_derive = { path = "../map3d_derive" }
 
@@ -38,11 +38,16 @@ criterion = { version = "~0.8", features = ["html_reports"] }
 name = "geobench"
 harness = false
 
+[lib]
+doctest = false
+
 [features]
 # generate pyo3 functions at all
 pyo3 = ["dep:pyo3", "dep:pyo3-stub-gen", "pyglam/pyo3"]
+pydantic-serde = []
+serde = ["dep:serde", "dep:serde_json", "pyglam/serde"]
 # only bevy functionality
-bevy = ["dep:bevy", "dep:serde", "dep:serde_json", "pyglam/bevy"]
+bevy = ["dep:bevy", "serde", "pyglam/bevy"]
 # bevy and py ref functionality
 py-bevy = [
     "pyo3",

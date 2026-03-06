@@ -6,8 +6,10 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DVec3,
+    DVec3
 };
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn, utils};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -16,7 +18,7 @@ use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::{exceptions::PyValueError, prelude::*};
+use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -31,14 +33,23 @@ use std::ops::{Add, Div, Mul, Sub};
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoVelocity {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DVec3Ref, 
+                other_set_type = pyglam::DVec3Ref
+            )
+        )
+    ]
     #[pyo3(get, set)]
     dir_ecef: DVec3,
     #[pyo3(get, set)]
@@ -80,6 +91,9 @@ impl GeoVelocity {
     }
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+validator_wrapper_fn!(GeoVelocity, "GeoVelocity");  // need to create a non-classmethod validator for pydantic to hook into
+
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     py_bevy_methods,
@@ -87,6 +101,103 @@ impl GeoVelocity {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVelocity {
+
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Dump to a python dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "dir_ecef": [
+    ///         1., 0., 0.
+    ///     ],
+    ///     "speed": 100.
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
+    }
+    /// Pydantic hook
+    /// Allows this to be used as-is in pydantic basemodels
+    /// 
+    /// * Example
+    /// ```python,no_run
+    /// class MyModel(pydantic.BaseModel):
+    ///     ve;: rustmap3d.GeoVelocity
+    /// 
+    /// dumped = MyModel(...).model_dump_json()
+    /// loaded = MyModel.model_validate_json(dumped)
+    /// ```
+    // * Note: it would be nice to macro_rules! this away, but pyo3 does not allow macros inside impl blocks
+    // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classmethod]
+    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+        let validator = PyCFunction::new_closure(
+            py, None, None, 
+            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+                let py = args.py();
+                let first = args.get_item(0)?;
+                validate_obj(py, first.unbind())
+            }
+        ).unwrap();
+        let validator = validator.as_any().clone().unbind();
+        let serializer = cls.getattr("model_dump")?.unbind();
+        utils::create_pydantic_core_schema(py, validator, serializer)
+    }
+
     /// Construct a velocity from an ecef unit direction and speed
     ///
     /// # Arguments
@@ -151,10 +262,20 @@ impl GeoVelocity {
     ///
     /// - `DVec3` - ECEF velocity in m/s
     ///
-    // #[cfg_attr(feature = "pyo3", getter)]
     #[getter]
     pub fn get_ecef_uvw(&self) -> DVec3 {
         return self.dir_ecef * self.speed;
+    }
+    /// Sets this velocity from an ecef uvw vector in m/s
+    ///
+    /// # Returns
+    ///
+    /// - `DVec3` - ECEF velocity in m/s
+    ///
+    #[setter]
+    pub fn set_ecef_uvw(&mut self, ecef_uvw_mps: &DVec3) {
+        self.dir_ecef = ecef_uvw_mps.normalize().into();
+        self.speed = ecef_uvw_mps.length();
     }
 
     /// Get this velocity in a local enu frame in m/s

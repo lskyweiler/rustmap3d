@@ -1,6 +1,8 @@
 use crate::{
-    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3,
+    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3
 };
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -9,8 +11,9 @@ use either::Either;
 use glam::{self, swizzles::*};
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
+#[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -40,15 +43,24 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
+    derive(Component, Reflect),
     reflect(Component, Clone)
 )]
 #[repr(transparent)]
 pub struct GeoPosition {
     // Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DVec3Ref, 
+                other_set_type = pyglam::DVec3Ref
+            )
+        )
+    ]
     #[pyo3(get, set)]
     ecef: DVec3,
 }
@@ -65,6 +77,9 @@ impl GeoPosition {
     }
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+validator_wrapper_fn!(GeoPosition, "GeoPosition");  // need to create a non-classmethod validator for pydantic to hook into
+
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     py_bevy_methods,
@@ -72,6 +87,96 @@ impl GeoPosition {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoPosition {
+
+    /// Load from a json string
+    /// ```
+    /// "{'ecef':[0.,0.,0.]}"
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "ecef": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// "{'ecef':[0.,0.,0.]}"
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Dump to a python dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
+    }
+
+    /// Pydantic hook
+    /// Allows this to be used as-is in pydantic basemodels
+    /// 
+    /// * Example
+    /// ```python,no_run
+    /// class MyModel(pydantic.BaseModel):
+    ///     pos: rustmap3d.GeoPosition
+    /// 
+    /// dumped = MyModel(...).model_dump_json()
+    /// loaded = MyModel.model_validate_json(dumped)
+    /// ```
+    // * Note: it would be nice to macro_rules! this away, but pyo3 does not allow macros inside impl blocks
+    // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classmethod]
+    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+        let validator = PyCFunction::new_closure(
+            py, None, None, 
+            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+                let py = args.py();
+                let first = args.get_item(0)?;
+                validate_obj(py, first.unbind())
+            }
+        ).unwrap();
+        let validator = validator.as_any().clone().unbind();
+        let serializer = cls.getattr("model_dump")?.unbind();
+        utils::create_pydantic_core_schema(py, validator, serializer)
+    }
+
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
     /// # Arguments
@@ -694,10 +799,9 @@ mod test_geo_pos {
         }
     }
 
-    #[cfg(feature = "bevy")]
+    #[cfg(feature = "serde")]
     mod test_serde {
         use super::*;
-        use serde_json;
 
         #[test]
         fn test_deserialize() {
@@ -709,14 +813,14 @@ mod test_geo_pos {
                     3693569.6778840856
                 ]
             }"#;
-            let actual: GeoPosition = serde_json::from_str(json).unwrap();
+            let actual = GeoPosition::model_validate_json(json).unwrap();
             almost::equal_with(actual.ecef.x, 119962.85915496295, 1e-10);
         }
 
         #[test]
         fn test_serialize() {
             let pos = GeoPosition::from_lla((0., 0., 0.));
-            let actual = serde_json::to_string(&pos);
+            let actual = pos.model_dump_json();
             assert!(actual.is_ok());
         }
     }

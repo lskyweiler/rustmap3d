@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import pydantic
 
 import rustmap3d
 
@@ -24,3 +25,72 @@ class TestGeoOrientation:
             rustmap3d.DVec3(0, 0, math.pi / 2.0)
         )
         np.testing.assert_allclose(actual.x_axis().to_tuple(), (0, 1, 0), atol=1e-10)
+
+    def test_dump_dict(self):
+        actual = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0, 0, math.pi / 2.0)
+        ).model_dump()
+        assert "ecef_rot" in actual.keys()
+
+    def test_load_dict(self):
+        dumped = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0, 0, math.pi / 2.0)
+        ).model_dump()
+        rustmap3d.GeoOrientation.model_validate(dumped)
+
+    def test_dump(self):
+        actual = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0, 0, math.pi / 2.0)
+        ).model_dump_json()
+        # assert actual == '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}
+        assert "ecef_rot" in actual
+
+    def test_load(self):
+        rustmap3d.GeoOrientation.model_validate_json(
+            '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}'
+        )
+
+
+class MockModel(pydantic.BaseModel):
+    rot: rustmap3d.GeoOrientation
+
+
+class TestPydantic:
+    def test_model_dump(self):
+        model = MockModel(
+            rot=rustmap3d.GeoOrientation.from_ecef_euler(
+                rustmap3d.DVec3(0, 0, math.pi / 2.0)
+            )
+        )
+        dumped = model.model_dump(mode="json")
+        assert "rot" in dumped
+        assert "ecef_rot" in dumped["rot"]
+
+    def test_model_dump_json(self):
+        model = MockModel(
+            rot=rustmap3d.GeoOrientation.from_ecef_euler(
+                rustmap3d.DVec3(0, 0, math.pi / 2.0)
+            )
+        )
+        dumped = model.model_dump_json()
+        assert isinstance(dumped, str)
+        assert "rot" in dumped
+        assert "ecef_rot" in dumped
+
+    def test_model_validate(self):
+        model = MockModel(
+            rot=rustmap3d.GeoOrientation.from_ecef_euler(
+                rustmap3d.DVec3(0, 0, math.pi / 2.0)
+            )
+        )
+        dumped = model.model_dump(mode="json")
+        _ = MockModel.model_validate(dumped)
+
+    def test_model_validate_json(self):
+        model = MockModel(
+            rot=rustmap3d.GeoOrientation.from_ecef_euler(
+                rustmap3d.DVec3(0, 0, math.pi / 2.0)
+            )
+        )
+        dumped = model.model_dump_json()
+        _ = MockModel.model_validate_json(dumped)

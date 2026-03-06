@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-02-24
+
+### 🚀 Features
+
+- Added setter for velocity.ecef_uvw
+- Added option to set values in geo references from ref objects
+- Added serde methods to geo objects
+
+### 🐛 Bug Fixes
+
+- Put serde behind pyo3 gate
+
 ## [0.3.0] - 2026-02-17
 
 ### 🚀 Features
@@ -77,6 +89,8 @@ All notable changes to this project will be documented in this file.
 - Bumped pyglam in lock
 - Updated pyglam pointer
 - Fixed cargo warning
+- Prep for release v0.3.0
+- Updated version
 
 ## [0.2.3] - 2026-01-12
 

@@ -1,11 +1,14 @@
 use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn, utils};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
+#[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -19,13 +22,22 @@ use simple_py_bevy::*;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize,),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 pub struct GeoVector {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DVec3Ref))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DVec3Ref, 
+                other_set_type = pyglam::DVec3Ref
+            )
+        )
+    ]
     #[pyo3(get, set)]
     ecef_uvw: DVec3,
     lla_ref: (f64, f64, f64),
@@ -37,6 +49,9 @@ impl GeoVector {
     }
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+validator_wrapper_fn!(GeoVector, "GeoVector");  // need to create a non-classmethod validator for pydantic to hook into
+
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     py_bevy_methods,
@@ -44,6 +59,110 @@ impl GeoVector {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVector {
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Dump to a python dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_uvw": [
+    ///         119962.85915496295,
+    ///         -5189589.602611365,
+    ///         3693569.6778840856
+    ///     ],
+    ///     "lla_ref": [0., 0., 0.]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
+    }
+    /// Pydantic hook
+    /// Allows this to be used as-is in pydantic basemodels
+    /// 
+    /// * Example
+    /// ```python,no_run
+    /// class MyModel(pydantic.BaseModel):
+    ///     vec: rustmap3d.GeoVector
+    /// 
+    /// dumped = MyModel(...).model_dump_json()
+    /// loaded = MyModel.model_validate_json(dumped)
+    /// ```
+    // * Note: it would be nice to macro_rules! this away, but pyo3 does not allow macros inside impl blocks
+    // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classmethod]
+    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+        let validator = PyCFunction::new_closure(
+            py, None, None, 
+            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+                let py = args.py();
+                let first = args.get_item(0)?;
+                validate_obj(py, first.unbind())
+            }
+        ).unwrap();
+        let validator = validator.as_any().clone().unbind();
+        let serializer = cls.getattr("model_dump")?.unbind();
+        utils::create_pydantic_core_schema(py, validator, serializer)
+    }
+
     /// Create a Vector from an ecef vector relative to a reference point
     /// 
     /// # Arguments

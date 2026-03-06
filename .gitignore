@@ -67,11 +67,12 @@ docs/_build/
 # VSCode
 # .vscode/
 
-# Pyenv
-.python-version
-
 target/
 
 .benchmarks/
 
 .ruff_cache/
+
+**/.cargo/
+
+.env

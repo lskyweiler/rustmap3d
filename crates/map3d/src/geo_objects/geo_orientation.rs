@@ -5,8 +5,10 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DQuat, DVec3,
+    DQuat, DVec3
 };
+#[cfg(feature = "pydantic-serde")]
+use crate::{validator_wrapper_fn, utils};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -14,8 +16,9 @@ use bevy::prelude::*;
 use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
+#[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -28,14 +31,23 @@ use std::ops::Mul;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
-    derive(Component, Reflect, serde::Deserialize, serde::Serialize),
+    derive(Component, Reflect),
     reflect(Component)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
-    #[cfg_attr(all(feature = "py-bevy", feature = "pyo3"), py_bevy(get_ref = pyglam::DQuatRef))]
+    #[
+        cfg_attr(
+            all(feature = "py-bevy", feature = "pyo3"), 
+            py_bevy(
+                get_ref = pyglam::DQuatRef, 
+                other_set_type = pyglam::DQuatRef
+            )
+        )
+    ]
     ecef_rot: DQuat,
 }
 
@@ -155,6 +167,9 @@ impl GeoOrientation {
     }
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+validator_wrapper_fn!(GeoOrientation, "GeoOrientation");  // need to create a non-classmethod validator for pydantic to hook into
+
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     py_bevy_methods,
@@ -162,6 +177,99 @@ impl GeoOrientation {
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoOrientation {
+
+    /// Load from a json string
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate_json(json_str: &str) -> PyResult<Self> {
+        match serde_json::from_str(json_str) {
+            Ok(loaded) => Ok(loaded),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Load from a json python dict
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    #[staticmethod]
+    fn model_validate<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<Self> {
+        let s = crate::utils::pydict_to_dump(py, json_dict)?;
+        Self::model_validate_json(&s)
+    }
+
+    /// Dump to a json string
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump_json(&self) -> PyResult<String> {
+        match serde_json::to_string(&self) {
+            Ok(s) => Ok(s),
+            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+        }
+    }
+    /// Dump to a python json dict
+    /// # Examples
+    /// 
+    /// ```
+    /// {
+    ///     "ecef_rot": [
+    ///         1., 0., 0., 0.
+    ///     ]
+    /// }
+    /// ```
+    #[cfg(all(feature = "serde", feature = "pyo3"))]
+    fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+        let s = self.model_dump_json()?;
+        crate::utils::dump_to_pydict(py, &s)
+    }
+    /// Pydantic hook
+    /// Allows this to be used as-is in pydantic basemodels
+    /// 
+    /// * Example
+    /// ```python,no_run
+    /// class MyModel(pydantic.BaseModel):
+    ///     rot: rustmap3d.GeoOrientation
+    /// 
+    /// dumped = MyModel(...).model_dump_json()
+    /// loaded = MyModel.model_validate_json(dumped)
+    /// ```
+    // * Note: it would be nice to macro_rules! this away, but pyo3 does not allow macros inside impl blocks
+    // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classmethod]
+    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+        let validator = PyCFunction::new_closure(
+            py, None, None, 
+            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+                let py = args.py();
+                let first = args.get_item(0)?;
+                validate_obj(py, first.unbind())
+            }
+        ).unwrap();
+        let validator = validator.as_any().clone().unbind();
+        let serializer = cls.getattr("model_dump")?.unbind();
+        utils::create_pydantic_core_schema(py, validator, serializer)
+    }
+
     /// Create an identity ecef orientation
     #[staticmethod]
     pub fn from_identity() -> Self {
@@ -269,7 +377,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     pub fn from_enu_frame(reference: EitherGeoPosOrLLATup) -> Self {
-        let body2ecef = ecef2enu_quat(reference);
+        let body2ecef = enu2ecef_quat(reference);
         Self::from_ecef(&body2ecef.into())
     }
     /// Construct an orientation aligned with the NED frame at the given reference location
@@ -280,7 +388,7 @@ impl GeoOrientation {
     ///
     #[staticmethod]
     pub fn from_ned_frame(reference: EitherGeoPosOrLLATup) -> Self {
-        let body2ecef = ecef2ned_quat(reference);
+        let body2ecef = ned2ecef_quat(reference);
         Self::from_ecef(&body2ecef.into())
     }
 
@@ -325,6 +433,21 @@ impl GeoOrientation {
     pub fn as_enu(&self, reference: EitherGeoPosOrLLATup) -> DQuat {
         let ecef2enu = ecef2enu_quat(reference);
         return ecef2enu * self.ecef_rot;
+    }
+
+    /// Sets this rotation to face an ecef direction and orient up in an ecef direction
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
+    /// 
+    pub fn look_to(&mut self, ecef_direction: DVec3, ecef_up: DVec3) {
+        let right = ecef_up.cross(*ecef_direction);
+        let up = ecef_direction.cross(right);
+        let frame = glam::DMat3::from_cols(*ecef_direction, right, up);
+        let rot = glam::DQuat::from_mat3(&frame);
+        self.ecef_rot = rot.into();
     }
 
     /// Get the positive x axis for this orientation in the ecef frame

@@ -1,4 +1,5 @@
 import numpy as np
+import pydantic
 
 import rustmap3d
 
@@ -21,6 +22,25 @@ class TestGeoPosition:
     def test_lla_dms(self):
         actual = rustmap3d.GeoPosition.from_lla((0, 0, 0)).lat_lon_dms()
         assert actual == "0:0:0.000S, 0:0:0.000W"
+
+    def test_dump_dict(self):
+        actual = rustmap3d.GeoPosition.from_lla((0, 0, 0)).model_dump()
+        assert "ecef" in actual.keys()
+
+    def test_load_dict(self):
+        dumped = rustmap3d.GeoPosition.from_lla((0, 0, 0)).model_dump()
+        actual = rustmap3d.GeoPosition.model_validate(dumped)
+        np.testing.assert_allclose(actual.ecef.x, 6378137.0)
+
+    def test_dump_json(self):
+        actual = rustmap3d.GeoPosition.from_lla((0, 0, 0)).model_dump_json()
+        assert actual == '{"ecef":[6378137.0,0.0,0.0]}'
+
+    def test_load_json(self):
+        actual = rustmap3d.GeoPosition.model_validate_json(
+            '{"ecef":[6378137.0,0.0,0.0]}'
+        )
+        np.testing.assert_allclose(actual.ecef.x, 6378137.0)
 
 
 class TestGeoPosOps:
@@ -56,3 +76,34 @@ class TestGeoPosOps:
 
         actual = pos + rate * 1.0
         np.testing.assert_allclose(actual.ecef.y, 100.0, atol=1e-5)
+
+
+class MockModel(pydantic.BaseModel):
+    pos: rustmap3d.GeoPosition
+
+
+class TestPydantic:
+    def test_model_dump(self):
+        model = MockModel(pos=rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0)))
+        dumped = model.model_dump(mode="json")
+        assert "pos" in dumped
+        assert "ecef" in dumped["pos"]
+
+    def test_model_dump_json(self):
+        model = MockModel(pos=rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0)))
+        dumped = model.model_dump_json()
+        assert isinstance(dumped, str)
+        assert "pos" in dumped
+        assert "ecef" in dumped
+
+    def test_model_validate(self):
+        model = MockModel(pos=rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0)))
+        dumped = model.model_dump(mode="json")
+        actual = MockModel.model_validate(dumped)
+        np.testing.assert_allclose(actual.pos.ecef.x, 6378137.0)
+
+    def test_model_validate_json(self):
+        model = MockModel(pos=rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0)))
+        dumped = model.model_dump_json()
+        actual = MockModel.model_validate_json(dumped)
+        np.testing.assert_allclose(actual.pos.ecef.x, 6378137.0)

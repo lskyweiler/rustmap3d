@@ -18,7 +18,7 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-version = "0.3.0"
+version = "0.4.0"
 
 [workspace.dependencies]
 map3d = { path = "crates/map3d", features = ["pyo3"] }
@@ -33,7 +33,7 @@ pyo3 = { version = "~0.27", features = [
     "extension-module",
     "generate-import-lib",
 ] }
-pyo3-stub-gen = { version = "~0.18", default-features = false, features = [
+pyo3-stub-gen = { version = "~0.19", default-features = false, features = [
     "either",
 ] }
 
@@ -58,10 +58,11 @@ strip = true # Automatically strip symbols from the binary.
 
 [features]
 # if you're building from here, you always want python functionality
-default = ["pyo3"]
+default = ["pyo3", "serde", "map3d/pydantic-serde"]
 # generate python functions in geo_objects
 pyo3 = ["map3d/pyo3"]
 # generates generic bevy derives (reflect, serde)
-bevy = ["map3d/bevy"]
+serde = ["map3d/serde"]
+bevy = ["map3d/bevy", "serde"]
 # generates bevy ref structs
 py-bevy = ["map3d/py-bevy", "bevy", "pyo3"]

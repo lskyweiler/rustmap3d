@@ -9,7 +9,9 @@
     "python.testing.pytestEnabled": true,
     "rust-analyzer.cargo.features": [
         // "py-bevy",
+        "pydantic-serde",
         "pyo3",
+        "serde",
         // "bevy"
     ],
     "rust-analyzer.cargo.noDefaultFeatures": true

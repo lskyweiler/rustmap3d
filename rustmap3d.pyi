@@ -220,6 +220,73 @@ class DVec3:
 @typing.final
 class GeoOrientation:
     @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoOrientation:
+        r"""
+        Load from a json string
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoOrientation:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python json dict
+        # Examples
+
+        ```
+        {
+            "ecef_rot": [
+                1., 0., 0., 0.
+            ]
+        }
+        ```
+        """
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source: typing.Any, _handler: typing.Any
+    ) -> typing.Any:
+        r"""
+        Pydantic hook
+        Allows this to be used as-is in pydantic basemodels
+
+        * Example
+        ```python,no_run
+        class MyModel(pydantic.BaseModel):
+            rot: rustmap3d.GeoOrientation
+
+        dumped = MyModel(...).model_dump_json()
+        loaded = MyModel.model_validate_json(dumped)
+        ```
+        """
+    @staticmethod
     def from_identity() -> GeoOrientation:
         r"""
         Create an identity ecef orientation
@@ -375,6 +442,15 @@ class GeoOrientation:
 
         - `DQuat` - body 2 local enu rotation
         """
+    def look_to(self, ecef_direction: DVec3, ecef_up: DVec3) -> None:
+        r"""
+        Sets this rotation to face an ecef direction and orient up in an ecef direction
+
+        # Arguments
+
+        - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+        - `ecef_up` (`DVec3`) - z axis of the resulting frame
+        """
     def x_axis(self) -> DVec3:
         r"""
         Get the positive x axis for this orientation in the ecef frame
@@ -426,6 +502,69 @@ class GeoPosition:
         # Returns
 
         - `(f64, f64, f64)` - (lat, lon, alt) in (deg, deg, meters)
+        """
+    @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoPosition:
+        r"""
+        Load from a json string
+        ```
+        "{'ecef':[0.,0.,0.]}"
+        ```
+        """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoPosition:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        "{'ecef':[0.,0.,0.]}"
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
+        # Examples
+
+        ```
+        {
+            "ecef": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ]
+        }
+        ```
+        """
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source: typing.Any, _handler: typing.Any
+    ) -> typing.Any:
+        r"""
+        Pydantic hook
+        Allows this to be used as-is in pydantic basemodels
+
+        * Example
+        ```python,no_run
+        class MyModel(pydantic.BaseModel):
+            pos: rustmap3d.GeoPosition
+
+        dumped = MyModel(...).model_dump_json()
+        loaded = MyModel.model_validate_json(dumped)
+        ```
         """
     @staticmethod
     def from_ecef(ecef_m: DVec3) -> GeoPosition:
@@ -690,6 +829,85 @@ class GeoVector:
     @ecef_uvw.setter
     def ecef_uvw(self, value: DVec3) -> None: ...
     @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoVector:
+        r"""
+        Load from a json string
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoVector:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
+        # Examples
+
+        ```
+        {
+            "ecef_uvw": [
+                119962.85915496295,
+                -5189589.602611365,
+                3693569.6778840856
+            ],
+            "lla_ref": [0., 0., 0.]
+        }
+        ```
+        """
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source: typing.Any, _handler: typing.Any
+    ) -> typing.Any:
+        r"""
+        Pydantic hook
+        Allows this to be used as-is in pydantic basemodels
+
+        * Example
+        ```python,no_run
+        class MyModel(pydantic.BaseModel):
+            vec: rustmap3d.GeoVector
+
+        dumped = MyModel(...).model_dump_json()
+        loaded = MyModel.model_validate_json(dumped)
+        ```
+        """
+    @staticmethod
     def from_ecef(
         ecef_uvw: DVec3,
         reference: typing.Union[
@@ -833,6 +1051,86 @@ class GeoVelocity:
         # Returns
 
         - `DVec3` - ECEF velocity in m/s
+        """
+    @ecef_uvw.setter
+    def ecef_uvw(self, value: DVec3) -> None:
+        r"""
+        Sets this velocity from an ecef uvw vector in m/s
+
+        # Returns
+
+        - `DVec3` - ECEF velocity in m/s
+        """
+    @staticmethod
+    def model_validate_json(json_str: builtins.str) -> GeoVelocity:
+        r"""
+        Load from a json string
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    @staticmethod
+    def model_validate(json_dict: dict) -> GeoVelocity:
+        r"""
+        Load from a json python dict
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    def model_dump_json(self) -> builtins.str:
+        r"""
+        Dump to a json string
+        # Examples
+
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    def model_dump(self) -> typing.Any:
+        r"""
+        Dump to a python dict
+        # Examples
+
+        ```
+        {
+            "dir_ecef": [
+                1., 0., 0.
+            ],
+            "speed": 100.
+        }
+        ```
+        """
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source: typing.Any, _handler: typing.Any
+    ) -> typing.Any:
+        r"""
+        Pydantic hook
+        Allows this to be used as-is in pydantic basemodels
+
+        * Example
+        ```python,no_run
+        class MyModel(pydantic.BaseModel):
+            ve;: rustmap3d.GeoVelocity
+
+        dumped = MyModel(...).model_dump_json()
+        loaded = MyModel.model_validate_json(dumped)
+        ```
         """
     @staticmethod
     def from_dir_speed(ecef_dir: DVec3, speed_mps: builtins.float) -> GeoVelocity:
