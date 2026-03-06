@@ -2,17 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.4.0] - 2026-02-24
+## [0.4.0] - 2026-03-06
 
 ### 🚀 Features
 
 - Added setter for velocity.ecef_uvw
 - Added option to set values in geo references from ref objects
 - Added serde methods to geo objects
+- Added dict dumping and loading to geo objects
+- Added look_to function to orientation
+- Added pydantic hooks for geo objects
 
 ### 🐛 Bug Fixes
 
 - Put serde behind pyo3 gate
+- Fixed unit tests
+- Squashed warning from 3.14t
+- Fixed stubs
+- Fixed issues when building without pydantic-serde feature
+
+### 📚 Documentation
+
+- Updated readme with pydantic integration
+
+### ⚙️ Miscellaneous Tasks
+
+- Prep for release v0.4.0
+- Ruff formatted
+- Bumped pyo3 stub gen to 19
+- Updated deps
+- Ruff formatted
+- Ruff formatted/fixed
 
 ## [0.3.0] - 2026-02-17
 
