@@ -1,5 +1,6 @@
 import numpy as np
 import pydantic
+
 import rustmap3d
 
 
@@ -85,7 +86,9 @@ class TestPydantic:
         )
         dumped = model.model_dump(mode="json")
         actual = MockModel.model_validate(dumped)
-        np.testing.assert_allclose(actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0))
+        np.testing.assert_allclose(
+            actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0)
+        )
 
     def test_model_validate_json(self):
         model = MockModel(
@@ -93,4 +96,6 @@ class TestPydantic:
         )
         dumped = model.model_dump_json()
         actual = MockModel.model_validate_json(dumped)
-        np.testing.assert_allclose(actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0))
+        np.testing.assert_allclose(
+            actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0)
+        )

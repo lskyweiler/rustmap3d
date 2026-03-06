@@ -3,7 +3,9 @@ rustmap3d also has a higher-level API that allows you to construct geo objects t
 """
 
 import math
+
 import pydantic
+
 import rustmap3d
 
 # Construct a GeoPosition from either global or local coordinates
