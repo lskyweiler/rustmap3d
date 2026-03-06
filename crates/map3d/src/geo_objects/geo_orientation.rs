@@ -3,9 +3,11 @@ use crate::{
         geo_position::{EitherGeoPosOrLLATup, GeoPosition},
         geo_vector::GeoVector,
     },
+    utils,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
     DQuat, DVec3,
+    validator_wrapper_fn
 };
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
@@ -15,7 +17,7 @@ use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError, types::PyDict};
+use pyo3::{prelude::*, exceptions::PyValueError, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -164,6 +166,9 @@ impl GeoOrientation {
     }
 }
 
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+validator_wrapper_fn!(GeoOrientation, "GeoOrientation");  // need to create a non-classmethod validator for pydantic to hook into
+
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     py_bevy_methods,
@@ -234,6 +239,34 @@ impl GeoOrientation {
     fn model_dump<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
         let s = self.model_dump_json()?;
         crate::utils::dump_to_pydict(py, &s)
+    }
+    /// Pydantic hook
+    /// Allows this to be used as-is in pydantic basemodels
+    /// 
+    /// * Example
+    /// ```python,no_run
+    /// class MyModel(pydantic.BaseModel):
+    ///     rot: rustmap3d.GeoOrientation
+    /// 
+    /// dumped = MyModel(...).model_dump_json()
+    /// loaded = MyModel.model_validate_json(dumped)
+    /// ```
+    // * Note: it would be nice to macro_rules! this away, but pyo3 does not allow macros inside impl blocks
+    // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classmethod]
+    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+        let validator = PyCFunction::new_closure(
+            py, None, None, 
+            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+                let py = args.py();
+                let first = args.get_item(0)?;
+                validate_obj(py, first.unbind())
+            }
+        ).unwrap();
+        let validator = validator.as_any().clone().unbind();
+        let serializer = cls.getattr("model_dump")?.unbind();
+        utils::create_pydantic_core_schema(py, validator, serializer)
     }
 
     /// Create an identity ecef orientation

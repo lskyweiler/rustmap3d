@@ -1,5 +1,5 @@
 import numpy as np
-
+import pydantic
 import rustmap3d
 
 
@@ -55,3 +55,42 @@ class TestGeoVector:
             '{"ecef_uvw":[4.043810359732617e-15,100.00000000000006,0.0],"lla_ref":[0.0,0.0,0.0]}'
         )
         np.testing.assert_allclose(actual.ecef_uvw.y, 100.0)
+
+
+class MockModel(pydantic.BaseModel):
+    vec: rustmap3d.GeoVector
+
+
+class TestPydantic:
+    def test_model_dump(self):
+        model = MockModel(
+            vec=rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(0.0), (0.0, 0.0, 0.0))
+        )
+        dumped = model.model_dump(mode="json")
+        assert "vec" in dumped
+        assert "ecef_uvw" in dumped["vec"]
+
+    def test_model_dump_json(self):
+        model = MockModel(
+            vec=rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(0.0), (0.0, 0.0, 0.0))
+        )
+        dumped = model.model_dump_json()
+        assert isinstance(dumped, str)
+        assert "vec" in dumped
+        assert "ecef_uvw" in dumped
+
+    def test_model_validate(self):
+        model = MockModel(
+            vec=rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(200.0), (0.0, 0.0, 0.0))
+        )
+        dumped = model.model_dump(mode="json")
+        actual = MockModel.model_validate(dumped)
+        np.testing.assert_allclose(actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0))
+
+    def test_model_validate_json(self):
+        model = MockModel(
+            vec=rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(200.0), (0.0, 0.0, 0.0))
+        )
+        dumped = model.model_dump_json()
+        actual = MockModel.model_validate_json(dumped)
+        np.testing.assert_allclose(actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0))
