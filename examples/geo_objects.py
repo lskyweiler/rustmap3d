@@ -3,7 +3,7 @@ rustmap3d also has a higher-level API that allows you to construct geo objects t
 """
 
 import math
-
+import pydantic
 import rustmap3d
 
 # Construct a GeoPosition from either global or local coordinates
@@ -35,3 +35,15 @@ rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0.0, 0.0, 1), mat
 rot.x_axis()
 rot.y_axis()
 rot.z_axis()
+
+
+# There is also native pydantic integration for geo objects
+class MyModel(pydantic.BaseModel):
+    pos: rustmap3d.GeoPosition
+
+
+model = MyModel(pos=rustmap3d.GeoPosition.from_lla((0.0, 0.0, 0.0)))
+dumped = model.model_dump(mode="json")
+print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
+
+validated = MyModel.model_validate(dumped)
