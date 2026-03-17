@@ -3,6 +3,7 @@ rustmap3d also has a higher-level API that allows you to construct geo objects t
 """
 
 import math
+import json
 
 import pydantic
 
@@ -49,3 +50,7 @@ dumped = model.model_dump(mode="json")
 print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
 
 validated = MyModel.model_validate(dumped)
+
+# Schema is supported
+schema = MyModel.model_json_schema()
+print(json.dumps(schema, indent=4))

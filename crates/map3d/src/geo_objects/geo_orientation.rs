@@ -25,6 +25,7 @@ use pyo3_stub_gen::derive::*;
 use simple_py_bevy::*;
 use std::ops::Mul;
 
+/// Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
 #[cfg_attr(
@@ -169,6 +170,25 @@ impl GeoOrientation {
 
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
 validator_wrapper_fn!(GeoOrientation, "GeoOrientation");  // need to create a non-classmethod validator for pydantic to hook into
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+        use std::collections::HashMap;
+        use pyo3::PyTypeInfo;
+
+        let pydantic = utils::Pydantic::new(py)?;
+        let dquat_schema = utils::create_dquat_schema(py)?;
+
+        let desc = utils::create_pydantic_schema_description(py, "Quaternion rotating local body frame to ecef")?;
+        let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+        let ecef_schema = pydantic.model_field_fn.call((dquat_schema,), Some(&desc_kwargs))?;
+
+        let model_field_schema_kwargs = HashMap::from([("ecef_rot", ecef_schema)]);
+        let fields = pydantic.model_fields_schema_fn.call1((model_field_schema_kwargs,))?;
+        let geo_rot_class = GeoOrientation::type_object(py).unbind();
+
+        let out = pydantic.model_schema_fn.call1((geo_rot_class, fields))?;
+        Ok(out.unbind())
+}
 
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -267,8 +287,15 @@ impl GeoOrientation {
         ).unwrap();
         let validator = validator.as_any().clone().unbind();
         let serializer = cls.getattr("model_dump")?.unbind();
-        utils::create_pydantic_core_schema(py, validator, serializer)
+        let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
+
+        utils::create_pydantic_core_schema(py, validator, serializer, json_schema_input_schema)
     }
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classattr]
+    fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+        utils::create_pydantic_model_config(py)
+}
 
     /// Create an identity ecef orientation
     #[staticmethod]

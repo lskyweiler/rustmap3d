@@ -219,6 +219,7 @@ class DVec3:
 
 @typing.final
 class GeoOrientation:
+    model_config: typing.Any
     @staticmethod
     def model_validate_json(json_str: builtins.str) -> GeoOrientation:
         r"""
@@ -486,6 +487,8 @@ class GeoPosition:
     r"""
     Represents a position on the earth
     """
+
+    model_config: typing.Any
     @property
     def ecef(self) -> DVec3: ...
     @ecef.setter
@@ -824,6 +827,8 @@ class GeoVector:
     r"""
     Represents a vector relative to a reference point
     """
+
+    model_config: typing.Any
     @property
     def ecef_uvw(self) -> DVec3: ...
     @ecef_uvw.setter
@@ -1035,6 +1040,8 @@ class GeoVelocity:
     Represents a 3D velocity vector in geo space
     Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
     """
+
+    model_config: pydantic.ModelConfig
     @property
     def dir_ecef(self) -> DVec3: ...
     @dir_ecef.setter

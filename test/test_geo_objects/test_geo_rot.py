@@ -94,3 +94,7 @@ class TestPydantic:
         )
         dumped = model.model_dump_json()
         _ = MockModel.model_validate_json(dumped)
+
+    def test_model_json_schema(self):
+        actual = MockModel.model_json_schema()
+        assert "DQuat" in actual["$defs"]

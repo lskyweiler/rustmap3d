@@ -132,6 +132,7 @@ pub fn create_pydantic_core_schema<'py>(
     py: Python,
     validator_py_fn: Py<PyAny>,
     serializer_py_fn: Py<PyAny>,
+    json_schema_input_schema: Py<PyAny>,
 ) -> PyResult<Py<PyAny>> {
     use pyo3::types::IntoPyDict;
     use std::collections::HashMap;
@@ -139,7 +140,7 @@ pub fn create_pydantic_core_schema<'py>(
     /*
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source: type[typing.Any], handler: pydantic.GetCoreSchemaHandler
+        cls, _source: type[typing.Any], _handler: pydantic.GetCoreSchemaHandler
     ) -> CoreSchema:
         """
         Generates the pydantic-core schema for this class.
@@ -148,6 +149,29 @@ pub fn create_pydantic_core_schema<'py>(
         # Define the schema: use a plain validator function
         schema = core_schema.no_info_plain_validator_function(
             GeoPosition.model_validate,
+            json_schema_input_schema=core_schema.model_schema(
+                GeoPosition,
+                core_schema.model_fields_schema(
+                    fields={
+                        "ecef": core_schema.model_field(
+                            core_schema.tuple_schema(
+                                [
+                                    core_schema.model_field(
+                                        schema=core_schema.float_schema()
+                                    ),
+                                    core_schema.model_field(
+                                        schema=core_schema.float_schema()
+                                    ),
+                                    core_schema.model_field(
+                                        schema=core_schema.float_schema()
+                                    ),
+                                ],
+                                ref="DVec3"
+                            ),
+                        )
+                    },
+                ),
+            ),
             serialization=core_schema.plain_serializer_function_ser_schema(
                 lambda v: {"ecef": [v.ecef.x, v.ecef.y, v.ecef.z]},
                 when_used="always",
@@ -158,14 +182,164 @@ pub fn create_pydantic_core_schema<'py>(
 
     let pydantic_core_mod = py.import("pydantic_core")?;
     let core_schema_mod = pydantic_core_mod.getattr("core_schema")?;
-
+    let schema_fn = core_schema_mod.getattr("no_info_plain_validator_function")?;
     let serialization_fn = core_schema_mod.getattr("plain_serializer_function_ser_schema")?;
+
     let ser_kwargs = HashMap::from([("when_used", "always")]).into_py_dict(py)?;
     let serialization = serialization_fn.call((serializer_py_fn,), Some(&ser_kwargs))?;
-    let schema_fn = core_schema_mod.getattr("no_info_plain_validator_function")?;
 
-    let schema_kwargs = HashMap::from([("serialization", serialization)]).into_py_dict(py)?;
+    let schema_kwargs = HashMap::from([
+        ("serialization", serialization),
+        (
+            "json_schema_input_schema",
+            json_schema_input_schema.bind(py).to_owned(),
+        ),
+    ])
+    .into_py_dict(py)?;
     let schema = schema_fn.call((validator_py_fn,), Some(&schema_kwargs))?;
+
+    Ok(schema.unbind())
+}
+
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_pydantic_model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+    let pydantic_mod = py.import("pydantic")?;
+    let model_config_type = pydantic_mod.getattr("ConfigDict")?;
+
+    let out = model_config_type.call0()?;
+    Ok(out.unbind())
+}
+
+pub struct Pydantic<'py> {
+    pub pydantic_core_mod: Bound<'py, PyModule>,
+    pub core_schema_mod: Bound<'py, PyAny>,
+    pub tuple_schema_fn: Bound<'py, PyAny>,
+    pub model_schema_fn: Bound<'py, PyAny>,
+    pub model_field_fn: Bound<'py, PyAny>,
+    pub model_fields_schema_fn: Bound<'py, PyAny>,
+    pub float_schema_fn: Bound<'py, PyAny>,
+}
+impl<'py> Pydantic<'py> {
+    pub fn new(py: Python<'py>) -> PyResult<Self> {
+        let pydantic_core_mod = py.import("pydantic_core")?;
+        let core_schema_mod = pydantic_core_mod.getattr("core_schema")?;
+
+        Ok(Self {
+            pydantic_core_mod: pydantic_core_mod.clone(),
+            core_schema_mod: core_schema_mod.clone(),
+            tuple_schema_fn: core_schema_mod.getattr("tuple_schema")?,
+            model_schema_fn: core_schema_mod.getattr("model_schema")?,
+            model_field_fn: core_schema_mod.getattr("model_field")?,
+            model_fields_schema_fn: core_schema_mod.getattr("model_fields_schema")?,
+            float_schema_fn: core_schema_mod.getattr("float_schema")?,
+        })
+    }
+}
+
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_pydantic_schema_description<'py>(
+    py: Python,
+    description: &str,
+) -> PyResult<(String, Py<PyAny>)> {
+    use pyo3::IntoPyObjectExt;
+    use std::collections::HashMap;
+    let description = HashMap::from([("description", description)]).into_py_any(py)?;
+    let js_updates = HashMap::from([(("pydantic_js_updates", description))]).into_py_any(py)?;
+    Ok(("metadata".to_string(), js_updates))
+}
+
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_dvec3_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+    /*
+    core_schema.tuple_schema(
+        [
+            core_schema.model_field(
+                schema=core_schema.float_schema()
+            ),
+            core_schema.model_field(
+                schema=core_schema.float_schema()
+            ),
+            core_schema.model_field(
+                schema=core_schema.float_schema()
+            ),
+        ],
+        ref="DVec3",
+        metadata={"pydantic_js_updates": {"description": "fjdkl"}}
+    ),
+    */
+
+    use pyo3::types::{IntoPyDict, PyString};
+    use std::collections::HashMap;
+
+    let pydantic = Pydantic::new(py)?;
+
+    let float_schema = pydantic.float_schema_fn.call0()?;
+    let float_field = pydantic.model_field_fn.call1((float_schema,))?.unbind();
+    let fields = vec![
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+    ];
+
+    let description = create_pydantic_schema_description(py, "3 component Vector of floats XYZ")?;
+    let ref_ = PyString::new(py, "DVec3").unbind().as_any().clone_ref(py);
+
+    let kwargs = HashMap::from([("ref".to_string(), ref_), description]).into_py_dict(py)?;
+    let schema = pydantic.tuple_schema_fn.call((fields,), Some(&kwargs))?;
+
+    Ok(schema.unbind())
+}
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_lat_lon_tuple_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+    use pyo3::types::{IntoPyDict, PyString};
+    use std::collections::HashMap;
+
+    let pydantic = Pydantic::new(py)?;
+
+    let float_schema = pydantic.float_schema_fn.call0()?;
+    let float_field = pydantic.model_field_fn.call1((float_schema,))?.unbind();
+    let fields = vec![
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+    ];
+
+    let ref_ = PyString::new(py, "LLA").unbind().as_any().clone_ref(py);
+
+    let desc = create_pydantic_schema_description(
+        py,
+        "3 component Tuple of Latitude, Longitude, Altitude in Meters/Degrees",
+    )?;
+    let kwargs = HashMap::from([("ref".to_string(), ref_), desc]).into_py_dict(py)?;
+    let schema = pydantic.tuple_schema_fn.call((fields,), Some(&kwargs))?;
+
+    Ok(schema.unbind())
+}
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+pub fn create_dquat_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+    use pyo3::{
+        types::{IntoPyDict, PyString},
+        IntoPyObjectExt,
+    };
+    use std::collections::HashMap;
+    let pydantic = Pydantic::new(py)?;
+
+    let float_schema = pydantic.float_schema_fn.call0()?;
+    let float_field = pydantic.model_field_fn.call1((float_schema,))?.unbind();
+    let fields = vec![
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+        float_field.clone_ref(py),
+    ];
+
+    let description = HashMap::from([("description", "4 component Quaternion of floats WXYZ")])
+        .into_py_any(py)?;
+    let ref_ = PyString::new(py, "DQuat").unbind().as_any().clone_ref(py);
+
+    let js_updates = HashMap::from([(("pydantic_js_updates", description))]).into_py_any(py)?;
+    let kwargs = HashMap::from([("ref", ref_), ("metadata", js_updates)]).into_py_dict(py)?;
+    let schema = pydantic.tuple_schema_fn.call((fields,), Some(&kwargs))?;
 
     Ok(schema.unbind())
 }
