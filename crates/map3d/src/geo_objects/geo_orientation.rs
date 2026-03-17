@@ -171,10 +171,10 @@ fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<Py
     use pyo3::PyTypeInfo;
     use std::collections::HashMap;
 
-    let pydantic = utils::Pydantic::new(py)?;
-    let dquat_schema = utils::create_dquat_schema(py)?;
+    let pydantic = utils::pydantic::Pydantic::new(py)?;
+    let dquat_schema = utils::pydantic::create_dquat_schema(py)?;
 
-    let desc = utils::create_pydantic_schema_description(
+    let desc = utils::pydantic::create_pydantic_schema_description(
         py,
         "Quaternion rotating local body frame to ecef",
     )?;
@@ -301,12 +301,17 @@ impl GeoOrientation {
         let serializer = cls.getattr("model_dump")?.unbind();
         let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
 
-        utils::create_pydantic_core_schema(py, validator, serializer, json_schema_input_schema)
+        utils::pydantic::create_pydantic_core_schema(
+            py,
+            validator,
+            serializer,
+            json_schema_input_schema,
+        )
     }
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        utils::create_pydantic_model_config(py)
+        utils::pydantic::create_pydantic_model_config(py)
     }
 
     /// Create an identity ecef orientation

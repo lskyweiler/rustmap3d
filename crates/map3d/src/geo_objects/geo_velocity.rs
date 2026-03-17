@@ -107,17 +107,17 @@ fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<Py
     use pyo3::PyTypeInfo;
     use std::collections::HashMap;
 
-    let pydantic = utils::Pydantic::new(py)?;
-    let dvec3_schema = utils::create_dvec3_schema(py)?;
+    let pydantic = utils::pydantic::Pydantic::new(py)?;
+    let dvec3_schema = utils::pydantic::create_dvec3_schema(py)?;
     let float_schema = pydantic.float_schema_fn.call0()?;
-    let desc = utils::create_pydantic_schema_description(py, "Speed in Meters/second")?;
+    let desc = utils::pydantic::create_pydantic_schema_description(py, "Speed in Meters/second")?;
     let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
     let float_field = pydantic
         .model_field_fn
         .call((float_schema,), Some(&desc_kwargs))?
         .unbind();
 
-    let desc = utils::create_pydantic_schema_description(
+    let desc = utils::pydantic::create_pydantic_schema_description(
         py,
         "Unit Direction in ECEF frame. Normalized to 1.",
     )?;
@@ -251,13 +251,18 @@ impl GeoVelocity {
 
         let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
 
-        utils::create_pydantic_core_schema(py, validator, serializer, json_schema_input_schema)
+        utils::pydantic::create_pydantic_core_schema(
+            py,
+            validator,
+            serializer,
+            json_schema_input_schema,
+        )
     }
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
     #[gen_stub(override_return_type(type_repr = "pydantic.ModelConfig"))]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        utils::create_pydantic_model_config(py)
+        utils::pydantic::create_pydantic_model_config(py)
     }
 
     /// Construct a velocity from an ecef unit direction and speed

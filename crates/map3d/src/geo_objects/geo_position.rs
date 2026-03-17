@@ -97,10 +97,10 @@ fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<Py
     use pyo3::PyTypeInfo;
     use std::collections::HashMap;
 
-    let pydantic = utils::Pydantic::new(py)?;
-    let dvec3_schema = utils::create_dvec3_schema(py)?;
+    let pydantic = utils::pydantic::Pydantic::new(py)?;
+    let dvec3_schema = utils::pydantic::create_dvec3_schema(py)?;
 
-    let desc = utils::create_pydantic_schema_description(py, "ECEF location in meters")?;
+    let desc = utils::pydantic::create_pydantic_schema_description(py, "ECEF location in meters")?;
     let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
     let ecef_schema = pydantic
         .model_field_fn
@@ -222,12 +222,17 @@ impl GeoPosition {
 
         let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
 
-        utils::create_pydantic_core_schema(py, validator, serializer, json_schema_input_schema)
+        utils::pydantic::create_pydantic_core_schema(
+            py,
+            validator,
+            serializer,
+            json_schema_input_schema,
+        )
     }
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        utils::create_pydantic_model_config(py)
+        utils::pydantic::create_pydantic_model_config(py)
     }
 
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
