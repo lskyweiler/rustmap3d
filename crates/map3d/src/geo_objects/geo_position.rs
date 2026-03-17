@@ -1,8 +1,8 @@
-use crate::{
-    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3
-};
 #[cfg(feature = "pydantic-serde")]
-use crate::{validator_wrapper_fn};
+use crate::validator_wrapper_fn;
+use crate::{
+    geo_objects::geo_vector::GeoVector, traits::*, transforms::*, utils, vincenty::*, DVec3,
+};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -13,7 +13,7 @@ use glam::{self, swizzles::*};
 use map3d_derive::*;
 #[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError, types::*};
+use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -43,7 +43,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
-#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(
     feature = "bevy",
     derive(Component, Reflect),
@@ -56,7 +56,7 @@ pub struct GeoPosition {
         cfg_attr(
             all(feature = "py-bevy", feature = "pyo3"), 
             py_bevy(
-                get_ref = pyglam::DVec3Ref, 
+                get_ref = pyglam::DVec3Ref,
                 other_set_type = pyglam::DVec3Ref
             )
         )
@@ -78,7 +78,43 @@ impl GeoPosition {
 }
 
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
-validator_wrapper_fn!(GeoPosition, "GeoPosition");  // need to create a non-classmethod validator for pydantic to hook into
+validator_wrapper_fn!(GeoPosition, "GeoPosition"); // need to create a non-classmethod validator for pydantic to hook into
+#[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+    /*
+    json_schema_input_schema=core_schema.model_schema(
+            GeoPosition,
+            core_schema.model_fields_schema(
+                fields={
+                    "ecef": core_schema.model_field(
+                        schema=dvec_3_schema
+                    )
+                },
+            ),
+        ),
+    */
+
+    use pyo3::PyTypeInfo;
+    use std::collections::HashMap;
+
+    let pydantic = utils::pydantic::Pydantic::new(py)?;
+    let dvec3_schema = utils::pydantic::create_dvec3_schema(py)?;
+
+    let desc = utils::pydantic::create_pydantic_schema_description(py, "ECEF location in meters")?;
+    let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+    let ecef_schema = pydantic
+        .model_field_fn
+        .call((dvec3_schema,), Some(&desc_kwargs))?;
+
+    let model_field_schema_kwargs = HashMap::from([("ecef", ecef_schema)]);
+    let fields = pydantic
+        .model_fields_schema_fn
+        .call1((model_field_schema_kwargs,))?;
+    let geo_pos_class = GeoPosition::type_object(py).unbind();
+
+    let out = pydantic.model_schema_fn.call1((geo_pos_class, fields))?;
+    Ok(out.unbind())
+}
 
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -87,7 +123,6 @@ validator_wrapper_fn!(GeoPosition, "GeoPosition");  // need to create a non-clas
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoPosition {
-
     /// Load from a json string
     /// ```
     /// "{'ecef':[0.,0.,0.]}"
@@ -97,7 +132,7 @@ impl GeoPosition {
     fn model_validate_json(json_str: &str) -> PyResult<Self> {
         match serde_json::from_str(json_str) {
             Ok(loaded) => Ok(loaded),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Load from a json python dict
@@ -119,7 +154,7 @@ impl GeoPosition {
 
     /// Dump to a json string
     /// # Examples
-    /// 
+    ///
     /// ```
     /// "{'ecef':[0.,0.,0.]}"
     /// ```
@@ -127,12 +162,12 @@ impl GeoPosition {
     fn model_dump_json(&self) -> PyResult<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Dump to a python dict
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "ecef": [
@@ -150,12 +185,12 @@ impl GeoPosition {
 
     /// Pydantic hook
     /// Allows this to be used as-is in pydantic basemodels
-    /// 
+    ///
     /// * Example
     /// ```python,no_run
     /// class MyModel(pydantic.BaseModel):
     ///     pos: rustmap3d.GeoPosition
-    /// 
+    ///
     /// dumped = MyModel(...).model_dump_json()
     /// loaded = MyModel.model_validate_json(dumped)
     /// ```
@@ -163,18 +198,41 @@ impl GeoPosition {
     // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classmethod]
-    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+    fn __get_pydantic_core_schema__<'py>(
+        cls: &Bound<'_, PyType>,
+        py: Python<'py>,
+        _source: Py<PyAny>,
+        _handler: Py<PyAny>,
+    ) -> PyResult<Py<PyAny>> {
         let validator = PyCFunction::new_closure(
-            py, None, None, 
-            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+            py,
+            None,
+            None,
+            |args: &Bound<'_, PyTuple>,
+             _kwargs: Option<&Bound<'_, PyDict>>|
+             -> PyResult<Py<PyAny>> {
                 let py = args.py();
                 let first = args.get_item(0)?;
                 validate_obj(py, first.unbind())
-            }
-        ).unwrap();
+            },
+        )
+        .unwrap();
         let validator = validator.as_any().clone().unbind();
         let serializer = cls.getattr("model_dump")?.unbind();
-        utils::create_pydantic_core_schema(py, validator, serializer)
+
+        let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
+
+        utils::pydantic::create_pydantic_core_schema(
+            py,
+            validator,
+            serializer,
+            json_schema_input_schema,
+        )
+    }
+    #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
+    #[classattr]
+    fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+        utils::pydantic::create_pydantic_model_config(py)
     }
 
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters

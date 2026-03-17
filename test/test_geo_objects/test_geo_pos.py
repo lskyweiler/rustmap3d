@@ -107,3 +107,7 @@ class TestPydantic:
         dumped = model.model_dump_json()
         actual = MockModel.model_validate_json(dumped)
         np.testing.assert_allclose(actual.pos.ecef.x, 6378137.0)
+
+    def test_model_json_schema(self):
+        actual = MockModel.model_json_schema()
+        assert "DVec3" in actual["$defs"]
