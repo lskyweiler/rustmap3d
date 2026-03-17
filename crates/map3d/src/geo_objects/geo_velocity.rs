@@ -6,10 +6,10 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DVec3
+    DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
-use crate::{validator_wrapper_fn, utils};
+use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -33,19 +33,15 @@ use std::ops::{Add, Div, Mul, Sub};
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
-#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(
-    feature = "bevy",
-    derive(Component, Reflect),
-    reflect(Component)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoVelocity {
     #[
         cfg_attr(
             all(feature = "py-bevy", feature = "pyo3"), 
             py_bevy(
-                get_ref = pyglam::DVec3Ref, 
+                get_ref = pyglam::DVec3Ref,
                 other_set_type = pyglam::DVec3Ref
             )
         )
@@ -92,43 +88,54 @@ impl GeoVelocity {
 }
 
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
-validator_wrapper_fn!(GeoVelocity, "GeoVelocity");  // need to create a non-classmethod validator for pydantic to hook into
+validator_wrapper_fn!(GeoVelocity, "GeoVelocity"); // need to create a non-classmethod validator for pydantic to hook into
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
 fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-
-        /*
-        json_schema_input_schema=core_schema.model_schema(
-                GeoPosition,
-                core_schema.model_fields_schema(
-                    fields={
-                        "ecef": core_schema.model_field(
-                            schema=dvec_3_schema
-                        )
-                    },
-                ),
+    /*
+    json_schema_input_schema=core_schema.model_schema(
+            GeoPosition,
+            core_schema.model_fields_schema(
+                fields={
+                    "ecef": core_schema.model_field(
+                        schema=dvec_3_schema
+                    )
+                },
             ),
-        */
+        ),
+    */
 
-        use std::collections::HashMap;
-        use pyo3::PyTypeInfo;
+    use pyo3::PyTypeInfo;
+    use std::collections::HashMap;
 
-        let pydantic = utils::Pydantic::new(py)?;
-        let dvec3_schema = utils::create_dvec3_schema(py)?;
-        let float_schema = pydantic.float_schema_fn.call0()?;
-        let desc = utils::create_pydantic_schema_description(py, "Speed in Meters/second")?;
-        let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
-        let float_field = pydantic.model_field_fn.call((float_schema,), Some(&desc_kwargs))?.unbind();
+    let pydantic = utils::Pydantic::new(py)?;
+    let dvec3_schema = utils::create_dvec3_schema(py)?;
+    let float_schema = pydantic.float_schema_fn.call0()?;
+    let desc = utils::create_pydantic_schema_description(py, "Speed in Meters/second")?;
+    let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+    let float_field = pydantic
+        .model_field_fn
+        .call((float_schema,), Some(&desc_kwargs))?
+        .unbind();
 
-        let desc = utils::create_pydantic_schema_description(py, "Unit Direction in ECEF frame. Normalized to 1.")?;
-        let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
-        let ecef_schema = pydantic.model_field_fn.call((dvec3_schema,), Some(&desc_kwargs))?.unbind();
+    let desc = utils::create_pydantic_schema_description(
+        py,
+        "Unit Direction in ECEF frame. Normalized to 1.",
+    )?;
+    let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+    let ecef_schema = pydantic
+        .model_field_fn
+        .call((dvec3_schema,), Some(&desc_kwargs))?
+        .unbind();
 
-        let model_field_schema_kwargs = HashMap::from([("dir_ecef", ecef_schema), ("speed", float_field)]);
-        let fields = pydantic.model_fields_schema_fn.call1((model_field_schema_kwargs,))?;
-        let geo_vel_class = GeoVelocity::type_object(py).unbind();
+    let model_field_schema_kwargs =
+        HashMap::from([("dir_ecef", ecef_schema), ("speed", float_field)]);
+    let fields = pydantic
+        .model_fields_schema_fn
+        .call1((model_field_schema_kwargs,))?;
+    let geo_vel_class = GeoVelocity::type_object(py).unbind();
 
-        let out = pydantic.model_schema_fn.call1((geo_vel_class, fields))?;
-        Ok(out.unbind())
+    let out = pydantic.model_schema_fn.call1((geo_vel_class, fields))?;
+    Ok(out.unbind())
 }
 
 #[cfg_attr(
@@ -138,7 +145,6 @@ fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<Py
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoVelocity {
-
     /// Load from a json string
     /// ```
     /// {
@@ -153,7 +159,7 @@ impl GeoVelocity {
     fn model_validate_json(json_str: &str) -> PyResult<Self> {
         match serde_json::from_str(json_str) {
             Ok(loaded) => Ok(loaded),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Load from a json python dict
@@ -174,7 +180,7 @@ impl GeoVelocity {
 
     /// Dump to a json string
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "dir_ecef": [
@@ -187,12 +193,12 @@ impl GeoVelocity {
     fn model_dump_json(&self) -> PyResult<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Dump to a python dict
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "dir_ecef": [
@@ -208,12 +214,12 @@ impl GeoVelocity {
     }
     /// Pydantic hook
     /// Allows this to be used as-is in pydantic basemodels
-    /// 
+    ///
     /// * Example
     /// ```python,no_run
     /// class MyModel(pydantic.BaseModel):
     ///     ve;: rustmap3d.GeoVelocity
-    /// 
+    ///
     /// dumped = MyModel(...).model_dump_json()
     /// loaded = MyModel.model_validate_json(dumped)
     /// ```
@@ -221,15 +227,25 @@ impl GeoVelocity {
     // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classmethod]
-    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+    fn __get_pydantic_core_schema__<'py>(
+        cls: &Bound<'_, PyType>,
+        py: Python<'py>,
+        _source: Py<PyAny>,
+        _handler: Py<PyAny>,
+    ) -> PyResult<Py<PyAny>> {
         let validator = PyCFunction::new_closure(
-            py, None, None, 
-            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+            py,
+            None,
+            None,
+            |args: &Bound<'_, PyTuple>,
+             _kwargs: Option<&Bound<'_, PyDict>>|
+             -> PyResult<Py<PyAny>> {
                 let py = args.py();
                 let first = args.get_item(0)?;
                 validate_obj(py, first.unbind())
-            }
-        ).unwrap();
+            },
+        )
+        .unwrap();
         let validator = validator.as_any().clone().unbind();
         let serializer = cls.getattr("model_dump")?.unbind();
 

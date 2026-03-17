@@ -100,7 +100,7 @@ class TestPydantic:
         np.testing.assert_allclose(
             actual.vec.ecef_uvw.to_tuple(), (200.0, 200.0, 200.0)
         )
-        
+
     def test_model_json_schema(self):
         actual = MockModel.model_json_schema()
         assert "DVec3" in actual["$defs"]

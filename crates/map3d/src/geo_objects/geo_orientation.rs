@@ -5,10 +5,10 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DQuat, DVec3
+    DQuat, DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
-use crate::{validator_wrapper_fn, utils};
+use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -18,7 +18,7 @@ use either::Either;
 use map3d_derive::*;
 #[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError, types::*};
+use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -32,19 +32,15 @@ use std::ops::Mul;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
-#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(
-    feature = "bevy",
-    derive(Component, Reflect),
-    reflect(Component)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
     #[
         cfg_attr(
             all(feature = "py-bevy", feature = "pyo3"), 
             py_bevy(
-                get_ref = pyglam::DQuatRef, 
+                get_ref = pyglam::DQuatRef,
                 other_set_type = pyglam::DQuatRef
             )
         )
@@ -169,25 +165,32 @@ impl GeoOrientation {
 }
 
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
-validator_wrapper_fn!(GeoOrientation, "GeoOrientation");  // need to create a non-classmethod validator for pydantic to hook into
+validator_wrapper_fn!(GeoOrientation, "GeoOrientation"); // need to create a non-classmethod validator for pydantic to hook into
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
 fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        use std::collections::HashMap;
-        use pyo3::PyTypeInfo;
+    use pyo3::PyTypeInfo;
+    use std::collections::HashMap;
 
-        let pydantic = utils::Pydantic::new(py)?;
-        let dquat_schema = utils::create_dquat_schema(py)?;
+    let pydantic = utils::Pydantic::new(py)?;
+    let dquat_schema = utils::create_dquat_schema(py)?;
 
-        let desc = utils::create_pydantic_schema_description(py, "Quaternion rotating local body frame to ecef")?;
-        let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
-        let ecef_schema = pydantic.model_field_fn.call((dquat_schema,), Some(&desc_kwargs))?;
+    let desc = utils::create_pydantic_schema_description(
+        py,
+        "Quaternion rotating local body frame to ecef",
+    )?;
+    let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+    let ecef_schema = pydantic
+        .model_field_fn
+        .call((dquat_schema,), Some(&desc_kwargs))?;
 
-        let model_field_schema_kwargs = HashMap::from([("ecef_rot", ecef_schema)]);
-        let fields = pydantic.model_fields_schema_fn.call1((model_field_schema_kwargs,))?;
-        let geo_rot_class = GeoOrientation::type_object(py).unbind();
+    let model_field_schema_kwargs = HashMap::from([("ecef_rot", ecef_schema)]);
+    let fields = pydantic
+        .model_fields_schema_fn
+        .call1((model_field_schema_kwargs,))?;
+    let geo_rot_class = GeoOrientation::type_object(py).unbind();
 
-        let out = pydantic.model_schema_fn.call1((geo_rot_class, fields))?;
-        Ok(out.unbind())
+    let out = pydantic.model_schema_fn.call1((geo_rot_class, fields))?;
+    Ok(out.unbind())
 }
 
 #[cfg_attr(
@@ -197,7 +200,6 @@ fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<Py
 )]
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
 impl GeoOrientation {
-
     /// Load from a json string
     /// ```
     /// {
@@ -211,7 +213,7 @@ impl GeoOrientation {
     fn model_validate_json(json_str: &str) -> PyResult<Self> {
         match serde_json::from_str(json_str) {
             Ok(loaded) => Ok(loaded),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Load from a json python dict
@@ -231,7 +233,7 @@ impl GeoOrientation {
 
     /// Dump to a json string
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "ecef_rot": [
@@ -243,12 +245,12 @@ impl GeoOrientation {
     fn model_dump_json(&self) -> PyResult<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Dump to a python json dict
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "ecef_rot": [
@@ -263,12 +265,12 @@ impl GeoOrientation {
     }
     /// Pydantic hook
     /// Allows this to be used as-is in pydantic basemodels
-    /// 
+    ///
     /// * Example
     /// ```python,no_run
     /// class MyModel(pydantic.BaseModel):
     ///     rot: rustmap3d.GeoOrientation
-    /// 
+    ///
     /// dumped = MyModel(...).model_dump_json()
     /// loaded = MyModel.model_validate_json(dumped)
     /// ```
@@ -276,15 +278,25 @@ impl GeoOrientation {
     // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classmethod]
-    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+    fn __get_pydantic_core_schema__<'py>(
+        cls: &Bound<'_, PyType>,
+        py: Python<'py>,
+        _source: Py<PyAny>,
+        _handler: Py<PyAny>,
+    ) -> PyResult<Py<PyAny>> {
         let validator = PyCFunction::new_closure(
-            py, None, None, 
-            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+            py,
+            None,
+            None,
+            |args: &Bound<'_, PyTuple>,
+             _kwargs: Option<&Bound<'_, PyDict>>|
+             -> PyResult<Py<PyAny>> {
                 let py = args.py();
                 let first = args.get_item(0)?;
                 validate_obj(py, first.unbind())
-            }
-        ).unwrap();
+            },
+        )
+        .unwrap();
         let validator = validator.as_any().clone().unbind();
         let serializer = cls.getattr("model_dump")?.unbind();
         let json_schema_input_schema = get_pydantic_json_schema_input_schema(py)?;
@@ -295,7 +307,7 @@ impl GeoOrientation {
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
         utils::create_pydantic_model_config(py)
-}
+    }
 
     /// Create an identity ecef orientation
     #[staticmethod]
@@ -463,12 +475,12 @@ impl GeoOrientation {
     }
 
     /// Sets this rotation to face an ecef direction and orient up in an ecef direction
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
     /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
-    /// 
+    ///
     pub fn look_to(&mut self, ecef_direction: DVec3, ecef_up: DVec3) {
         let right = ecef_up.cross(*ecef_direction);
         let up = ecef_direction.cross(right);

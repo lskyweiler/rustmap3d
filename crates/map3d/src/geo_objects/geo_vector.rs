@@ -1,6 +1,6 @@
 use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
 #[cfg(feature = "pydantic-serde")]
-use crate::{validator_wrapper_fn, utils};
+use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use map3d_derive::*;
 #[allow(unused_imports)]
 #[cfg(feature = "pyo3")]
-use pyo3::{prelude::*, exceptions::PyValueError, types::*};
+use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
@@ -22,18 +22,14 @@ use simple_py_bevy::*;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
-#[cfg_attr(feature ="serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(
-    feature = "bevy",
-    derive(Component, Reflect),
-    reflect(Component)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
 pub struct GeoVector {
     #[
         cfg_attr(
             all(feature = "py-bevy", feature = "pyo3"), 
             py_bevy(
-                get_ref = pyglam::DVec3Ref, 
+                get_ref = pyglam::DVec3Ref,
                 other_set_type = pyglam::DVec3Ref
             )
         )
@@ -50,41 +46,45 @@ impl GeoVector {
 }
 
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
-validator_wrapper_fn!(GeoVector, "GeoVector");  // need to create a non-classmethod validator for pydantic to hook into
+validator_wrapper_fn!(GeoVector, "GeoVector"); // need to create a non-classmethod validator for pydantic to hook into
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
 fn get_pydantic_json_schema_input_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-
-        /*
-        json_schema_input_schema=core_schema.model_schema(
-                GeoPosition,
-                core_schema.model_fields_schema(
-                    fields={
-                        "ecef": core_schema.model_field(
-                            schema=dvec_3_schema
-                        )
-                    },
-                ),
+    /*
+    json_schema_input_schema=core_schema.model_schema(
+            GeoPosition,
+            core_schema.model_fields_schema(
+                fields={
+                    "ecef": core_schema.model_field(
+                        schema=dvec_3_schema
+                    )
+                },
             ),
-        */
+        ),
+    */
 
-        use std::collections::HashMap;
-        use pyo3::PyTypeInfo;
+    use pyo3::PyTypeInfo;
+    use std::collections::HashMap;
 
-        let pydantic = utils::Pydantic::new(py)?;
-        let lla_schema = utils::create_lat_lon_tuple_schema(py)?;
-        let dvec3_schema = utils::create_dvec3_schema(py)?;
+    let pydantic = utils::Pydantic::new(py)?;
+    let lla_schema = utils::create_lat_lon_tuple_schema(py)?;
+    let dvec3_schema = utils::create_dvec3_schema(py)?;
 
-        let desc = utils::create_pydantic_schema_description(py, "Relative ECEF vector in meters")?;
-        let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
-        let ecef_schema = pydantic.model_field_fn.call((dvec3_schema,), Some(&desc_kwargs))?.unbind();
-        let lla_schema = pydantic.model_field_fn.call1((lla_schema,))?.unbind();
+    let desc = utils::create_pydantic_schema_description(py, "Relative ECEF vector in meters")?;
+    let desc_kwargs = HashMap::from([desc]).into_py_dict(py)?;
+    let ecef_schema = pydantic
+        .model_field_fn
+        .call((dvec3_schema,), Some(&desc_kwargs))?
+        .unbind();
+    let lla_schema = pydantic.model_field_fn.call1((lla_schema,))?.unbind();
 
-        let model_field_schema_kwargs = HashMap::from([("ecef", ecef_schema), ("lla_ref", lla_schema)]);
-        let fields = pydantic.model_fields_schema_fn.call1((model_field_schema_kwargs,))?;
-        let geo_vec_class = GeoVector::type_object(py).unbind();
+    let model_field_schema_kwargs = HashMap::from([("ecef", ecef_schema), ("lla_ref", lla_schema)]);
+    let fields = pydantic
+        .model_fields_schema_fn
+        .call1((model_field_schema_kwargs,))?;
+    let geo_vec_class = GeoVector::type_object(py).unbind();
 
-        let out = pydantic.model_schema_fn.call1((geo_vec_class, fields))?;
-        Ok(out.unbind())
+    let out = pydantic.model_schema_fn.call1((geo_vec_class, fields))?;
+    Ok(out.unbind())
 }
 
 #[cfg_attr(
@@ -110,7 +110,7 @@ impl GeoVector {
     fn model_validate_json(json_str: &str) -> PyResult<Self> {
         match serde_json::from_str(json_str) {
             Ok(loaded) => Ok(loaded),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Load from a json python dict
@@ -133,7 +133,7 @@ impl GeoVector {
 
     /// Dump to a json string
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "ecef_uvw": [
@@ -148,12 +148,12 @@ impl GeoVector {
     fn model_dump_json(&self) -> PyResult<String> {
         match serde_json::to_string(&self) {
             Ok(s) => Ok(s),
-            Err(what) => Err(PyValueError::new_err(format!("{}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{}", what))),
         }
     }
     /// Dump to a python dict
     /// # Examples
-    /// 
+    ///
     /// ```
     /// {
     ///     "ecef_uvw": [
@@ -171,12 +171,12 @@ impl GeoVector {
     }
     /// Pydantic hook
     /// Allows this to be used as-is in pydantic basemodels
-    /// 
+    ///
     /// * Example
     /// ```python,no_run
     /// class MyModel(pydantic.BaseModel):
     ///     vec: rustmap3d.GeoVector
-    /// 
+    ///
     /// dumped = MyModel(...).model_dump_json()
     /// loaded = MyModel.model_validate_json(dumped)
     /// ```
@@ -184,15 +184,25 @@ impl GeoVector {
     // *        and we dont want to use multiple-pymethods since that will break the pyo3-stub-generation
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classmethod]
-    fn __get_pydantic_core_schema__<'py>(cls: &Bound<'_, PyType>, py: Python<'py>, _source: Py<PyAny>, _handler: Py<PyAny>) -> PyResult<Py<PyAny>> {
+    fn __get_pydantic_core_schema__<'py>(
+        cls: &Bound<'_, PyType>,
+        py: Python<'py>,
+        _source: Py<PyAny>,
+        _handler: Py<PyAny>,
+    ) -> PyResult<Py<PyAny>> {
         let validator = PyCFunction::new_closure(
-            py, None, None, 
-            |args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>| -> PyResult<Py<PyAny>> {
+            py,
+            None,
+            None,
+            |args: &Bound<'_, PyTuple>,
+             _kwargs: Option<&Bound<'_, PyDict>>|
+             -> PyResult<Py<PyAny>> {
                 let py = args.py();
                 let first = args.get_item(0)?;
                 validate_obj(py, first.unbind())
-            }
-        ).unwrap();
+            },
+        )
+        .unwrap();
         let validator = validator.as_any().clone().unbind();
         let serializer = cls.getattr("model_dump")?.unbind();
 
@@ -207,12 +217,12 @@ impl GeoVector {
     }
 
     /// Create a Vector from an ecef vector relative to a reference point
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `ecef_uvw` (`&DVec3`) - Vector in ecef frame in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
-    /// 
+    ///
     #[staticmethod]
     pub fn from_ecef(ecef_uvw: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         Self {
@@ -221,12 +231,12 @@ impl GeoVector {
         }
     }
     /// Create a Vector from an enu vector relative to a reference point
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `enu` (`&DVec3`) - enu vector in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
-    /// 
+    ///
     #[staticmethod]
     pub fn from_enu(enu: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
@@ -236,12 +246,12 @@ impl GeoVector {
         }
     }
     /// Create a Vector from an ned vector relative to a reference point
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `ned` (`&DVec3`) - ned vector in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
-    /// 
+    ///
     #[staticmethod]
     pub fn from_ned(ned: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
@@ -251,12 +261,12 @@ impl GeoVector {
         }
     }
     /// Create a Vector from an ned vector relative to a reference point
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `ned` (`&DVec3`) - ned vector in meters
     /// - `reference` (`EitherGeoPosOrLLATup`) - Reference geo location
-    /// 
+    ///
     #[staticmethod]
     pub fn from_aer(aer: &DVec3, reference: EitherGeoPosOrLLATup) -> Self {
         let lla_ref = reference.into_lat_lon_triple();
