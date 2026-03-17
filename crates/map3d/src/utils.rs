@@ -130,6 +130,11 @@ pub fn pydict_to_dump<'py>(py: Python<'py>, json_dict: Py<PyDict>) -> PyResult<S
 #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
 pub mod pydantic {
     use super::*;
+    use pyo3::{
+        types::{IntoPyDict, PyString},
+        IntoPyObjectExt,
+    };
+    use std::collections::HashMap;
 
     pub fn create_pydantic_core_schema<'py>(
         py: Python,
@@ -137,9 +142,6 @@ pub mod pydantic {
         serializer_py_fn: Py<PyAny>,
         json_schema_input_schema: Py<PyAny>,
     ) -> PyResult<Py<PyAny>> {
-        use pyo3::types::IntoPyDict;
-        use std::collections::HashMap;
-
         /*
         @classmethod
         def __get_pydantic_core_schema__(
@@ -242,8 +244,6 @@ pub mod pydantic {
         py: Python,
         description: &str,
     ) -> PyResult<(String, Py<PyAny>)> {
-        use pyo3::IntoPyObjectExt;
-        use std::collections::HashMap;
         let description = HashMap::from([("description", description)]).into_py_any(py)?;
         let js_updates = HashMap::from([(("pydantic_js_updates", description))]).into_py_any(py)?;
         Ok(("metadata".to_string(), js_updates))
@@ -267,10 +267,6 @@ pub mod pydantic {
             metadata={"pydantic_js_updates": {"description": "fjdkl"}}
         ),
         */
-
-        use pyo3::types::{IntoPyDict, PyString};
-        use std::collections::HashMap;
-
         let pydantic = Pydantic::new(py)?;
 
         let float_schema = pydantic.float_schema_fn.call0()?;
@@ -291,9 +287,6 @@ pub mod pydantic {
         Ok(schema.unbind())
     }
     pub fn create_lat_lon_tuple_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        use pyo3::types::{IntoPyDict, PyString};
-        use std::collections::HashMap;
-
         let pydantic = Pydantic::new(py)?;
 
         let float_schema = pydantic.float_schema_fn.call0()?;
@@ -316,11 +309,6 @@ pub mod pydantic {
         Ok(schema.unbind())
     }
     pub fn create_dquat_schema<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
-        use pyo3::{
-            types::{IntoPyDict, PyString},
-            IntoPyObjectExt,
-        };
-        use std::collections::HashMap;
         let pydantic = Pydantic::new(py)?;
 
         let float_schema = pydantic.float_schema_fn.call0()?;

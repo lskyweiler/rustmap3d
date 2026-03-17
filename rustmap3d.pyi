@@ -219,6 +219,10 @@ class DVec3:
 
 @typing.final
 class GeoOrientation:
+    r"""
+    Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
+    """
+
     model_config: typing.Any
     @staticmethod
     def model_validate_json(json_str: builtins.str) -> GeoOrientation:
@@ -1041,7 +1045,7 @@ class GeoVelocity:
     Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
     """
 
-    model_config: pydantic.ModelConfig
+    model_config: typing.Any
     @property
     def dir_ecef(self) -> DVec3: ...
     @dir_ecef.setter

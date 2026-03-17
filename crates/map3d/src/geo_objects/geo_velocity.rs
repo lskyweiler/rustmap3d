@@ -260,7 +260,6 @@ impl GeoVelocity {
     }
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
-    #[gen_stub(override_return_type(type_repr = "pydantic.ModelConfig"))]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
         utils::pydantic::create_pydantic_model_config(py)
     }
