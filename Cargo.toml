@@ -10,7 +10,7 @@ license-file = "LICENSE"
 homepage = "https://github.com/lskyweiler/rustmap3d"
 repository = "https://github.com/lskyweiler/rustmap3d"
 readme = "README.md"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 
 [workspace]
@@ -18,7 +18,7 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-version = "0.4.0"
+version = "0.4.1"
 
 [workspace.dependencies]
 map3d = { path = "crates/map3d", features = ["pyo3"] }

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-03-17
+
+### 🚀 Features
+
+- Added pydantic schema support to geo objects
+
+### 🐛 Bug Fixes
+
+- Put all pydantic utility functions behind a cfg guarded mod
+- Minor typing fix
+
+### ⚙️ Miscellaneous Tasks
+
+- Formatted
+
 ## [0.4.0] - 2026-03-06
 
 ### 🚀 Features
@@ -33,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Updated deps
 - Ruff formatted
 - Ruff formatted/fixed
+- *(release)* Prep for release v0.4.0
 
 ## [0.3.0] - 2026-02-17
 
