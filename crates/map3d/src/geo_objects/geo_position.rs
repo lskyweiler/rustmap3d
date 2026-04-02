@@ -16,7 +16,7 @@ use map3d_derive::*;
 use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
+#[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
 use std::{
     fmt::Debug,
@@ -49,6 +49,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
     derive(Component, Reflect),
     reflect(Component, Clone)
 )]
+#[cfg_attr(feature = "gen-to-owned-stubs", derive(PyToOwnedStub))]
 #[repr(transparent)]
 pub struct GeoPosition {
     // Store the position in an [ecef](https://en.wikipedia.org/wiki/Earth-centered,_Earth-fixed_coordinate_system) vector since this is the most exact representation
@@ -233,6 +234,19 @@ impl GeoPosition {
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
         utils::pydantic::create_pydantic_model_config(py)
+    }
+
+    /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
+    ///
+    /// # Arguments
+    ///
+    /// - `ecef` (`DVec3`) - ECEF location in meters
+    #[new]
+    fn py_new(ecef_m: Either<DVec3, (f64, f64, f64)>) -> Self {
+        match ecef_m {
+            Either::Left(vec) => Self::from_ecef(&vec),
+            Either::Right(tup) => Self::from_ecef(&tup.into_dvec3().into()),
+        }
     }
 
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters

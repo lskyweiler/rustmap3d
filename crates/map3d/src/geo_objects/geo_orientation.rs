@@ -21,7 +21,7 @@ use map3d_derive::*;
 use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
+#[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
 use std::ops::Mul;
 
@@ -34,6 +34,7 @@ use std::ops::Mul;
 )]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
+#[cfg_attr(feature = "gen-to-owned-stubs", derive(PyToOwnedStub))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
     #[
@@ -45,6 +46,7 @@ pub struct GeoOrientation {
             )
         )
     ]
+    #[pyo3(get, set)]
     ecef_rot: DQuat,
 }
 
@@ -321,6 +323,20 @@ impl GeoOrientation {
             ecef_rot: DQuat::new(glam::DQuat::IDENTITY),
         };
     }
+
+    /// Construct a rotation to face an ecef direction and orient up in an ecef direction
+    ///
+    /// # Arguments
+    ///
+    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
+    #[staticmethod]
+    pub fn from_look_to(ecef_direction: DVec3, ecef_up: DVec3) -> Self {
+        let mut out = Self::from_identity();
+        out.look_to(ecef_direction, ecef_up);
+        out
+    }
+
     /// Construct an orientation from a body2ecef quaternion
     ///
     /// This does not check that the input quaternion is normalized

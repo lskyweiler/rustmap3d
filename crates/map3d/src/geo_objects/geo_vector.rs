@@ -11,8 +11,9 @@ use map3d_derive::*;
 use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
+#[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
+use std::ops::{Div, Mul};
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -22,6 +23,7 @@ use simple_py_bevy::*;
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
 )]
+#[cfg_attr(feature = "gen-to-owned-stubs", derive(PyToOwnedStub))]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
 pub struct GeoVector {
@@ -348,7 +350,53 @@ impl GeoVector {
     pub fn azimuth(&self) -> f64 {
         self.aer().x
     }
+
+    /// Scale this vector with a float
+    /// # Arguments
+    ///
+    /// - `rhs` (`f64`) - Scale to multiply
+    ///
+    /// # Returns
+    ///
+    /// - `PyResult<GeoVector>` - Scaled GeoVector
+    ///
+    #[cfg(feature = "pyo3")]
+    fn __mul__(&self, rhs: f64) -> PyResult<GeoVector> {
+        Ok(self * rhs)
+    }
+    #[cfg(feature = "pyo3")]
+    fn __rmul__(&self, rhs: f64) -> PyResult<GeoVector> {
+        self.__mul__(rhs)
+    }
+    /// Shrink this vector with a float
+    #[cfg(feature = "pyo3")]
+    fn __div__(&self, rhs: f64) -> PyResult<GeoVector> {
+        Ok(self / rhs)
+    }
 }
+
+macro_rules! geo_vec_scale {
+    ($a:ty, $b:ty) => {
+        impl Mul<$a> for $b {
+            type Output = GeoVector;
+            fn mul(self, scale: $a) -> Self::Output {
+                let scaled = self.ecef_uvw * scale;
+                GeoVector::from_ecef(&scaled, self.lla_ref.into_either())
+            }
+        }
+        impl Div<$a> for $b {
+            type Output = GeoVector;
+            fn div(self, scale: $a) -> Self::Output {
+                let scaled = self.ecef_uvw / scale;
+                GeoVector::from_ecef(&scaled, self.lla_ref.into_either())
+            }
+        }
+    };
+}
+geo_vec_scale!(f64, GeoVector);
+geo_vec_scale!(&f64, GeoVector);
+geo_vec_scale!(f64, &GeoVector);
+geo_vec_scale!(&f64, &GeoVector);
 
 #[cfg(test)]
 mod test_geo_vector {
