@@ -13,6 +13,7 @@ use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(feature = "py-bevy")]
 use simple_py_bevy::*;
+use std::ops::{Div, Mul};
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -348,7 +349,53 @@ impl GeoVector {
     pub fn azimuth(&self) -> f64 {
         self.aer().x
     }
+
+    /// Scale this vector with a float
+    /// # Arguments
+    ///
+    /// - `rhs` (`f64`) - Scale to multiply
+    ///
+    /// # Returns
+    ///
+    /// - `PyResult<GeoVector>` - Scaled GeoVector
+    ///
+    #[cfg(feature = "pyo3")]
+    fn __mul__(&self, rhs: f64) -> PyResult<GeoVector> {
+        Ok(self * rhs)
+    }
+    #[cfg(feature = "pyo3")]
+    fn __rmul__(&self, rhs: f64) -> PyResult<GeoVector> {
+        self.__mul__(rhs)
+    }
+    /// Shrink this vector with a float
+    #[cfg(feature = "pyo3")]
+    fn __div__(&self, rhs: f64) -> PyResult<GeoVector> {
+        Ok(self / rhs)
+    }
 }
+
+macro_rules! geo_vec_scale {
+    ($a:ty, $b:ty) => {
+        impl Mul<$a> for $b {
+            type Output = GeoVector;
+            fn mul(self, scale: $a) -> Self::Output {
+                let scaled = self.ecef_uvw * scale;
+                GeoVector::from_ecef(&scaled, self.lla_ref.into_either())
+            }
+        }
+        impl Div<$a> for $b {
+            type Output = GeoVector;
+            fn div(self, scale: $a) -> Self::Output {
+                let scaled = self.ecef_uvw / scale;
+                GeoVector::from_ecef(&scaled, self.lla_ref.into_either())
+            }
+        }
+    };
+}
+geo_vec_scale!(f64, GeoVector);
+geo_vec_scale!(&f64, GeoVector);
+geo_vec_scale!(f64, &GeoVector);
+geo_vec_scale!(&f64, &GeoVector);
 
 #[cfg(test)]
 mod test_geo_vector {

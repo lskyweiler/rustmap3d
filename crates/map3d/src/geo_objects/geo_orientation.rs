@@ -45,6 +45,7 @@ pub struct GeoOrientation {
             )
         )
     ]
+    #[pyo3(get, set)]
     ecef_rot: DQuat,
 }
 
@@ -321,6 +322,20 @@ impl GeoOrientation {
             ecef_rot: DQuat::new(glam::DQuat::IDENTITY),
         };
     }
+
+    /// Construct a rotation to face an ecef direction and orient up in an ecef direction
+    ///
+    /// # Arguments
+    ///
+    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
+    #[staticmethod]
+    pub fn from_look_to(ecef_direction: DVec3, ecef_up: DVec3) -> Self {
+        let mut out = Self::from_identity();
+        out.look_to(ecef_direction, ecef_up);
+        out
+    }
+
     /// Construct an orientation from a body2ecef quaternion
     ///
     /// This does not check that the input quaternion is normalized

@@ -236,6 +236,16 @@ impl GeoPosition {
     }
 
     /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
+    /// 
+    /// # Arguments
+    /// 
+    /// - `ecef` (`DVec3`) - ECEF location in meters
+    #[new]
+    pub fn py_new(ecef_m: &DVec3) -> Self {
+        Self::from_ecef(ecef_m)
+    }
+
+    /// Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
     ///
     /// # Arguments
     ///
