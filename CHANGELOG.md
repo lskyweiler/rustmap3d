@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-04-02
+
+### 🚀 Features
+
+- Added more utility api functions to geo objects
+
+### 🐛 Bug Fixes
+
+- Updated stubs
+- Added either vec or tuple in geopos constructor
+- Added to owned stub export derive
+
+### ⚙️ Miscellaneous Tasks
+
+- Locked
+
 ## [0.4.1] - 2026-03-17
 
 ### 🚀 Features
@@ -16,6 +32,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Formatted
+- *(release)* Prep for release v0.4.1
 
 ## [0.4.0] - 2026-03-06
 
