@@ -224,6 +224,10 @@ class GeoOrientation:
     """
 
     model_config: typing.Any
+    @property
+    def ecef_rot(self) -> DQuat: ...
+    @ecef_rot.setter
+    def ecef_rot(self, value: DQuat) -> None: ...
     @staticmethod
     def model_validate_json(json_str: builtins.str) -> GeoOrientation:
         r"""
@@ -295,6 +299,16 @@ class GeoOrientation:
     def from_identity() -> GeoOrientation:
         r"""
         Create an identity ecef orientation
+        """
+    @staticmethod
+    def from_look_to(ecef_direction: DVec3, ecef_up: DVec3) -> GeoOrientation:
+        r"""
+        Construct a rotation to face an ecef direction and orient up in an ecef direction
+
+        # Arguments
+
+        - `ecef_direction` (`DVec3`) - x axis of the resulting frame
+        - `ecef_up` (`DVec3`) - z axis of the resulting frame
         """
     @staticmethod
     def from_ecef(body2ecef: DQuat) -> GeoOrientation:
@@ -572,6 +586,14 @@ class GeoPosition:
         dumped = MyModel(...).model_dump_json()
         loaded = MyModel.model_validate_json(dumped)
         ```
+        """
+    def __new__(cls, ecef_m: DVec3) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
+
+        # Arguments
+
+        - `ecef` (`DVec3`) - ECEF location in meters
         """
     @staticmethod
     def from_ecef(ecef_m: DVec3) -> GeoPosition:
@@ -1036,6 +1058,22 @@ class GeoVector:
         # Returns
 
         * `azimuth` - Clockwise angle off true north in [[degrees]]
+        """
+    def __mul__(self, rhs: builtins.float) -> GeoVector:
+        r"""
+        Scale this vector with a float
+        # Arguments
+
+        - `rhs` (`f64`) - Scale to multiply
+
+        # Returns
+
+        - `PyResult<GeoVector>` - Scaled GeoVector
+        """
+    def __rmul__(self, rhs: builtins.float) -> GeoVector: ...
+    def __div__(self, rhs: builtins.float) -> GeoVector:
+        r"""
+        Shrink this vector with a float
         """
 
 @typing.final
