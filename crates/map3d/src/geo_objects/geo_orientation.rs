@@ -21,7 +21,7 @@ use map3d_derive::*;
 use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
-#[cfg(feature = "py-bevy")]
+#[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
 use std::ops::Mul;
 
@@ -34,6 +34,7 @@ use std::ops::Mul;
 )]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect), reflect(Component))]
+#[cfg_attr(feature = "gen-to-owned-stubs", derive(PyToOwnedStub))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct GeoOrientation {
     #[

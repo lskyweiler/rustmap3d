@@ -4335,6 +4335,7 @@ dependencies = [
  "pyo3-stub-gen",
  "rand 0.9.2",
  "serde",
+ "simple-py-bevy",
 ]
 
 [[package]]
