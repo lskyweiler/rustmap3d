@@ -587,7 +587,12 @@ class GeoPosition:
         loaded = MyModel.model_validate_json(dumped)
         ```
         """
-    def __new__(cls, ecef_m: DVec3) -> GeoPosition:
+    def __new__(
+        cls,
+        ecef_m: typing.Union[
+            DVec3, tuple[builtins.float, builtins.float, builtins.float]
+        ],
+    ) -> GeoPosition:
         r"""
         Construct a GeoPosition from an ECEF (Earth Centered, Earth Fixed) vec3 in meters
 

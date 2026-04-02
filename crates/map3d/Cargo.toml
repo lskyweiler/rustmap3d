@@ -55,5 +55,5 @@ py-bevy = [
     "dep:simple-py-bevy",
     "simple-py-bevy/py-bevy",
     "simple-py-bevy/py-ref",
-    "pyglam/py-ref",
+    "simple-py-bevy/gen-to-owned-stubs",
 ]

@@ -33,6 +33,11 @@ impl IntoDVec3 for pyglam::DVec3 {
         (**self).into()
     }
 }
+impl IntoDVec3 for (f64, f64, f64) {
+    fn into_dvec3(&self) -> glam::DVec3 {
+        glam::dvec3(self.0, self.1, self.2)
+    }
+}
 
 impl IntoLatLonTuple for &glam::DVec3 {
     fn into_lat_lon_tuple(&self) -> (f64, f64) {
