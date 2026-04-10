@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-04-10
+
+### ⚙️ Miscellaneous Tasks
+
+- Updated bevy to 18
+
 ## [0.5.0] - 2026-04-02
 
 ### 🚀 Features
@@ -17,6 +23,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Locked
+- *(release)* Prep for release v0.5.0
 
 ## [0.4.1] - 2026-03-17
 

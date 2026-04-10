@@ -4478,6 +4478,7 @@ checksum = "b5a041e753da8b807c9255f28de81879c78c876392ff2469cde94799b2896b9d"
 [[package]]
 name = "pyglam"
 version = "0.2.2"
+source = "git+https://github.com/lskyweiler/pyglam#99bda1f1ecbbd475714aa0548e20cc5f177b4dba"
 dependencies = [
  "bevy",
  "either",
@@ -5167,6 +5168,7 @@ checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 [[package]]
 name = "simple-py-bevy"
 version = "0.5.0"
+source = "git+https://github.com/lskyweiler/simple-py-bevy#d7edc89941a2ba0783e2d6241be866064a30335f"
 dependencies = [
  "bevy",
  "pyo3",
@@ -5176,6 +5178,7 @@ dependencies = [
 [[package]]
 name = "simple_py_bevy_derive"
 version = "0.5.0"
+source = "git+https://github.com/lskyweiler/simple-py-bevy#d7edc89941a2ba0783e2d6241be866064a30335f"
 dependencies = [
  "darling",
  "proc-macro2",
