@@ -525,6 +525,19 @@ impl GeoPosition {
         format!("{:?}", self)
     }
 
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __getstate__(&self) -> PyResult<(f64, f64, f64)> {
+        Ok((self.ecef.x, self.ecef.y, self.ecef.z))
+    }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __setstate__(&mut self, state: (f64, f64, f64)) -> PyResult<()> {
+        self.ecef = glam::dvec3(state.0, state.1, state.2).into();
+        Ok(())
+    }
+
     /// Adds a relative ecef vector to this position
     ///
     /// # Arguments

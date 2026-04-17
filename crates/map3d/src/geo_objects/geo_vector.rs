@@ -373,6 +373,23 @@ impl GeoVector {
     fn __div__(&self, rhs: f64) -> PyResult<GeoVector> {
         Ok(self / rhs)
     }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __getstate__(&self) -> PyResult<((f64, f64, f64), (f64, f64, f64))> {
+        Ok((
+            (self.ecef_uvw.x, self.ecef_uvw.y, self.ecef_uvw.z),
+            self.lla_ref
+        ))
+    }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __setstate__(&mut self, state: ((f64, f64, f64), (f64, f64, f64))) -> PyResult<()> {
+        self.ecef_uvw = glam::dvec3(state.0.0, state.0.1, state.0.2).into();
+        self.lla_ref = state.1;
+        Ok(())
+    }
 }
 
 macro_rules! geo_vec_scale {

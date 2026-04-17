@@ -435,6 +435,23 @@ impl GeoVelocity {
     fn __rdiv__(&self, lhs: GeoVelocity) -> PyResult<GeoVelocity> {
         Ok(lhs / self)
     }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __getstate__(&self) -> PyResult<((f64, f64, f64), f64)> {
+        Ok((
+            (self.dir_ecef.x, self.dir_ecef.y, self.dir_ecef.z),
+            self.speed
+        ))
+    }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __setstate__(&mut self, state: ((f64, f64, f64), f64)) -> PyResult<()> {
+        self.dir_ecef = glam::dvec3(state.0.0, state.0.1, state.0.2).into();
+        self.speed = state.1;
+        Ok(())
+    }
 }
 
 macro_rules! geo_vel_mul_time {

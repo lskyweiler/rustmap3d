@@ -546,6 +546,19 @@ impl GeoOrientation {
             Either::Right(rot) => Ok(Either::Right(self * rot)),
         }
     }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __getstate__(&self) -> PyResult<(f64, f64, f64, f64)> {
+        Ok((self.ecef_rot.x, self.ecef_rot.y, self.ecef_rot.z, self.ecef_rot.w))
+    }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __setstate__(&mut self, state: (f64, f64, f64, f64)) -> PyResult<()> {
+        self.ecef_rot = glam::DQuat::from_xyzw(state.0, state.1, state.2, state.3).into();
+        Ok(())
+    }
 }
 
 macro_rules! ops_with_geo_pos {
