@@ -5,7 +5,7 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DQuat, DVec3,
+    dquat, DQuat, DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
@@ -547,17 +547,19 @@ impl GeoOrientation {
         }
     }
 
-    /// Support for pickle/deepcopy
+    /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
-    fn __getstate__(&self) -> PyResult<(f64, f64, f64, f64)> {
-        Ok((self.ecef_rot.x, self.ecef_rot.y, self.ecef_rot.z, self.ecef_rot.w))
+    #[new]
+    fn __new__(ecef_rot: (f64, f64, f64, f64)) -> Self {
+        GeoOrientation {
+            ecef_rot: dquat(ecef_rot.0, ecef_rot.1, ecef_rot.2, ecef_rot.3),
+        }
     }
 
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
-    fn __setstate__(&mut self, state: (f64, f64, f64, f64)) -> PyResult<()> {
-        self.ecef_rot = glam::DQuat::from_xyzw(state.0, state.1, state.2, state.3).into();
-        Ok(())
+    fn __getnewargs__(&self) -> PyResult<((f64, f64, f64, f64),)> {
+        Ok(((self.ecef_rot.x, self.ecef_rot.y, self.ecef_rot.z, self.ecef_rot.w),))
     }
 }
 

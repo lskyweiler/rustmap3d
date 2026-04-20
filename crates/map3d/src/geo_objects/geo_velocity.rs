@@ -6,7 +6,7 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DVec3,
+    dvec3, DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
@@ -436,21 +436,20 @@ impl GeoVelocity {
         Ok(lhs / self)
     }
 
-    /// Support for pickle/deepcopy
+    /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
-    fn __getstate__(&self) -> PyResult<((f64, f64, f64), f64)> {
-        Ok((
-            (self.dir_ecef.x, self.dir_ecef.y, self.dir_ecef.z),
-            self.speed
-        ))
+    #[new]
+    fn __new__(dir_ecef: (f64, f64, f64), speed: f64) -> Self {
+        GeoVelocity {
+            dir_ecef: dvec3(dir_ecef.0, dir_ecef.1, dir_ecef.2),
+            speed,
+        }
     }
 
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
-    fn __setstate__(&mut self, state: ((f64, f64, f64), f64)) -> PyResult<()> {
-        self.dir_ecef = glam::dvec3(state.0.0, state.0.1, state.0.2).into();
-        self.speed = state.1;
-        Ok(())
+    fn __getnewargs__(&self) -> PyResult<((f64, f64, f64), f64)> {
+        Ok(((self.dir_ecef.x, self.dir_ecef.y, self.dir_ecef.z), self.speed))
     }
 }
 

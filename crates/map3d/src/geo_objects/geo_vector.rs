@@ -1,4 +1,4 @@
-use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
+use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, dvec3, DVec3};
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
@@ -374,21 +374,20 @@ impl GeoVector {
         Ok(self / rhs)
     }
 
-    /// Support for pickle/deepcopy
+    /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
-    fn __getstate__(&self) -> PyResult<((f64, f64, f64), (f64, f64, f64))> {
-        Ok((
-            (self.ecef_uvw.x, self.ecef_uvw.y, self.ecef_uvw.z),
-            self.lla_ref
-        ))
+    #[new]
+    fn __new__(ecef_uvw: (f64, f64, f64), lla_ref: (f64, f64, f64)) -> Self {
+        GeoVector {
+            ecef_uvw: dvec3(ecef_uvw.0, ecef_uvw.1, ecef_uvw.2),
+            lla_ref,
+        }
     }
 
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
-    fn __setstate__(&mut self, state: ((f64, f64, f64), (f64, f64, f64))) -> PyResult<()> {
-        self.ecef_uvw = glam::dvec3(state.0.0, state.0.1, state.0.2).into();
-        self.lla_ref = state.1;
-        Ok(())
+    fn __getnewargs__(&self) -> PyResult<((f64, f64, f64), (f64, f64, f64))> {
+        Ok(((self.ecef_uvw.x, self.ecef_uvw.y, self.ecef_uvw.z), self.lla_ref))
     }
 }
 
