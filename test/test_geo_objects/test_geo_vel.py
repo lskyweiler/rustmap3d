@@ -1,4 +1,5 @@
 import copy
+import pickle
 
 import numpy as np
 import pydantic
@@ -50,6 +51,19 @@ class TestDeepcopy:
 
         # Verify it's a different object
         assert copied is not original
+
+    def test_pickle(self):
+        original = rustmap3d.GeoVelocity.from_dir_speed(
+            rustmap3d.DVec3(0.707, 0.707, 0.0), 100.0
+        )
+        pickled = pickle.dumps(original)
+        unpickled = pickle.loads(pickled)
+
+        # Verify values match
+        np.testing.assert_allclose(
+            unpickled.dir_ecef.to_tuple(), original.dir_ecef.to_tuple()
+        )
+        np.testing.assert_allclose(unpickled.speed, original.speed)
 
 
 class MockModel(pydantic.BaseModel):

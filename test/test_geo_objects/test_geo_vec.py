@@ -1,4 +1,5 @@
 import copy
+import pickle
 
 import numpy as np
 import pydantic
@@ -76,6 +77,19 @@ class TestDeepcopy:
 
         # Verify it's a different object
         assert copied is not original
+
+    def test_pickle(self):
+        original = rustmap3d.GeoVector.from_ned(
+            rustmap3d.DVec3(100.0, 50.0, -25.0), (45.0, -122.0, 100.0)
+        )
+        pickled = pickle.dumps(original)
+        unpickled = pickle.loads(pickled)
+
+        # Verify values match
+        np.testing.assert_allclose(
+            unpickled.ecef_uvw.to_tuple(), original.ecef_uvw.to_tuple()
+        )
+        np.testing.assert_allclose(unpickled.length(), original.length())
 
 
 class MockModel(pydantic.BaseModel):
