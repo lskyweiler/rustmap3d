@@ -1,6 +1,7 @@
+import copy
+
 import numpy as np
 import pydantic
-
 import rustmap3d
 
 
@@ -32,6 +33,23 @@ class TestGeoVelocity:
             '{"dir_ecef":[1.0,0.0,0.0],"speed":100.0}'
         )
         np.testing.assert_allclose(actual.dir_ecef.x, 1.0)
+
+
+class TestDeepcopy:
+    def test_deepcopy(self):
+        original = rustmap3d.GeoVelocity.from_dir_speed(
+            rustmap3d.DVec3(0.707, 0.707, 0.0), 100.0
+        )
+        copied = copy.deepcopy(original)
+
+        # Verify values match
+        np.testing.assert_allclose(
+            copied.dir_ecef.to_tuple(), original.dir_ecef.to_tuple()
+        )
+        np.testing.assert_allclose(copied.speed, original.speed)
+
+        # Verify it's a different object
+        assert copied is not original
 
 
 class MockModel(pydantic.BaseModel):

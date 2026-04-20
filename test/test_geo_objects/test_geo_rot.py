@@ -1,8 +1,8 @@
+import copy
 import math
 
 import numpy as np
 import pydantic
-
 import rustmap3d
 
 
@@ -49,6 +49,28 @@ class TestGeoOrientation:
         rustmap3d.GeoOrientation.model_validate_json(
             '{"ecef_rot":[0.0,0.0,0.7071067811865476,0.7071067811865476]}'
         )
+
+
+class TestDeepcopy:
+    def test_deepcopy(self):
+        original = rustmap3d.GeoOrientation.from_ecef_euler(
+            rustmap3d.DVec3(0.1, 0.2, 0.3)
+        )
+        copied = copy.deepcopy(original)
+
+        # Verify values match by checking the resulting rotation produces the same x_axis
+        np.testing.assert_allclose(
+            copied.x_axis().to_tuple(), original.x_axis().to_tuple(), atol=1e-10
+        )
+        np.testing.assert_allclose(
+            copied.y_axis().to_tuple(), original.y_axis().to_tuple(), atol=1e-10
+        )
+        np.testing.assert_allclose(
+            copied.z_axis().to_tuple(), original.z_axis().to_tuple(), atol=1e-10
+        )
+
+        # Verify it's a different object
+        assert copied is not original
 
 
 class MockModel(pydantic.BaseModel):

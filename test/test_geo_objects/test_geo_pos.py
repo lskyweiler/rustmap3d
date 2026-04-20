@@ -1,6 +1,7 @@
+import copy
+
 import numpy as np
 import pydantic
-
 import rustmap3d
 
 
@@ -76,6 +77,19 @@ class TestGeoPosOps:
 
         actual = pos + rate * 1.0
         np.testing.assert_allclose(actual.ecef.y, 100.0, atol=1e-5)
+
+
+class TestDeepcopy:
+    def test_deepcopy(self):
+        original = rustmap3d.GeoPosition.from_lla((45.0, -122.0, 100.0))
+        copied = copy.deepcopy(original)
+
+        # Verify values match
+        np.testing.assert_allclose(copied.ecef.to_tuple(), original.ecef.to_tuple())
+        np.testing.assert_allclose(copied.lla, original.lla)
+
+        # Verify it's a different object
+        assert copied is not original
 
 
 class MockModel(pydantic.BaseModel):

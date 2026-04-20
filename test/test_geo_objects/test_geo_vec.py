@@ -1,6 +1,7 @@
+import copy
+
 import numpy as np
 import pydantic
-
 import rustmap3d
 
 
@@ -57,6 +58,24 @@ class TestGeoVector:
             '{"ecef_uvw":[4.043810359732617e-15,100.00000000000006,0.0],"lla_ref":[0.0,0.0,0.0]}'
         )
         np.testing.assert_allclose(actual.ecef_uvw.y, 100.0)
+
+
+class TestDeepcopy:
+    def test_deepcopy(self):
+        original = rustmap3d.GeoVector.from_ned(
+            rustmap3d.DVec3(100.0, 50.0, -25.0), (45.0, -122.0, 100.0)
+        )
+        copied = copy.deepcopy(original)
+
+        # Verify values match by checking both ecef_uvw and computed properties
+        np.testing.assert_allclose(
+            copied.ecef_uvw.to_tuple(), original.ecef_uvw.to_tuple()
+        )
+        np.testing.assert_allclose(copied.length(), original.length())
+        np.testing.assert_allclose(copied.ned().to_tuple(), original.ned().to_tuple())
+
+        # Verify it's a different object
+        assert copied is not original
 
 
 class MockModel(pydantic.BaseModel):
