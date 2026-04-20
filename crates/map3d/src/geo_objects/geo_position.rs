@@ -37,7 +37,7 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
 
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),

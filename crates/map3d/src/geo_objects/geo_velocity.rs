@@ -28,7 +28,7 @@ use std::ops::{Add, Div, Mul, Sub};
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)

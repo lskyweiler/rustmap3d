@@ -27,7 +27,7 @@ use std::ops::Mul;
 
 /// Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
