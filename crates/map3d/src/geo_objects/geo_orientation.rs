@@ -550,9 +550,14 @@ impl GeoOrientation {
     /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
     #[new]
-    fn __new__(ecef_rot: (f64, f64, f64, f64)) -> Self {
-        GeoOrientation {
-            ecef_rot: dquat(ecef_rot.0, ecef_rot.1, ecef_rot.2, ecef_rot.3),
+    fn py_new(ecef_rot: Either<DQuat, (f64, f64, f64, f64)>) -> Self {
+        match ecef_rot {
+            Either::Left(quat) => GeoOrientation {
+                ecef_rot: quat,
+            },
+            Either::Right(tup) => GeoOrientation {
+                ecef_rot: dquat(tup.0, tup.1, tup.2, tup.3),
+            },
         }
     }
 

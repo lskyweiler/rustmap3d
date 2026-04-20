@@ -439,10 +439,16 @@ impl GeoVelocity {
     /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
     #[new]
-    fn __new__(dir_ecef: (f64, f64, f64), speed: f64) -> Self {
-        GeoVelocity {
-            dir_ecef: dvec3(dir_ecef.0, dir_ecef.1, dir_ecef.2),
-            speed,
+    fn py_new(dir_ecef: Either<DVec3, (f64, f64, f64)>, speed: f64) -> Self {
+        match dir_ecef {
+            Either::Left(vec) => GeoVelocity {
+                dir_ecef: vec,
+                speed,
+            },
+            Either::Right(tup) => GeoVelocity {
+                dir_ecef: dvec3(tup.0, tup.1, tup.2),
+                speed,
+            },
         }
     }
 

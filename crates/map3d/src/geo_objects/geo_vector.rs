@@ -4,6 +4,7 @@ use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
+use either::Either;
 #[cfg(not(feature = "pyo3"))]
 use map3d_derive::*;
 #[allow(unused_imports)]
@@ -377,10 +378,16 @@ impl GeoVector {
     /// Constructor for pickle/deepcopy support
     #[cfg(feature = "pyo3")]
     #[new]
-    fn __new__(ecef_uvw: (f64, f64, f64), lla_ref: (f64, f64, f64)) -> Self {
-        GeoVector {
-            ecef_uvw: dvec3(ecef_uvw.0, ecef_uvw.1, ecef_uvw.2),
-            lla_ref,
+    fn py_new(ecef_uvw: Either<DVec3, (f64, f64, f64)>, lla_ref: (f64, f64, f64)) -> Self {
+        match ecef_uvw {
+            Either::Left(vec) => GeoVector {
+                ecef_uvw: vec,
+                lla_ref,
+            },
+            Either::Right(tup) => GeoVector {
+                ecef_uvw: dvec3(tup.0, tup.1, tup.2),
+                lla_ref,
+            },
         }
     }
 
