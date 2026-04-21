@@ -2,11 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-04-21
+
+### 🚀 Features
+
+- Adds pickle and deepcopy support to geo objects
+
+### 🐛 Bug Fixes
+
+- Corrects pickle implementation
+- Manually sets PyO3 module for pickle support
+- Updated stubs
+
+### 🚜 Refactor
+
+- Aligns Geo objects with py_new pattern
+
+### 🧪 Testing
+
+- Verifies Geo object pickle/deepcopy support
+- Adds explicit tests for python pickling
+
 ## [0.5.1] - 2026-04-10
 
 ### ⚙️ Miscellaneous Tasks
 
 - Updated bevy to 18
+- *(release)* Prep for release v0.5.1
 
 ## [0.5.0] - 2026-04-02
 
