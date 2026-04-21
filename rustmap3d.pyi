@@ -515,6 +515,21 @@ class GeoOrientation:
 
         - `PyResult<Either<GeoVector, GeoOrientation>>` - Either a transformed GeoVector or a combined GeoOrientation
         """
+    def __new__(
+        cls,
+        ecef_rot: typing.Union[
+            DQuat, tuple[builtins.float, builtins.float, builtins.float, builtins.float]
+        ],
+    ) -> GeoOrientation:
+        r"""
+        Constructor for pickle/deepcopy support
+        """
+    def __getnewargs__(
+        self,
+    ) -> tuple[tuple[builtins.float, builtins.float, builtins.float, builtins.float]]:
+        r"""
+        Support for pickle/deepcopy
+        """
 
 @typing.final
 class GeoPosition:
@@ -837,6 +852,12 @@ class GeoPosition:
         r"""
         Python __repr__ to pretty print the geo position as degrees.minutes.seconds
         """
+    def __getnewargs__(
+        self,
+    ) -> tuple[tuple[builtins.float, builtins.float, builtins.float]]:
+        r"""
+        Support for pickle/deepcopy
+        """
     def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition:
         r"""
         Adds a relative ecef vector to this position
@@ -1096,6 +1117,25 @@ class GeoVector:
         r"""
         Shrink this vector with a float
         """
+    def __new__(
+        cls,
+        ecef_uvw: typing.Union[
+            DVec3, tuple[builtins.float, builtins.float, builtins.float]
+        ],
+        lla_ref: tuple[builtins.float, builtins.float, builtins.float],
+    ) -> GeoVector:
+        r"""
+        Constructor for pickle/deepcopy support
+        """
+    def __getnewargs__(
+        self,
+    ) -> tuple[
+        tuple[builtins.float, builtins.float, builtins.float],
+        tuple[builtins.float, builtins.float, builtins.float],
+    ]:
+        r"""
+        Support for pickle/deepcopy
+        """
 
 @typing.final
 class GeoVelocity:
@@ -1320,6 +1360,22 @@ class GeoVelocity:
     def __rdiv__(self, lhs: GeoVelocity) -> GeoVelocity:
         r"""
         Component-wise division of velocity
+        """
+    def __new__(
+        cls,
+        dir_ecef: typing.Union[
+            DVec3, tuple[builtins.float, builtins.float, builtins.float]
+        ],
+        speed: builtins.float,
+    ) -> GeoVelocity:
+        r"""
+        Constructor for pickle/deepcopy support
+        """
+    def __getnewargs__(
+        self,
+    ) -> tuple[tuple[builtins.float, builtins.float, builtins.float], builtins.float]:
+        r"""
+        Support for pickle/deepcopy
         """
 
 @typing.final

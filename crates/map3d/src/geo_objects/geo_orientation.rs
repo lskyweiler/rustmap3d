@@ -5,7 +5,7 @@ use crate::{
     },
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    DQuat, DVec3,
+    dquat, DQuat, DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
@@ -27,7 +27,7 @@ use std::ops::Mul;
 
 /// Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass)]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -545,6 +545,26 @@ impl GeoOrientation {
             Either::Left(vec) => Ok(Either::Left(self * vec)),
             Either::Right(rot) => Ok(Either::Right(self * rot)),
         }
+    }
+
+    /// Constructor for pickle/deepcopy support
+    #[cfg(feature = "pyo3")]
+    #[new]
+    fn py_new(ecef_rot: Either<DQuat, (f64, f64, f64, f64)>) -> Self {
+        match ecef_rot {
+            Either::Left(quat) => GeoOrientation {
+                ecef_rot: quat,
+            },
+            Either::Right(tup) => GeoOrientation {
+                ecef_rot: dquat(tup.0, tup.1, tup.2, tup.3),
+            },
+        }
+    }
+
+    /// Support for pickle/deepcopy
+    #[cfg(feature = "pyo3")]
+    fn __getnewargs__(&self) -> PyResult<((f64, f64, f64, f64),)> {
+        Ok(((self.ecef_rot.x, self.ecef_rot.y, self.ecef_rot.z, self.ecef_rot.w),))
     }
 }
 
