@@ -3514,7 +3514,7 @@ dependencies = [
 
 [[package]]
 name = "map3d"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "almost",
  "approx",
@@ -3537,7 +3537,7 @@ dependencies = [
 
 [[package]]
 name = "map3d_derive"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "quote",
  "syn",
@@ -4493,7 +4493,7 @@ dependencies = [
 
 [[package]]
 name = "pymap3d"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "glam",
  "map3d",
@@ -4958,7 +4958,7 @@ dependencies = [
 
 [[package]]
 name = "rustmap3d"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "env_logger",
  "glam",
