@@ -1,14 +1,11 @@
+#[cfg(feature = "pyo3")]
+use crate::dquat;
 use crate::{
-    geo_objects::{
-        geo_position::{EitherGeoPosOrLLATup, GeoPosition},
-        geo_vector::GeoVector,
-    },
-    traits::IntoEitherLLATupOrGeoPos,
+    geo_objects::{geo_position::GeoPosition, geo_vector::GeoVector},
+    traits::{EitherGeoPosOrLLATup, IntoEitherLLATupOrGeoPos},
     transforms::*,
     DQuat, DVec3,
 };
-#[cfg(feature = "pyo3")]
-use crate::dquat;
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
@@ -29,7 +26,9 @@ use std::ops::Mul;
 
 /// Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass(module = "rustmap3d"))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -496,9 +495,23 @@ impl GeoOrientation {
         let ecef2enu = ecef2enu_quat(reference);
         return ecef2enu * self.ecef_rot;
     }
+    /// Express this bodies orientation in a local ned frame
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+    ///
+    /// # Returns
+    ///
+    /// - `DQuat` - body 2 local ned rotation
+    ///
+    pub fn as_ned(&self, reference: EitherGeoPosOrLLATup) -> DQuat {
+        let ecef2ned = ecef2ned_quat(reference);
+        return ecef2ned * self.ecef_rot;
+    }
 
     /// Sets this rotation to face an ecef direction and orient up in an ecef direction
-    /// 
+    ///
     /// Resulting frame:
     ///     * X axis: Look-To Direction
     ///     * Y Axis: Up cross X

@@ -23,29 +23,11 @@ use std::{
     ops::{Add, Sub},
 };
 
-pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
-impl Into<EitherGeoPosOrLLATup> for GeoPosition {
-    fn into(self) -> EitherGeoPosOrLLATup {
-        Either::Right(self)
-    }
-}
-impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
-    fn into(self) -> EitherGeoPosOrLLATup {
-        Either::Right(self.clone())
-    }
-}
-impl Into<GeoPosition> for EitherGeoPosOrLLATup {
-    fn into(self) -> GeoPosition {
-        match self {
-            Either::Left(lla_tup) => GeoPosition::from_lla(lla_tup),
-            Either::Right(pos) => pos
-        }
-    }
-}
-
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass(module = "rustmap3d"))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -284,7 +266,7 @@ impl GeoPosition {
     /// Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds string
     ///
     /// Altitude it set to 0
-    /// 
+    ///
     /// # Arguments
     ///
     /// - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
@@ -292,9 +274,9 @@ impl GeoPosition {
     #[cfg(feature = "pyo3")]
     #[staticmethod]
     fn from_ll_dms(lat_dms: &str, lon_dms: &str) -> PyResult<Self> {
-        match dms_ll2dd(lat_dms, lon_dms){
+        match dms_ll2dd(lat_dms, lon_dms) {
             Ok((lat, lon)) => Ok(Self::from_lla((lat, lon, 0.))),
-            Err(what) => Err(PyValueError::new_err(format!("{:?}", what)))
+            Err(what) => Err(PyValueError::new_err(format!("{:?}", what))),
         }
     }
     /// Construct a GeoPosition from a local east, north, up vector in meters relative to a reference location
@@ -545,7 +527,7 @@ impl GeoPosition {
     }
 
     /// Checks if two GeoPositions are close to being equal
-    /// 
+    ///
     /// # Arguments
     ///
     /// - `other` (`GeoPosition`) - Other GeoPosition to check

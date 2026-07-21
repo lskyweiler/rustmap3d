@@ -100,14 +100,17 @@ impl IntoLatLonTriple for &(f64, f64, f64) {
         (self.0, self.1, self.2)
     }
 }
+
+pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
+
 pub trait IntoEitherLLATupOrGeoPos {
-    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition>;
+    fn into_either(self) -> EitherGeoPosOrLLATup;
     fn into_lla_tuple(self) -> (f64, f64, f64);
     fn into_geo_pos(self) -> GeoPosition;
 }
 
 impl IntoEitherLLATupOrGeoPos for (f64, f64, f64) {
-    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+    fn into_either(self) -> EitherGeoPosOrLLATup {
         Either::Left(self)
     }
     fn into_lla_tuple(self) -> (f64, f64, f64) {
@@ -118,7 +121,7 @@ impl IntoEitherLLATupOrGeoPos for (f64, f64, f64) {
     }
 }
 impl IntoEitherLLATupOrGeoPos for &(f64, f64, f64) {
-    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+    fn into_either(self) -> EitherGeoPosOrLLATup {
         Either::Left(*self)
     }
     fn into_lla_tuple(self) -> (f64, f64, f64) {
@@ -129,7 +132,7 @@ impl IntoEitherLLATupOrGeoPos for &(f64, f64, f64) {
     }
 }
 impl IntoEitherLLATupOrGeoPos for GeoPosition {
-    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+    fn into_either(self) -> EitherGeoPosOrLLATup {
         Either::Right(self.clone())
     }
     fn into_lla_tuple(self) -> (f64, f64, f64) {
@@ -140,7 +143,7 @@ impl IntoEitherLLATupOrGeoPos for GeoPosition {
     }
 }
 impl IntoEitherLLATupOrGeoPos for &GeoPosition {
-    fn into_either(self) -> Either<(f64, f64, f64), GeoPosition> {
+    fn into_either(self) -> EitherGeoPosOrLLATup {
         Either::Right(self.clone())
     }
     fn into_lla_tuple(self) -> (f64, f64, f64) {
@@ -150,7 +153,7 @@ impl IntoEitherLLATupOrGeoPos for &GeoPosition {
         self.clone()
     }
 }
-impl IntoLatLonTriple for Either<(f64, f64, f64), GeoPosition> {
+impl IntoLatLonTriple for EitherGeoPosOrLLATup {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
         match self {
             Either::Left(tup) => *tup,
@@ -158,7 +161,7 @@ impl IntoLatLonTriple for Either<(f64, f64, f64), GeoPosition> {
         }
     }
 }
-impl IntoLatLonTuple for Either<(f64, f64, f64), GeoPosition> {
+impl IntoLatLonTuple for EitherGeoPosOrLLATup {
     fn into_lat_lon_tuple(&self) -> (f64, f64) {
         match self {
             Either::Left(tup) => (tup.0, tup.1),
@@ -166,6 +169,25 @@ impl IntoLatLonTuple for Either<(f64, f64, f64), GeoPosition> {
                 let lla = pos.lla();
                 (lla.0, lla.1)
             }
+        }
+    }
+}
+
+impl Into<EitherGeoPosOrLLATup> for GeoPosition {
+    fn into(self) -> EitherGeoPosOrLLATup {
+        Either::Right(self)
+    }
+}
+impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
+    fn into(self) -> EitherGeoPosOrLLATup {
+        Either::Right(self.clone())
+    }
+}
+impl Into<GeoPosition> for EitherGeoPosOrLLATup {
+    fn into(self) -> GeoPosition {
+        match self {
+            Either::Left(lla_tup) => GeoPosition::from_lla(lla_tup),
+            Either::Right(pos) => pos,
         }
     }
 }

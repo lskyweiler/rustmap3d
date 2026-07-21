@@ -1,6 +1,6 @@
-use crate::{geo_objects::geo_position::EitherGeoPosOrLLATup, traits::*, transforms::*, DVec3};
 #[cfg(feature = "pyo3")]
 use crate::dvec3;
+use crate::{traits::*, transforms::*, DVec3};
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
@@ -21,7 +21,9 @@ use std::ops::{Div, Mul};
 
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass(module = "rustmap3d"))]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -397,7 +399,10 @@ impl GeoVector {
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
     fn __getnewargs__(&self) -> PyResult<((f64, f64, f64), (f64, f64, f64))> {
-        Ok(((self.ecef_uvw.x, self.ecef_uvw.y, self.ecef_uvw.z), self.lla_ref))
+        Ok((
+            (self.ecef_uvw.x, self.ecef_uvw.y, self.ecef_uvw.z),
+            self.lla_ref,
+        ))
     }
 }
 
