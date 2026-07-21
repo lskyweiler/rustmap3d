@@ -549,12 +549,15 @@ impl GeoPosition {
     /// # Arguments
     ///
     /// - `other` (`GeoPosition`) - Other GeoPosition to check
+    /// - `max_abs_diff` (`float`) - Maximum absolute element-wise difference. Defaults to 1e-6
     ///
     /// # Returns
     ///
     /// - `bool` - true if the absolute difference of all elements between self and rhs is less than or equal to max_abs_diff.
     ///
-    pub fn abs_diff_eq(&self, other: &GeoPosition, max_abs_diff: f64) -> bool {
+    #[cfg(feature = "pyo3")]
+    #[pyo3(signature=(other, max_abs_diff=1e-6))]
+    fn abs_diff_eq(&self, other: &GeoPosition, max_abs_diff: f64) -> bool {
         self.ecef.abs_diff_eq(*other.ecef, max_abs_diff)
     }
 
@@ -567,6 +570,21 @@ impl GeoPosition {
     #[cfg(feature = "pyo3")]
     fn __getnewargs__(&self) -> PyResult<((f64, f64, f64),)> {
         Ok(((self.ecef.x, self.ecef.y, self.ecef.z),))
+    }
+
+    /// Checks if two GeoPositions are equal. Equivalent to calling `abs_diff_eq` with a tolerance of 1e-6
+    ///
+    /// # Arguments
+    ///
+    /// - `rhs` (`GeoPosition`) - GeoPosition to compare
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - True if the max absolute difference between the two positions is < 1e-6
+    ///
+    #[cfg(feature = "pyo3")]
+    fn __eq__(&self, rhs: GeoPosition) -> bool {
+        self.abs_diff_eq(&rhs, 1e-6)
     }
 
     /// Adds a relative ecef vector to this position
