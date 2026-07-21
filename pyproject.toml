@@ -32,6 +32,7 @@ dev = [
     "pylint",
     "maturin",
     "pydantic",  # for pydantic integration tests
+    "go-task-bin",  # for running Taskfile
     # for benchmarks
     "pymap3d",
     "numpy",

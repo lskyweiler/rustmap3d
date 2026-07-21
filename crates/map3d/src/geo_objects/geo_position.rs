@@ -34,6 +34,14 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
         Either::Right(self.clone())
     }
 }
+impl Into<GeoPosition> for EitherGeoPosOrLLATup {
+    fn into(self) -> GeoPosition {
+        match self {
+            Either::Left(lla_tup) => GeoPosition::from_lla(lla_tup),
+            Either::Right(pos) => pos
+        }
+    }
+}
 
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -271,6 +279,22 @@ impl GeoPosition {
     pub fn from_lla(lla_ddm: (f64, f64, f64)) -> Self {
         Self {
             ecef: lla2ecef(lla_ddm).into(),
+        }
+    }
+    /// Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds string
+    ///
+    /// Altitude it set to 0
+    /// 
+    /// # Arguments
+    ///
+    /// - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
+    ///
+    #[cfg(feature = "pyo3")]
+    #[staticmethod]
+    fn from_ll_dms(lat_dms: &str, lon_dms: &str) -> PyResult<Self> {
+        match dms_ll2dd(lat_dms, lon_dms){
+            Ok((lat, lon)) => Ok(Self::from_lla((lat, lon, 0.))),
+            Err(what) => Err(PyValueError::new_err(format!("{:?}", what)))
         }
     }
     /// Construct a GeoPosition from a local east, north, up vector in meters relative to a reference location

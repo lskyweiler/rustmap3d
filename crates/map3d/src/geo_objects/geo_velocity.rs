@@ -6,8 +6,10 @@ use crate::{
     mach,
     traits::IntoEitherLLATupOrGeoPos,
     transforms::*,
-    dvec3, DVec3,
+    DVec3,
 };
+#[cfg(feature = "pyo3")]
+use crate::dvec3;
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  APP_VERSION:
+    sh: cat VERSION
+
+tasks:
+  default:
+    cmds:
+      - task: build-dev
+
+  build-dev:
+    desc: Build a dev build of simplipy
+    cmds:
+      - uv run --dev maturin dev -r
+
+  build-whl:
+    desc: Build a python whl for this platform
+    cmds:
+      - uv run --dev maturin build -r
+
+  check:
+    desc: Run code checks
+    cmds:
+      - uv run ruff format
+      - uv run ruff check --fix
+      - cargo fix --allow-dirty --allow-staged && cargo fmt --all
+
+  test:
+    desc: Run the unit tests
+    deps: [build-dev]
+    cmds:
+      - pytest --disable-warnings test/
+      - cd crates/map3d && cargo test
+
+  gen-stubs:
+    desc: Generate python stubs
+    cmds:
+      - cargo run stub_gen
+      - uvx ruff format rustmap3d.pyi
+      - uvx ruff check --select I --fix rustmap3d.pyi
