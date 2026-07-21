@@ -101,7 +101,7 @@ impl IntoLatLonTriple for &(f64, f64, f64) {
     }
 }
 
-// I dont like this solution, but we need a way to enable passing in either lla | GeoPosition | GeoPositionBevyRef
+// I dont like this solution, but we need a way to enable passing in either lla | GeoPosition | GeoPositionBevyRef while working for non-bevy builds
 //  This should be better handled in the macros
 
 
@@ -206,7 +206,7 @@ impl IntoEitherLLATupOrGeoPos for &GeoPosition {
 impl IntoLatLonTriple for EitherGeoPosOrLLATup {
     fn into_lat_lon_triple(&self) -> (f64, f64, f64) {
         #[cfg(feature = "py-bevy")]
-        let either = self.0;
+        let either = &self.0;
         #[cfg(not(feature = "py-bevy"))]
         let either = self;
 
@@ -219,7 +219,7 @@ impl IntoLatLonTriple for EitherGeoPosOrLLATup {
 impl IntoLatLonTuple for EitherGeoPosOrLLATup {
     fn into_lat_lon_tuple(&self) -> (f64, f64) {
         #[cfg(feature = "py-bevy")]
-        let either = self.0;
+        let either = &self.0;
         #[cfg(not(feature = "py-bevy"))]
         let either = self;
 
@@ -252,13 +252,13 @@ impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
 impl Into<GeoPosition> for EitherGeoPosOrLLATup {
     fn into(self) -> GeoPosition {
         #[cfg(feature = "py-bevy")]
-        let either = self.0;
+        let either = &self.0;
         #[cfg(not(feature = "py-bevy"))]
         let either = self;
 
         match either {
-            Either::Left(lla_tup) => GeoPosition::from_lla(lla_tup),
-            Either::Right(pos) => pos,
+            Either::Left(lla_tup) => GeoPosition::from_lla(lla_tup.clone()),
+            Either::Right(pos) => pos.clone(),
         }
     }
 }
