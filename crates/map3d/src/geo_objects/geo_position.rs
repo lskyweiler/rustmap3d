@@ -544,6 +544,20 @@ impl GeoPosition {
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
 
+    /// Checks if two GeoPositions are close to being equal
+    /// 
+    /// # Arguments
+    ///
+    /// - `other` (`GeoPosition`) - Other GeoPosition to check
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - true if the absolute difference of all elements between self and rhs is less than or equal to max_abs_diff.
+    ///
+    pub fn abs_diff_eq(&self, other: &GeoPosition, max_abs_diff: f64) -> bool {
+        self.ecef.abs_diff_eq(*other.ecef, max_abs_diff)
+    }
+
     /// Python __repr__ to pretty print the geo position as degrees.minutes.seconds
     fn __repr__(&self) -> String {
         format!("{:?}", self)

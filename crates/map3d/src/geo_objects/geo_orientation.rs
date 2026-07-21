@@ -498,6 +498,11 @@ impl GeoOrientation {
     }
 
     /// Sets this rotation to face an ecef direction and orient up in an ecef direction
+    /// 
+    /// Resulting frame:
+    ///     * X axis: Look-To Direction
+    ///     * Y Axis: Up cross X
+    ///     * Z Axis: X cross Right
     ///
     /// # Arguments
     ///
