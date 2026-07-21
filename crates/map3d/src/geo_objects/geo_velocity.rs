@@ -29,7 +29,7 @@ use std::ops::{Add, Div, Mul, Sub};
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
 #[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
-#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass(module = "rustmap3d"))]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
