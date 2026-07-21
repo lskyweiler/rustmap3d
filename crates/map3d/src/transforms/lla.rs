@@ -325,7 +325,7 @@ pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
 /// Convenience function to convert lat lon degrees minutes seconds to decimal lat lon
 ///
 /// See `dms2dd` for more details
-/// 
+///
 /// # Arguments
 ///
 /// * `lat_dms` - latitude in Degrees:Minutes:Seconds

@@ -28,7 +28,10 @@ use std::ops::{Add, Div, Mul, Sub};
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
-#[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(module = "rustmap3d")
+)]
 #[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),

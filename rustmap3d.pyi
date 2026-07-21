@@ -477,6 +477,23 @@ class GeoOrientation:
 
         - `DQuat` - body 2 local enu rotation
         """
+    def as_ned(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> DQuat:
+        r"""
+        Express this bodies orientation in a local ned frame
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+
+        # Returns
+
+        - `DQuat` - body 2 local ned rotation
+        """
     def look_to(self, ecef_direction: DVec3, ecef_up: DVec3) -> None:
         r"""
         Sets this rotation to face an ecef direction and orient up in an ecef direction

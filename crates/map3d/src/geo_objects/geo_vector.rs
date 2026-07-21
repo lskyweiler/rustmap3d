@@ -22,7 +22,10 @@ use std::ops::{Div, Mul};
 /// Represents a vector relative to a reference point
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
-#[cfg_attr(all(feature = "pyo3", feature = "set-pyclass-module"), pyclass(module = "rustmap3d"))]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(module = "rustmap3d")
+)]
 #[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
