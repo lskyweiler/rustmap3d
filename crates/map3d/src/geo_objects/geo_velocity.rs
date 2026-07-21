@@ -1,12 +1,11 @@
+#[cfg(feature = "pyo3")]
+use crate::dvec3;
 use crate::{
-    geo_objects::{
-        geo_position::{EitherGeoPosOrLLATup, GeoPosition},
-        geo_vector::GeoVector,
-    },
+    geo_objects::{geo_position::GeoPosition, geo_vector::GeoVector},
     mach,
-    traits::IntoEitherLLATupOrGeoPos,
+    traits::{EitherGeoPosOrLLATup, IntoEitherLLATupOrGeoPos},
     transforms::*,
-    dvec3, DVec3,
+    DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
@@ -28,7 +27,12 @@ use std::ops::{Add, Div, Mul, Sub};
 /// Represents a 3D velocity vector in geo space
 /// Velocity is stored as a direction and speed so that a 0 velocity still has a direction associated with it
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(module = "rustmap3d")
+)]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -455,7 +459,10 @@ impl GeoVelocity {
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
     fn __getnewargs__(&self) -> PyResult<((f64, f64, f64), f64)> {
-        Ok(((self.dir_ecef.x, self.dir_ecef.y, self.dir_ecef.z), self.speed))
+        Ok((
+            (self.dir_ecef.x, self.dir_ecef.y, self.dir_ecef.z),
+            self.speed,
+        ))
     }
 }
 

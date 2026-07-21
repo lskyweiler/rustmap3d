@@ -45,6 +45,21 @@ class TestGeoPosition:
         )
         np.testing.assert_allclose(actual.ecef.x, 6378137.0)
 
+    def test_abs_diff_eq(self):
+        a = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 0, 0))
+        b = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 0, 0))
+        assert a.abs_diff_eq(b)
+
+    def test_abs_diff_neq(self):
+        a = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 100, 0))
+        b = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 0, 0))
+        assert not a.abs_diff_eq(b)
+
+    def test_eq(self):
+        a = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 0, 0))
+        b = rustmap3d.GeoPosition.from_ecef(rustmap3d.DVec3(1e6, 0, 0))
+        assert a == b
+
 
 class TestGeoPosOps:
     def test_sub(self):

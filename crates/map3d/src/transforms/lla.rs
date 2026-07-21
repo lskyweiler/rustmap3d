@@ -322,6 +322,24 @@ pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
     let ll_deg = ll_deg.into_lat_lon_tuple();
     return (dd2dms(ll_deg.0, true), dd2dms(ll_deg.0, false));
 }
+/// Convenience function to convert lat lon degrees minutes seconds to decimal lat lon
+///
+/// See `dms2dd` for more details
+///
+/// # Arguments
+///
+/// * `lat_dms` - latitude in Degrees:Minutes:Seconds
+/// * `lon_dms` - longitude in Degrees:Minutes:Seconds
+///
+/// # Returns
+///
+/// * `(lat, lon)` - Tuple of lat/lon as decimal degrees
+/// ```
+pub fn dms_ll2dd(lat_dms: &str, lon_dms: &str) -> Result<(f64, f64), IllFormedDMSError> {
+    let lat_dd = dms2dd(lat_dms)?;
+    let lon_dd = dms2dd(lon_dms)?;
+    Ok((lat_dd, lon_dd))
+}
 
 #[cfg(test)]
 mod test_lla {

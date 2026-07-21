@@ -1,11 +1,10 @@
+#[cfg(feature = "pyo3")]
+use crate::dquat;
 use crate::{
-    geo_objects::{
-        geo_position::{EitherGeoPosOrLLATup, GeoPosition},
-        geo_vector::GeoVector,
-    },
-    traits::IntoEitherLLATupOrGeoPos,
+    geo_objects::{geo_position::GeoPosition, geo_vector::GeoVector},
+    traits::{EitherGeoPosOrLLATup, IntoEitherLLATupOrGeoPos},
     transforms::*,
-    dquat, DQuat, DVec3,
+    DQuat, DVec3,
 };
 #[cfg(feature = "pydantic-serde")]
 use crate::{utils, validator_wrapper_fn};
@@ -27,7 +26,12 @@ use std::ops::Mul;
 
 /// Represents a rotation in the ECEF frame. Rotates a local body's frame to ecef
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(module = "rustmap3d")
+)]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -494,20 +498,149 @@ impl GeoOrientation {
         let ecef2enu = ecef2enu_quat(reference);
         return ecef2enu * self.ecef_rot;
     }
-
-    /// Sets this rotation to face an ecef direction and orient up in an ecef direction
+    /// Express this bodies orientation in a local ned frame
     ///
     /// # Arguments
     ///
-    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame
-    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+    ///
+    /// # Returns
+    ///
+    /// - `DQuat` - body 2 local ned rotation
+    ///
+    pub fn as_ned(&self, reference: EitherGeoPosOrLLATup) -> DQuat {
+        let ecef2ned = ecef2ned_quat(reference);
+        return ecef2ned * self.ecef_rot;
+    }
+
+    /// Sets this rotation to face an ecef direction and orient up in an ecef direction
+    ///
+    /// Resulting frame:
+    ///     * X axis: Look-To Direction
+    ///     * Y Axis: Up cross X
+    ///     * Z Axis: X cross Right
+    ///
+    /// # Arguments
+    ///
+    /// - `ecef_direction` (`DVec3`) - x axis of the resulting frame. Should be normalized
+    /// - `ecef_up` (`DVec3`) - z axis of the resulting frame. Should be normalized
     ///
     pub fn look_to(&mut self, ecef_direction: DVec3, ecef_up: DVec3) {
-        let right = ecef_up.cross(*ecef_direction);
+        let dir_normed = ecef_direction.normalize();
+        let right = ecef_up.cross(dir_normed);
         let up = ecef_direction.cross(right);
-        let frame = glam::DMat3::from_cols(*ecef_direction, right, up);
+        let frame = glam::DMat3::from_cols(dir_normed, right, up);
         let rot = glam::DQuat::from_mat3(&frame);
         self.ecef_rot = rot.into();
+    }
+
+    /// Rotates this orientation about the up direction at a given geo position.
+    ///
+    /// Rotation is right handed about the reference's up vector
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+    ///
+    pub fn rotate_geo_up(&mut self, angle_rad: f64, reference: EitherGeoPosOrLLATup) {
+        let ref_pos: GeoPosition = reference.into();
+        let up_axis = ref_pos.ecef().normalize();
+
+        let rot = glam::DQuat::from_axis_angle(up_axis.into(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about the east direction at a given geo position.
+    ///
+    /// Rotation is right handed about the reference's east vector
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+    ///
+    pub fn rotate_geo_east(&mut self, angle_rad: f64, reference: EitherGeoPosOrLLATup) {
+        let enu_rot = Self::from_enu_frame(reference);
+        let east_axis = enu_rot.x_axis();
+
+        let rot = glam::DQuat::from_axis_angle(east_axis.into(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about the north direction at a given geo position.
+    ///
+    /// Rotation is right handed about the reference's north vector
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+    ///
+    pub fn rotate_geo_north(&mut self, angle_rad: f64, reference: EitherGeoPosOrLLATup) {
+        let enu_rot = Self::from_enu_frame(reference);
+        let north_axis = enu_rot.y_axis();
+
+        let rot = glam::DQuat::from_axis_angle(north_axis.into(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about its local ecef x axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_local_x(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&self.x_axis(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about its local ecef y axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_local_y(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&self.y_axis(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about its local ecef z axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_local_z(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&self.z_axis(), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about the global ecef x axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_ecef_x(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&pyglam::dvec3(1., 0., 0.), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about the global ecef y axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_ecef_y(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 1., 0.), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
+    }
+    /// Rotates this orientation about the global ecef z axis
+    ///
+    /// # Arguments
+    ///
+    /// - `angle_rad` `float` - Amount to rotate in radians
+    ///
+    pub fn rotate_ecef_z(&mut self, angle_rad: f64) {
+        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 0., 1.), angle_rad);
+        self.ecef_rot = rot * self.ecef_rot;
     }
 
     /// Get the positive x axis for this orientation in the ecef frame
@@ -552,9 +685,7 @@ impl GeoOrientation {
     #[new]
     fn py_new(ecef_rot: Either<DQuat, (f64, f64, f64, f64)>) -> Self {
         match ecef_rot {
-            Either::Left(quat) => GeoOrientation {
-                ecef_rot: quat,
-            },
+            Either::Left(quat) => GeoOrientation { ecef_rot: quat },
             Either::Right(tup) => GeoOrientation {
                 ecef_rot: dquat(tup.0, tup.1, tup.2, tup.3),
             },
@@ -564,7 +695,12 @@ impl GeoOrientation {
     /// Support for pickle/deepcopy
     #[cfg(feature = "pyo3")]
     fn __getnewargs__(&self) -> PyResult<((f64, f64, f64, f64),)> {
-        Ok(((self.ecef_rot.x, self.ecef_rot.y, self.ecef_rot.z, self.ecef_rot.w),))
+        Ok(((
+            self.ecef_rot.x,
+            self.ecef_rot.y,
+            self.ecef_rot.z,
+            self.ecef_rot.w,
+        ),))
     }
 }
 
