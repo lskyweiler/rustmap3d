@@ -777,7 +777,7 @@ class GeoPosition:
         r"""
         Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds:cardinal string
 
-        Altitude it set to 0
+        Altitude is set to 0. meters
 
         # Arguments
 
