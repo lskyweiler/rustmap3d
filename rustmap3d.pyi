@@ -775,13 +775,14 @@ class GeoPosition:
     @staticmethod
     def from_ll_dms(lat_dms: builtins.str, lon_dms: builtins.str) -> GeoPosition:
         r"""
-        Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds string
+        Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds:cardinal string
 
         Altitude it set to 0
 
         # Arguments
 
-        - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
+        - `lat_dms` (`str`) - WGS84 latitude as degrees:minutes:seconds.seconds:cardinal string ex: "25:22:44.738N"
+        - `lon_dms` (`str`) - WGS84 longitude  as degrees:minutes:seconds.seconds:cardinal string ex: "38:47:22.444W"
         """
     @staticmethod
     def from_enu(
