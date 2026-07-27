@@ -12,6 +12,7 @@ use crate::{utils, validator_wrapper_fn};
 #[allow(unused_imports)]
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
+use core::f64;
 #[cfg(feature = "pyo3")]
 use either::Either;
 #[cfg(not(feature = "pyo3"))]
@@ -285,14 +286,21 @@ impl GeoVelocity {
     }
     /// Construct a velocity from an ecef vector in meters/second
     ///
+    /// If given a velocity of (0, 0, 0), this will create a 0 speed GeoVelocity down the X axis
+    ///
     /// # Arguments
     ///
     /// - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
     ///
     #[staticmethod]
     pub fn from_ecef_uvw(ecef_uvw_mps: &DVec3) -> Self {
+        let speed = ecef_uvw_mps.length();
+        let dir = match speed.abs() < f64::EPSILON {
+            true => glam::DVec3::X,
+            false => ecef_uvw_mps.normalize(),
+        };
         return GeoVelocity {
-            dir_ecef: ecef_uvw_mps.normalize().into(),
+            dir_ecef: dir.into(),
             speed: ecef_uvw_mps.length(),
         };
     }
