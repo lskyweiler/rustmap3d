@@ -1417,6 +1417,8 @@ class GeoVelocity:
         r"""
         Construct a velocity from an ecef vector in meters/second
 
+        If given a velocity of (0, 0, 0), this will create a 0 speed GeoVelocity down the X axis
+
         # Arguments
 
         - `ecef` (`&DVec3`) - Velocity vector in ecef frame in meters/second
