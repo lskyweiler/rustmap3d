@@ -23,21 +23,14 @@ use std::{
     ops::{Add, Sub},
 };
 
-pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
-impl Into<EitherGeoPosOrLLATup> for GeoPosition {
-    fn into(self) -> EitherGeoPosOrLLATup {
-        Either::Right(self)
-    }
-}
-impl Into<EitherGeoPosOrLLATup> for &GeoPosition {
-    fn into(self) -> EitherGeoPosOrLLATup {
-        Either::Right(self.clone())
-    }
-}
-
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass, pyclass(module = "rustmap3d"))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(module = "rustmap3d")
+)]
+#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
@@ -271,6 +264,23 @@ impl GeoPosition {
     pub fn from_lla(lla_ddm: (f64, f64, f64)) -> Self {
         Self {
             ecef: lla2ecef(lla_ddm).into(),
+        }
+    }
+    /// Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds:cardinal string
+    ///
+    /// Altitude is set to 0. meters
+    ///
+    /// # Arguments
+    ///
+    /// - `lat_dms` (`str`) - WGS84 latitude as degrees:minutes:seconds.seconds:cardinal string ex: "25:22:44.738N"
+    /// - `lon_dms` (`str`) - WGS84 longitude  as degrees:minutes:seconds.seconds:cardinal string ex: "38:47:22.444W"
+    ///
+    #[cfg(feature = "pyo3")]
+    #[staticmethod]
+    fn from_ll_dms(lat_dms: &str, lon_dms: &str) -> PyResult<Self> {
+        match dms_ll2dd(lat_dms, lon_dms) {
+            Ok((lat, lon)) => Ok(Self::from_lla((lat, lon, 0.))),
+            Err(what) => Err(PyValueError::new_err(format!("{:?}", what))),
         }
     }
     /// Construct a GeoPosition from a local east, north, up vector in meters relative to a reference location
@@ -520,6 +530,23 @@ impl GeoPosition {
         self.ecef = lla2ecef(&glam::dvec3(new_lat_lon.x, new_lat_lon.y, starting_alt)).into();
     }
 
+    /// Checks if two GeoPositions are close to being equal
+    ///
+    /// # Arguments
+    ///
+    /// - `other` (`GeoPosition`) - Other GeoPosition to check
+    /// - `max_abs_diff` (`float`) - Maximum absolute element-wise difference. Defaults to 1e-6
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - true if the absolute difference of all elements between self and rhs is less than or equal to max_abs_diff.
+    ///
+    #[cfg(feature = "pyo3")]
+    #[pyo3(signature=(other, max_abs_diff=1e-6))]
+    fn abs_diff_eq(&self, other: &GeoPosition, max_abs_diff: f64) -> bool {
+        self.ecef.abs_diff_eq(*other.ecef, max_abs_diff)
+    }
+
     /// Python __repr__ to pretty print the geo position as degrees.minutes.seconds
     fn __repr__(&self) -> String {
         format!("{:?}", self)
@@ -529,6 +556,21 @@ impl GeoPosition {
     #[cfg(feature = "pyo3")]
     fn __getnewargs__(&self) -> PyResult<((f64, f64, f64),)> {
         Ok(((self.ecef.x, self.ecef.y, self.ecef.z),))
+    }
+
+    /// Checks if two GeoPositions are equal. Equivalent to calling `abs_diff_eq` with a tolerance of 1e-6
+    ///
+    /// # Arguments
+    ///
+    /// - `rhs` (`GeoPosition`) - GeoPosition to compare
+    ///
+    /// # Returns
+    ///
+    /// - `bool` - True if the max absolute difference between the two positions is < 1e-6
+    ///
+    #[cfg(feature = "pyo3")]
+    fn __eq__(&self, rhs: GeoPosition) -> bool {
+        self.abs_diff_eq(&rhs, 1e-6)
     }
 
     /// Adds a relative ecef vector to this position

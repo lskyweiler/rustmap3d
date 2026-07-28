@@ -65,3 +65,5 @@ py-bevy = [
     "simple-py-bevy/py-ref",
     "simple-py-bevy/gen-to-owned-stubs",
 ]
+# need to set rustmap3d to allow pickling, but you may not want this downstream
+set-pyclass-module = []

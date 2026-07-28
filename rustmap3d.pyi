@@ -477,14 +477,135 @@ class GeoOrientation:
 
         - `DQuat` - body 2 local enu rotation
         """
+    def as_ned(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> DQuat:
+        r"""
+        Express this bodies orientation in a local ned frame
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+
+        # Returns
+
+        - `DQuat` - body 2 local ned rotation
+        """
     def look_to(self, ecef_direction: DVec3, ecef_up: DVec3) -> None:
         r"""
         Sets this rotation to face an ecef direction and orient up in an ecef direction
 
+        Resulting frame:
+            * X axis: Look-To Direction
+            * Y Axis: Up cross X
+            * Z Axis: X cross Right
+
         # Arguments
 
-        - `ecef_direction` (`DVec3`) - x axis of the resulting frame
-        - `ecef_up` (`DVec3`) - z axis of the resulting frame
+        - `ecef_direction` (`DVec3`) - x axis of the resulting frame. Should be normalized
+        - `ecef_up` (`DVec3`) - z axis of the resulting frame. Should be normalized
+        """
+    def rotate_geo_up(
+        self,
+        angle_rad: builtins.float,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> None:
+        r"""
+        Rotates this orientation about the up direction at a given geo position.
+
+        Rotation is right handed about the reference's up vector
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+        """
+    def rotate_geo_east(
+        self,
+        angle_rad: builtins.float,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> None:
+        r"""
+        Rotates this orientation about the east direction at a given geo position.
+
+        Rotation is right handed about the reference's east vector
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+        """
+    def rotate_geo_north(
+        self,
+        angle_rad: builtins.float,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> None:
+        r"""
+        Rotates this orientation about the north direction at a given geo position.
+
+        Rotation is right handed about the reference's north vector
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location
+        """
+    def rotate_local_x(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about its local ecef x axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        """
+    def rotate_local_y(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about its local ecef y axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        """
+    def rotate_local_z(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about its local ecef z axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        """
+    def rotate_ecef_x(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about the global ecef x axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        """
+    def rotate_ecef_y(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about the global ecef y axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
+        """
+    def rotate_ecef_z(self, angle_rad: builtins.float) -> None:
+        r"""
+        Rotates this orientation about the global ecef z axis
+
+        # Arguments
+
+        - `angle_rad` `float` - Amount to rotate in radians
         """
     def x_axis(self) -> DVec3:
         r"""
@@ -650,6 +771,18 @@ class GeoPosition:
         # Arguments
 
         - `lla` (`(float, float, float)`) - WGS84 lat, lon, alt in [[degrees, degrees, meters]]
+        """
+    @staticmethod
+    def from_ll_dms(lat_dms: builtins.str, lon_dms: builtins.str) -> GeoPosition:
+        r"""
+        Construct a GeoPosition from a WGS84 Latitude, Longitude degrees:minutes:seconds:cardinal string
+
+        Altitude is set to 0. meters
+
+        # Arguments
+
+        - `lat_dms` (`str`) - WGS84 latitude as degrees:minutes:seconds.seconds:cardinal string ex: "25:22:44.738N"
+        - `lon_dms` (`str`) - WGS84 longitude  as degrees:minutes:seconds.seconds:cardinal string ex: "38:47:22.444W"
         """
     @staticmethod
     def from_enu(
@@ -848,6 +981,21 @@ class GeoPosition:
         r"""
         Rotate the geo position by an ecef rotation, but preserve the starting altitude
         """
+    def abs_diff_eq(
+        self, other: GeoPosition, max_abs_diff: builtins.float = ...
+    ) -> builtins.bool:
+        r"""
+        Checks if two GeoPositions are close to being equal
+
+        # Arguments
+
+        - `other` (`GeoPosition`) - Other GeoPosition to check
+        - `max_abs_diff` (`float`) - Maximum absolute element-wise difference. Defaults to 1e-6
+
+        # Returns
+
+        - `bool` - true if the absolute difference of all elements between self and rhs is less than or equal to max_abs_diff.
+        """
     def __repr__(self) -> builtins.str:
         r"""
         Python __repr__ to pretty print the geo position as degrees.minutes.seconds
@@ -857,6 +1005,18 @@ class GeoPosition:
     ) -> tuple[tuple[builtins.float, builtins.float, builtins.float]]:
         r"""
         Support for pickle/deepcopy
+        """
+    def __eq__(self, rhs: GeoPosition) -> builtins.bool:
+        r"""
+        Checks if two GeoPositions are equal. Equivalent to calling `abs_diff_eq` with a tolerance of 1e-6
+
+        # Arguments
+
+        - `rhs` (`GeoPosition`) - GeoPosition to compare
+
+        # Returns
+
+        - `bool` - True if the max absolute difference between the two positions is < 1e-6
         """
     def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition:
         r"""
@@ -1256,6 +1416,8 @@ class GeoVelocity:
     def from_ecef_uvw(ecef_uvw_mps: DVec3) -> GeoVelocity:
         r"""
         Construct a velocity from an ecef vector in meters/second
+
+        If given a velocity of (0, 0, 0), this will create a 0 speed GeoVelocity down the X axis
 
         # Arguments
 

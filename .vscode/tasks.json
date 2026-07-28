@@ -5,9 +5,7 @@
             "label": "Gen PyStubs",
             "type": "shell",
             "command": [
-                "cargo run stub_gen &&",
-                "uvx ruff format rustmap3d.pyi &&",
-                "uvx ruff check --select I --fix rustmap3d.pyi"
+                "task gen-stubs"
             ],
             "group": "build",
             "problemMatcher": [
