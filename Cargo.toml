@@ -10,8 +10,8 @@ license-file = "LICENSE"
 homepage = "https://github.com/lskyweiler/rustmap3d"
 repository = "https://github.com/lskyweiler/rustmap3d"
 readme = "README.md"
-version.workspace = true
 edition.workspace = true
+version = "0.7.0"
 
 [workspace]
 members = ["crates/*"]

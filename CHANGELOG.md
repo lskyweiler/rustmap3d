@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-07-28
+
+### 🚀 Features
+
+- Added rotate functions to geo orientation
+- Added method to check if two geopositions are close to being equal
+- Added == operator to geo positions
+- EitherLLATupleOrGeoPos now accepts BevyRef objects
+
+### 🐛 Bug Fixes
+
+- Added target options for building on mac
+- Add new compiler feature to turn on/off setting pyclass module for geo objects
+- Fixed typo in set-py-module feature
+- Added check for from_ecef_uvw being 0 magnitude
+
+### 📚 Documentation
+
+- Minor comments
+- Updated bad docstring
+- Minor typo in stubs
+
+### ⚙️ Miscellaneous Tasks
+
+- Cargo locked
+- Updated stub file
+
 ## [0.6.0] - 2026-04-21
 
 ### 🚀 Features
@@ -22,6 +49,10 @@ All notable changes to this project will be documented in this file.
 
 - Verifies Geo object pickle/deepcopy support
 - Adds explicit tests for python pickling
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.6.0
 
 ## [0.5.1] - 2026-04-10
 

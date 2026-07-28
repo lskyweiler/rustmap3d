@@ -42,18 +42,20 @@ ecef = rustmap3d.enu2ecef(e, n, u, lat_ref, lon_ref)
 ecef_uvw = rustmap3d.ned2ecef_uvw(n, e, d, lat_ref, lon_ref)
 ecef = rustmap3d.ned2ecef(n, e, d, lat_ref, lon_ref)
 # enu, ned, aer
-...  
+...
 
 # local rotations
 enu_quat = rustmap3d.enu2ecef_quat(lat, lon)
-enu_dcm = rustmap3d.enu2ecef_dcm(lat, lon) 
+enu_dcm = rustmap3d.enu2ecef_dcm(lat, lon)
 # enu, ned
 
 # Conversions
-dd = rustmap3d.dms2dd("25:22:44.738N")  #> 25.37909389
-dms = rustmap3d.dd2dms(25.37909389, is_lat=true) #> "25:22:44.738N"
-lat, lon = rustmap3d.ll2dms(25.37909389, -138.7895679)  #> "25:22:44.738N", "138:47:22.444W"
-...  
+dd = rustmap3d.dms2dd("25:22:44.738N")  # > 25.37909389
+dms = rustmap3d.dd2dms(25.37909389, is_lat=true)  # > "25:22:44.738N"
+lat, lon = rustmap3d.ll2dms(
+    25.37909389, -138.7895679
+)  # > "25:22:44.738N", "138:47:22.444W"
+...
 
 # distance functions
 lat, lon = rustmap3d.vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg)
