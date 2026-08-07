@@ -1,10 +1,16 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 
-version: '3'
+version: "3"
+
+dotenv: [".env"]
 
 vars:
   APP_VERSION:
     sh: cat VERSION
+
+env:
+  DAGGER_MODULE: https://gitlab.lsde.leidos.com/alphamosaic/utilities/dagger.git/pyo3
+  LSDE_PYPI_REGISTRY: https://gitlab.lsde.leidos.com/api/v4/projects/4091/packages/pypi
 
 tasks:
   default:
@@ -41,3 +47,27 @@ tasks:
       - cargo run stub_gen
       - uvx ruff format rustmap3d.pyi
       - uvx ruff check --select I --fix rustmap3d.pyi
+
+  build-whls:
+    desc: Build a matrix of python wheels
+    cmds:
+      - dagger
+          -m=${DAGGER_MODULE}
+        call
+          -v --src=./
+        build-whl-matrix
+          --targets=x86_64-unknown-linux-gnu,x86_64-pc-windows-gnu,aarch64-unknown-linux-gnu,aarch64-apple-darwin
+          --pythons=3.11,3.12,3.13,3.14,3.14t
+          --debian-version=bullseye
+        export
+          --path=./
+
+  upload-whls-pypi:
+    desc: Upload locally built whls to pypi
+    cmds:
+      - uv publish --token=$PYPI_TOKEN -v dist/*
+  
+  upload-whls-lsde:
+    desc: Upload locally built whls to lsde registry
+    cmds:
+      - uv publish --publish-url=$LSDE_PYPI_REGISTRY --username=$LSDE_USERNAME --password=$LSDE_TOKEN -v dist/*

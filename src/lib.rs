@@ -1,7 +1,13 @@
 use map3d;
 use pymap3d::*;
-use pyo3::prelude::*;
+use pyo3::{prelude::*, PyTypeInfo};
 use pyo3_stub_gen::define_stub_info_gatherer;
+
+fn override_pyclass_module<'py, P: PyTypeInfo>(py: Python<'py>, module: &str) -> PyResult<()> {
+    let py_cls = P::type_object(py);
+    py_cls.setattr("__module__", module)?;
+    Ok(())
+}
 
 #[pymodule]
 fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -64,6 +70,10 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<map3d::geo_objects::geo_orientation::GeoOrientation>()?;
         m.add_class::<map3d::geo_objects::geo_velocity::GeoVelocity>()?;
         m.add_class::<map3d::geo_objects::geo_orientation::EulerRot>()?;
+
+        // We need to tell python that these classes are compiled into this library
+        override_pyclass_module::<map3d::DVec3>(m.py(), "rustmap3d")?;
+        override_pyclass_module::<map3d::DQuat>(m.py(), "rustmap3d")?;
         m.add_class::<map3d::DVec3>()?;
         m.add_class::<map3d::DQuat>()?;
     }
