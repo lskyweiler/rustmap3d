@@ -66,7 +66,15 @@ pub struct GeoOrientation {
 /// euler_rot = i * j * k  #> EulerRot.XYZ given (i, j, k) euler angles
 /// euler_Rot = k * j * i  #> EulerRot::XYZEx given (i, j, k) euler angles
 ///
-#[cfg_attr(feature = "pyo3", gen_stub_pyclass_enum, pyclass(eq, eq_int))]
+#[cfg_attr(feature = "pyo3", gen_stub_pyclass_enum)]
+#[cfg_attr(
+    all(feature = "pyo3", not(feature = "set-pyclass-module")),
+    pyclass(eq, eq_int)
+)]
+#[cfg_attr(
+    all(feature = "pyo3", feature = "set-pyclass-module"),
+    pyclass(eq, eq_int, module = "rustmap3d")
+)]
 #[derive(PartialEq, Clone, Debug)]
 pub enum EulerRot {
     /// Intrinsic three-axis rotation ZYX
@@ -317,6 +325,12 @@ impl GeoOrientation {
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+        if py.import("pydantic").is_err() {
+            // if pydantic is not installed dont require it
+            let none = PyNone::get(py);
+            let none_any = none.to_owned().into_any();
+            return Ok(none_any.unbind());
+        }
         utils::pydantic::create_pydantic_model_config(py)
     }
 

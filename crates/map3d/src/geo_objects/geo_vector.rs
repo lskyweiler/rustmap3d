@@ -230,6 +230,12 @@ impl GeoVector {
     #[cfg(all(feature = "pydantic-serde", feature = "pyo3"))]
     #[classattr]
     fn model_config<'py>(py: Python<'py>) -> PyResult<Py<PyAny>> {
+        if py.import("pydantic").is_err() {
+            // if pydantic is not installed dont require it
+            let none = PyNone::get(py);
+            let none_any = none.to_owned().into_any();
+            return Ok(none_any.unbind());
+        }
         utils::pydantic::create_pydantic_model_config(py)
     }
 
