@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-08-07
+
+### 🐛 Bug Fixes
+
+- Fixed pyglam module paths
+
 ## [0.7.0] - 2026-07-28
 
 ### 🚀 Features
@@ -28,6 +34,7 @@ All notable changes to this project will be documented in this file.
 
 - Cargo locked
 - Updated stub file
+- *(release)* Prep for release v0.7.0
 
 ## [0.6.0] - 2026-04-21
 
