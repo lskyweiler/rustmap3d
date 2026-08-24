@@ -18,11 +18,11 @@ use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
+use std::hash::{Hash, Hasher};
 use std::{
     fmt::Debug,
     ops::{Add, Sub},
 };
-
 /// Represents a position on the earth
 #[derive(Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
@@ -577,6 +577,24 @@ impl GeoPosition {
     #[cfg(feature = "pyo3")]
     fn __eq__(&self, rhs: GeoPosition) -> bool {
         self.abs_diff_eq(&rhs, 1e-6)
+    }
+
+    /// Hashes this position by its exact ecef bits.
+    ///
+    /// Note: `__eq__` is tolerance-based (1e-6) but this hash is exact-bits, so two
+    /// positions within tolerance but not bit-identical may hash differently. Positions
+    /// derived from the same source data hash consistently.
+    ///
+    /// # Returns
+    ///
+    /// - `u64` - hash value
+    #[cfg(feature = "pyo3")]
+    fn __hash__(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.ecef.x.to_bits().hash(&mut hasher);
+        self.ecef.y.to_bits().hash(&mut hasher);
+        self.ecef.z.to_bits().hash(&mut hasher);
+        hasher.finish()
     }
 
     /// Adds a relative ecef vector to this position
