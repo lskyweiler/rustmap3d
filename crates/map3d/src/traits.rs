@@ -104,7 +104,6 @@ impl IntoLatLonTriple for &(f64, f64, f64) {
 // I dont like this solution, but we need a way to enable passing in either lla | GeoPosition | GeoPositionBevyRef while working for non-bevy builds
 //  This should be better handled in the macros
 
-
 #[cfg(not(feature = "py-bevy"))]
 pub type EitherGeoPosOrLLATup = Either<(f64, f64, f64), GeoPosition>;
 
