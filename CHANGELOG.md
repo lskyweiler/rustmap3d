@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-08-24
+
+### 🐛 Bug Fixes
+
+- Added geoposition hasher
+
 ## [0.7.1] - 2026-08-07
 
 ### 🐛 Bug Fixes
 
 - Fixed pyglam module paths
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.7.1
 
 ## [0.7.0] - 2026-07-28
 

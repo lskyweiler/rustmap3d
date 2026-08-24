@@ -1018,6 +1018,18 @@ class GeoPosition:
 
         - `bool` - True if the max absolute difference between the two positions is < 1e-6
         """
+    def __hash__(self) -> builtins.int:
+        r"""
+        Hashes this position by its exact ecef bits.
+
+        Note: `__eq__` is tolerance-based (1e-6) but this hash is exact-bits, so two
+        positions within tolerance but not bit-identical may hash differently. Positions
+        derived from the same source data hash consistently.
+
+        # Returns
+
+        - `u64` - hash value
+        """
     def __add__(self, rhs: typing.Union[GeoVector, DVec3]) -> GeoPosition:
         r"""
         Adds a relative ecef vector to this position
