@@ -1671,6 +1671,7 @@ def aer2ecef(
     r_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts AER from a given lat/lon to a new ECEF location
@@ -1682,6 +1683,7 @@ def aer2ecef(
     * `r_m` - Range in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -1813,6 +1815,7 @@ def ecef2aer(
     z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute ECEF to AER (az el range).
@@ -1824,6 +1827,7 @@ def ecef2aer(
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -1836,6 +1840,7 @@ def ecef2enu(
     z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an ECEF position to ENU.
@@ -1847,6 +1852,7 @@ def ecef2enu(
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -1918,6 +1924,7 @@ def ecef2ned(
     z_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute ECEF location to NED.
@@ -1929,6 +1936,7 @@ def ecef2ned(
     * `z_m` - ECEF z in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2094,6 +2102,7 @@ def enu2ecef(
     u_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to an ECEF position
@@ -2105,6 +2114,7 @@ def enu2ecef(
     * `u_m` - Up in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2199,6 +2209,7 @@ def enu2lla(
     u_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts ENU to an absolute LLA position
@@ -2210,6 +2221,7 @@ def enu2lla(
     * `u_m` - Up in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2256,6 +2268,7 @@ def lla2enu(
     alt_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute LLA position to an ENU vector relative to a lla reference
@@ -2267,6 +2280,7 @@ def lla2enu(
     * `alt_m` - WGS84 MSL alt in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2279,6 +2293,7 @@ def lla2ned(
     alt_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts an absolute LLA location to a NED vector relative to a lla reference point
@@ -2290,6 +2305,7 @@ def lla2ned(
     * `alt_m` - WGS84 MSL alt in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2338,6 +2354,7 @@ def ned2ecef(
     d_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts NED to an absolute ECEF location
@@ -2349,6 +2366,7 @@ def ned2ecef(
     * `d_m` - Down in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 
@@ -2426,6 +2444,7 @@ def ned2lla(
     d_m: builtins.float,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
     r"""
     Converts a NED vector to an absolute lat lon alt
@@ -2437,6 +2456,7 @@ def ned2lla(
     * `d_m` - Down in meters [float]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 
     # Returns
 

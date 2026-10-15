@@ -43,6 +43,29 @@ class TestGoldenVectors:
         expected = (-46.43897628, -26.81155573, 44.99513264)
         np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
 
+    def test_ecef2ned_with_ref_altitude(self):
+        lat_ref, lon_ref, alt_ref = lla_rad2deg(2.1, -1.1, 1250.0)
+        actual = rustmap3d.ecef2ned(
+            -1465000.0, 2880000.0, 5483500.0, lat_ref, lon_ref, alt_ref_m=alt_ref
+        )
+        expected = (2220.90854391709, 738.047215659648, -1205.58533167388)
+        np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
+
+    def test_lla2ned_with_ref_altitude(self):
+        lla = lla_rad2deg(-0.707, 0.496, 2400.0)
+        lat_ref, lon_ref, alt_ref = lla_rad2deg(-0.7, 0.5, 6000.0)
+        actual = rustmap3d.lla2ned(*lla, lat_ref, lon_ref, alt_ref_m=alt_ref)
+        expected = (-44576.5574572138, -19432.24609638221, 3785.6580070712043)
+        np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
+
+    def test_ned2ecef_with_ref_altitude(self):
+        lat_ref, lon_ref, alt_ref = lla_rad2deg(-2.9, -0.5, 6000.0)
+        actual = rustmap3d.ned2ecef(
+            -6500.0, -4800.0, 2400.0, lat_ref, lon_ref, alt_ref_m=alt_ref
+        )
+        expected = (-5442559.838214509, 2967814.4198892456, -1510590.1708055406)
+        np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
+
 
 class TestEdgeCases:
     def test_ecef2lla_polar_axis(self):
