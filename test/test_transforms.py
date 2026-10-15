@@ -38,6 +38,11 @@ class TestGoldenVectors:
         np.testing.assert_allclose(el, math.degrees(-0.6981317), rtol=0, atol=1e-4)
         np.testing.assert_allclose(r, 70.0, rtol=0, atol=1e-6)
 
+    def test_aer2ned(self):
+        actual = rustmap3d.aer2ned(30.0, 40.0, -70.0)
+        expected = (-46.43897628, -26.81155573, 44.99513264)
+        np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
+
 
 class TestEdgeCases:
     def test_ecef2lla_polar_axis(self):

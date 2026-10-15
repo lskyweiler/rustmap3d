@@ -492,7 +492,7 @@ pub fn ned2aer(n_m: f64, e_m: f64, d_m: f64) -> Vec3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn aer2ned(a_d: f64, e_d: f64, r_m: f64) -> Vec3Tup {
-    let ned = map3d::aer2enu(&glam::dvec3(a_d, e_d, r_m));
+    let ned = map3d::aer2ned(&glam::dvec3(a_d, e_d, r_m));
     return vec3_to_tuple(&ned);
 }
 
