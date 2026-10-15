@@ -2,11 +2,14 @@ use crate::constants::wgs84;
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam;
 
-// todo: need to test these
+/// Computes the Julian date of a UTC date and time.
+///
+/// Vallado, *Fundamentals of Astrodynamics and Applications*, Algorithm 14. Valid for years 1900
+/// through 2100.
 pub fn juliandate(year: i64, month: i64, day: i64, hour: i64, min: i64, sec: i64) -> f64 {
-    let jd = 367. * year as f64 - ((7. * (year as f64 + ((month as f64 + 9.) / 12.))) / 4.)
-        + (275. * month as f64 / 9.)
-        + day as f64
+    // Vallado's INT() truncates toward zero, which integer division matches for these positive terms
+    let day_number = 367 * year - (7 * (year + (month + 9) / 12)) / 4 + (275 * month) / 9 + day;
+    let jd = day_number as f64
         + 1721013.5
         + hour as f64 / 24.
         + min as f64 / 1440.
@@ -73,7 +76,44 @@ pub fn eci2ecef_j2000(
 #[cfg(test)]
 mod test_eci {
     use super::*;
+    use crate::transforms::reference as kl;
     use rstest::*;
+
+    /// Earth Rotation Angle at the J2000 epoch, IERS Conventions (2010) eq. 5.15 [[radians]].
+    const ERA_J2000_RAD: f64 = std::f64::consts::TAU * 0.7790572732640;
+
+    #[rstest]
+    // J2000 epoch, by definition
+    #[case((2000, 1, 1, 12, 0, 0), 2451545.0)]
+    // Vallado, Fundamentals of Astrodynamics and Applications, Example 3-4
+    #[case((1996, 10, 26, 14, 20, 0), 2450383.09722222)]
+    // Meeus, Astronomical Algorithms, Example 7.a (Sputnik 1 launch, 1957 Oct 4.81)
+    #[case((1957, 10, 4, 19, 26, 24), 2436116.31)]
+    fn test_juliandate(#[case] utc: (i64, i64, i64, i64, i64, i64), #[case] expected: f64) {
+        let (year, month, day, hour, min, sec) = utc;
+        let actual = juliandate(year, month, day, hour, min, sec);
+        assert!(
+            f64::abs(actual - expected) < 1e-8,
+            "juliandate{utc:?} = {actual}, expected {expected}"
+        );
+        // and the reference implementation agrees with the same published values
+        let reference = kl::juliandate(year, month, day, hour, min, sec as f64);
+        assert!(
+            f64::abs(reference - expected) < 1e-8,
+            "reference juliandate{utc:?} = {reference}"
+        );
+    }
+
+    #[test]
+    fn test_juliandate_from_utc_str() {
+        let actual = juliandate_from_utc_str("2000-01-01T12:00:00".to_string(), None);
+        assert_eq!(actual, 2451545.0);
+        let actual = juliandate_from_utc_str(
+            "1996/10/26 14:20".to_string(),
+            Some("%Y/%m/%d %H:%M".to_string()),
+        );
+        assert!(f64::abs(actual - 2450383.09722222) < 1e-8, "{actual}");
+    }
 
     #[test]
     fn test_ecef2eci_identity_at_lock() {
@@ -107,5 +147,37 @@ mod test_eci {
         let ecef = glam::DVec3::new(1234567.0, -5432109.0, 3141592.0);
         let actual = eci2ecef(&ecef2eci(&ecef, t), t);
         assert!(actual.abs_diff_eq(ecef, 1e-6), "t={t}: {actual:?}");
+    }
+
+    #[rstest]
+    #[case("2000-01-01T12:00:00", 0.0)]
+    #[case("2000-01-02T12:00:00", 1.0)]
+    #[case("2024-06-30T06:30:00", 8946.770833333333)]
+    fn test_ecef2eci_j2000_earth_rotation_angle(#[case] utc: &str, #[case] days_since_j2000: f64) {
+        let era =
+            std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * days_since_j2000);
+        let ecef = glam::DVec3::X * 6378137.0;
+        let expected = glam::DVec3::new(f64::cos(era), f64::sin(era), 0.0) * 6378137.0;
+
+        let eci = ecef2eci_j2000(&ecef, utc.to_string(), None);
+        // A Julian date near 2.46e6 stored in an f64 resolves ~1e-10 days, which turns into ~1 cm
+        // at the equator after the Earth rotation multiplies it up
+        assert!(
+            eci.abs_diff_eq(expected, 1e-2),
+            "{utc}: eci {eci:?} expected {expected:?}"
+        );
+        let back = eci2ecef_j2000(&eci, utc.to_string(), None);
+        assert!(back.abs_diff_eq(ecef, 1e-6), "{utc}: round trip {back:?}");
+    }
+
+    #[test]
+    fn test_era_at_j2000_epoch() {
+        let ecef = glam::DVec3::X;
+        let eci = ecef2eci_j2000(&ecef, "2000-01-01T12:00:00".to_string(), None);
+        let angle = f64::atan2(eci.y, eci.x).rem_euclid(std::f64::consts::TAU);
+        assert!(
+            f64::abs(angle - ERA_J2000_RAD) < 1e-12,
+            "ERA {angle} rad, expected {ERA_J2000_RAD}"
+        );
     }
 }
