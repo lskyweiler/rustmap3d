@@ -1,4 +1,5 @@
 mod aer;
+mod batch;
 mod ecef;
 mod eci;
 mod enu;
@@ -12,5 +13,7 @@ pub use enu::*;
 pub use lla::*;
 pub use ned::*;
 
+#[cfg(test)]
+mod batch_tests;
 #[cfg(test)]
 mod reference_tests;

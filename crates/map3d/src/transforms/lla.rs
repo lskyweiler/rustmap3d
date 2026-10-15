@@ -1,6 +1,7 @@
 use crate::{
     constants::wgs84,
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
+    transforms::batch,
     utils,
 };
 use almost;
@@ -161,6 +162,62 @@ pub fn lla2ecef(lla: impl IntoLatLonTriple) -> glam::DVec3 {
         + alt)
         * f64::sin(lat);
     return glam::DVec3::new(x, y, z);
+}
+
+/// Converts a batch of ECEF positions to LLA. Matches [`ecef2lla`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+///
+/// # Returns
+///
+/// * `llas` - Vectors represented in LLA coordinates [[degrees-degrees-meters]].
+pub fn ecef2lla_batch(ecefs: &[glam::DVec3]) -> Vec<glam::DVec3> {
+    return batch::map(ecefs, ecef2lla);
+}
+
+/// Converts a batch of ECEF positions to LLA, writing into `out`. Matches [`ecef2lla`] applied to
+/// each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+/// * `out` - Receives the LLAs [[degrees-degrees-meters]].
+///
+/// # Panics
+///
+/// If `ecefs` and `out` differ in length.
+pub fn ecef2lla_batch_into(ecefs: &[glam::DVec3], out: &mut [glam::DVec3]) {
+    batch::map_into(ecefs, out, ecef2lla);
+}
+
+/// Converts a batch of LLAs to ECEF. Matches [`lla2ecef`] applied to each point.
+///
+/// # Arguments
+///
+/// * `llas` - LLAs [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+pub fn lla2ecef_batch(llas: &[glam::DVec3]) -> Vec<glam::DVec3> {
+    return batch::map(llas, lla2ecef);
+}
+
+/// Converts a batch of LLAs to ECEF, writing into `out`. Matches [`lla2ecef`] applied to each
+/// point.
+///
+/// # Arguments
+///
+/// * `llas` - LLAs [[degrees-degrees-meters]].
+/// * `out` - Receives the ECEF positions [[meters]].
+///
+/// # Panics
+///
+/// If `llas` and `out` differ in length.
+pub fn lla2ecef_batch_into(llas: &[glam::DVec3], out: &mut [glam::DVec3]) {
+    batch::map_into(llas, out, lla2ecef);
 }
 
 /// Generates a uniform random ECEF point on the surface of a spherical Earth.
