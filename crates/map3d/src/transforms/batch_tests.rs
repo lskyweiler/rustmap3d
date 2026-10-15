@@ -214,6 +214,50 @@ fn enu2ecef_uvw_batch_matches_single() {
     );
 }
 
+#[test]
+fn ecef2ned_batch_matches_single() {
+    check_with_ref!(
+        "ecef2ned",
+        ecef_inputs(),
+        ecef2ned,
+        ecef2ned_batch,
+        ecef2ned_batch_into
+    );
+}
+
+#[test]
+fn ned2ecef_batch_matches_single() {
+    check_with_ref!(
+        "ned2ecef",
+        vector_inputs(),
+        ned2ecef,
+        ned2ecef_batch,
+        ned2ecef_batch_into
+    );
+}
+
+#[test]
+fn ecef_uvw2ned_batch_matches_single() {
+    check_with_ref!(
+        "ecef_uvw2ned",
+        vector_inputs(),
+        ecef_uvw2ned,
+        ecef_uvw2ned_batch,
+        ecef_uvw2ned_batch_into
+    );
+}
+
+#[test]
+fn ned2ecef_uvw_batch_matches_single() {
+    check_with_ref!(
+        "ned2ecef_uvw",
+        vector_inputs(),
+        ned2ecef_uvw,
+        ned2ecef_uvw_batch,
+        ned2ecef_uvw_batch_into
+    );
+}
+
 // --- Output length checks ---
 
 #[test]
