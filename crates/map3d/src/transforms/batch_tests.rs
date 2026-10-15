@@ -110,6 +110,18 @@ fn lla_refs() -> Vec<glam::DVec3> {
     ];
 }
 
+/// Seconds since ECI lock, shared by every point in a batch.
+const ECI_TIMES_S: [f64; 5] = [0.0, 1.5, 86_400.0, -3600.0, 1.0e9];
+
+/// UTC times (and formats) shared by every point in a batch.
+fn utc_times() -> Vec<(&'static str, Option<&'static str>)> {
+    return vec![
+        ("2000-01-01T12:00:00", None),
+        ("2024-06-30T06:30:00", None),
+        ("1996/10/26 14:20:00", Some("%Y/%m/%d %H:%M:%S")),
+    ];
+}
+
 /// Compares the bits of every component, so -0.0 vs 0.0 and differing NaN payloads both count.
 fn assert_bits_eq(actual: &[glam::DVec3], expected: &[glam::DVec3], ctx: &str) {
     assert_eq!(actual.len(), expected.len(), "{ctx}: length");
@@ -365,6 +377,66 @@ fn aer2ecef_uvw_batch_matches_single() {
         aer2ecef_uvw_batch,
         aer2ecef_uvw_batch_into
     );
+}
+
+// --- Shared time ---
+
+#[test]
+fn ecef2eci_batch_matches_single() {
+    let inputs = ecef_inputs();
+    for t in ECI_TIMES_S {
+        check_batch(
+            &format!("ecef2eci t={t}"),
+            &inputs,
+            |v| ecef2eci(&v, t),
+            |b| ecef2eci_batch(b, t),
+            |b, out| ecef2eci_batch_into(b, t, out),
+        );
+    }
+}
+
+#[test]
+fn eci2ecef_batch_matches_single() {
+    let inputs = ecef_inputs();
+    for t in ECI_TIMES_S {
+        check_batch(
+            &format!("eci2ecef t={t}"),
+            &inputs,
+            |v| eci2ecef(&v, t),
+            |b| eci2ecef_batch(b, t),
+            |b, out| eci2ecef_batch_into(b, t, out),
+        );
+    }
+}
+
+#[test]
+fn ecef2eci_j2000_batch_matches_single() {
+    let inputs = ecef_inputs();
+    for (utc, fmt) in utc_times() {
+        let fmt = fmt.map(str::to_string);
+        check_batch(
+            &format!("ecef2eci_j2000 {utc}"),
+            &inputs,
+            |v| ecef2eci_j2000(&v, utc.to_string(), fmt.clone()),
+            |b| ecef2eci_j2000_batch(b, utc.to_string(), fmt.clone()),
+            |b, out| ecef2eci_j2000_batch_into(b, utc.to_string(), fmt.clone(), out),
+        );
+    }
+}
+
+#[test]
+fn eci2ecef_j2000_batch_matches_single() {
+    let inputs = ecef_inputs();
+    for (utc, fmt) in utc_times() {
+        let fmt = fmt.map(str::to_string);
+        check_batch(
+            &format!("eci2ecef_j2000 {utc}"),
+            &inputs,
+            |v| eci2ecef_j2000(&v, utc.to_string(), fmt.clone()),
+            |b| eci2ecef_j2000_batch(b, utc.to_string(), fmt.clone()),
+            |b, out| eci2ecef_j2000_batch_into(b, utc.to_string(), fmt.clone(), out),
+        );
+    }
 }
 
 // --- Output length checks ---
