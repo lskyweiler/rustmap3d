@@ -77,6 +77,27 @@ fn vector_inputs() -> Vec<glam::DVec3> {
     return v;
 }
 
+/// AERs [[degrees-degrees-meters]]: random, wrapped and negative angles, straight up and down.
+fn aer_inputs() -> Vec<glam::DVec3> {
+    let mut rng = SplitMix64(3);
+    let mut v: Vec<glam::DVec3> = (0..N_RANDOM)
+        .map(|_| {
+            glam::DVec3::new(
+                rng.uniform(-360.0, 720.0),
+                rng.uniform(-90.0, 90.0),
+                rng.uniform(0.0, 4.0e7),
+            )
+        })
+        .collect();
+    for (az, el) in [(0.0, 90.0), (0.0, -90.0), (360.0, 0.0), (-90.0, 45.0)] {
+        v.push(glam::DVec3::new(az, el, 1000.0));
+    }
+    v.push(glam::DVec3::new(30.0, 40.0, -70.0));
+    v.push(glam::DVec3::ZERO);
+    v.push(glam::DVec3::splat(f64::NAN));
+    return v;
+}
+
 /// Reference points [[degrees-degrees-meters]] shared by every point in a batch.
 fn lla_refs() -> Vec<glam::DVec3> {
     return vec![
@@ -149,6 +170,50 @@ fn lla2ecef_batch_matches_single() {
         |v| lla2ecef(v),
         lla2ecef_batch,
         lla2ecef_batch_into,
+    );
+}
+
+#[test]
+fn enu2aer_batch_matches_single() {
+    check_batch(
+        "enu2aer",
+        &vector_inputs(),
+        |v| enu2aer(v),
+        enu2aer_batch,
+        enu2aer_batch_into,
+    );
+}
+
+#[test]
+fn aer2enu_batch_matches_single() {
+    check_batch(
+        "aer2enu",
+        &aer_inputs(),
+        |v| aer2enu(v),
+        aer2enu_batch,
+        aer2enu_batch_into,
+    );
+}
+
+#[test]
+fn ned2aer_batch_matches_single() {
+    check_batch(
+        "ned2aer",
+        &vector_inputs(),
+        |v| ned2aer(v),
+        ned2aer_batch,
+        ned2aer_batch_into,
+    );
+}
+
+#[test]
+fn aer2ned_batch_matches_single() {
+    check_batch(
+        "aer2ned",
+        &aer_inputs(),
+        |v| aer2ned(v),
+        aer2ned_batch,
+        aer2ned_batch_into,
     );
 }
 
@@ -255,6 +320,50 @@ fn ned2ecef_uvw_batch_matches_single() {
         ned2ecef_uvw,
         ned2ecef_uvw_batch,
         ned2ecef_uvw_batch_into
+    );
+}
+
+#[test]
+fn ecef2aer_batch_matches_single() {
+    check_with_ref!(
+        "ecef2aer",
+        ecef_inputs(),
+        ecef2aer,
+        ecef2aer_batch,
+        ecef2aer_batch_into
+    );
+}
+
+#[test]
+fn aer2ecef_batch_matches_single() {
+    check_with_ref!(
+        "aer2ecef",
+        aer_inputs(),
+        aer2ecef,
+        aer2ecef_batch,
+        aer2ecef_batch_into
+    );
+}
+
+#[test]
+fn ecef_uvw2aer_batch_matches_single() {
+    check_with_ref!(
+        "ecef_uvw2aer",
+        vector_inputs(),
+        ecef_uvw2aer,
+        ecef_uvw2aer_batch,
+        ecef_uvw2aer_batch_into
+    );
+}
+
+#[test]
+fn aer2ecef_uvw_batch_matches_single() {
+    check_with_ref!(
+        "aer2ecef_uvw",
+        aer_inputs(),
+        aer2ecef_uvw,
+        aer2ecef_uvw_batch,
+        aer2ecef_uvw_batch_into
     );
 }
 
