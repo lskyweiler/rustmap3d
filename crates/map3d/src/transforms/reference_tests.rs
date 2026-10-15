@@ -206,6 +206,18 @@ fn golden_aer2ned() {
 }
 
 #[test]
+fn golden_ecef2lla() {
+    let actual = ecef2lla(glam::DVec3::new(4040000.0, 4813000.0, 1100000.0));
+    // altitude from kinematics-library python/tests/ecef_to_lla_test.py, which carries more digits
+    let expected = lla_rad2deg(glam::DVec3::new(
+        0.174440593201424,
+        0.872492313234789,
+        1888.1851099917756,
+    ));
+    assert_lla_near(actual, expected, 1e-12, 1e-4, true, "ecef_to_lla golden");
+}
+
+#[test]
 fn golden_ecef2ned() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(2.1, -1.1, 1250.0));
     let actual = ecef2ned(glam::DVec3::new(-1465000.0, 2880000.0, 5483500.0), lla_ref);
@@ -252,6 +264,21 @@ fn golden_ned2ecef() {
     let expected = glam::DVec3::new(-5442559.838214509, 2967814.4198892456, -1510590.1708055406);
     // the C test asks for 1e-14, finer than f64 resolves values of this magnitude
     assert_vec_near(actual, expected, POS_TOL_M, "ned_to_ecef golden");
+}
+
+#[test]
+fn golden_ned2lla() {
+    let lla_ref = lla_rad2deg(glam::DVec3::new(0.1, 2.5, 9200.0));
+    let actual = ecef2lla(ned2ecef(
+        glam::DVec3::new(12300.0, -8000.0, 6500.0),
+        lla_ref,
+    ));
+    let expected = lla_rad2deg(glam::DVec3::new(
+        0.10194035135339555,
+        2.49873974993884,
+        2716.948501356757,
+    ));
+    assert_lla_near(actual, expected, 1e-14, 1e-4, true, "ned_to_lla golden");
 }
 
 #[test]

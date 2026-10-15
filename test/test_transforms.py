@@ -16,6 +16,14 @@ def lla_rad2deg(lat, lon, alt):
 
 
 class TestGoldenVectors:
+    def test_ecef2lla(self):
+        actual = rustmap3d.ecef2lla(4040000.0, 4813000.0, 1100000.0)
+        expected = lla_rad2deg(0.174440593201424, 0.872492313234789, 1888.1851099917756)
+        np.testing.assert_allclose(
+            actual[:2], expected[:2], rtol=0, atol=math.degrees(1e-12)
+        )
+        np.testing.assert_allclose(actual[2], expected[2], rtol=0, atol=1e-4)
+
     def test_lla2ecef(self):
         actual = rustmap3d.lla2ecef(*lla_rad2deg(-0.8, 1.7, 4750.0))
         expected = (-573960.23482409, 4417543.57131158, -4556021.90733023)
