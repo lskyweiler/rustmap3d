@@ -69,3 +69,43 @@ pub fn eci2ecef_j2000(
     let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
     return glam::DMat3::from_rotation_z(-earth_rot_angle) * (*eci);
 }
+
+#[cfg(test)]
+mod test_eci {
+    use super::*;
+    use rstest::*;
+
+    #[test]
+    fn test_ecef2eci_identity_at_lock() {
+        let ecef = glam::DVec3::new(-4395937.137069274, -5292832.080918098, 269071.20488286763);
+        assert_eq!(ecef2eci(&ecef, 0.0), ecef);
+        assert_eq!(eci2ecef(&ecef, 0.0), ecef);
+    }
+
+    #[test]
+    fn test_ecef2eci_rotates_eastward() {
+        // a quarter of a sidereal rotation carries the prime meridian (+x) to inertial +y
+        let quarter_turn_s = std::f64::consts::FRAC_PI_2 / wgs84::EARTH_ANGULAR_VEL_RADPS;
+        let eci = ecef2eci(&(glam::DVec3::X * 6378137.0), quarter_turn_s);
+        assert!(eci.abs_diff_eq(glam::DVec3::Y * 6378137.0, 1e-6), "{eci:?}");
+    }
+
+    #[test]
+    fn test_ecef2eci_full_rotation_is_identity() {
+        let sidereal_day_s = std::f64::consts::TAU / wgs84::EARTH_ANGULAR_VEL_RADPS;
+        let ecef = glam::DVec3::new(1234567.0, -5432109.0, 3141592.0);
+        let eci = ecef2eci(&ecef, sidereal_day_s);
+        assert!(eci.abs_diff_eq(ecef, 1e-6), "{eci:?}");
+    }
+
+    #[rstest]
+    #[case(0.0)]
+    #[case(1.5)]
+    #[case(86400.0)]
+    #[case(-3600.0)]
+    fn test_eci_round_trip(#[case] t: f64) {
+        let ecef = glam::DVec3::new(1234567.0, -5432109.0, 3141592.0);
+        let actual = eci2ecef(&ecef2eci(&ecef, t), t);
+        assert!(actual.abs_diff_eq(ecef, 1e-6), "t={t}: {actual:?}");
+    }
+}
