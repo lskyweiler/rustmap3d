@@ -303,10 +303,20 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
         }
     }
 
-    let deg = f64::abs(dd) * 3600.;
-    let (mnt, sec) = (deg / 60., deg % 60.);
-    let (deg, min) = (mnt / 60., mnt % 60.);
-    return format!("{:.0}:{:.0}:{:.3}{}", deg.floor(), min.floor(), sec, dir);
+    // Round to the printed millisecond of arc before splitting, so a value like 59.9999 seconds
+    // carries into the minutes instead of printing as 60.000
+    let total_ms = f64::round(f64::abs(dd) * 3600. * 1000.) as u64;
+    let deg = total_ms / 3_600_000;
+    let min = total_ms / 60_000 % 60;
+    let sec_ms = total_ms % 60_000;
+    return format!(
+        "{}:{}:{}.{:03}{}",
+        deg,
+        min,
+        sec_ms / 1000,
+        sec_ms % 1000,
+        dir
+    );
 }
 
 /// Convenience function to convert lat/lon to a tuple of (lat dms, lon dms)
@@ -673,6 +683,18 @@ mod test_lla {
         let (lat_dms, lon_dms) = ll2dms((25.379094, -74.998757));
         assert_eq!(lat_dms, "25:22:44.738N");
         assert_eq!(lon_dms, "74:59:55.525W");
+    }
+
+    #[rstest]
+    #[case(10.0166666, true, "10:1:0.000N")]
+    #[case(45.9999999, true, "46:0:0.000N")]
+    #[case(-25.9999999, false, "26:0:0.000W")]
+    #[case(179.99999999, false, "180:0:0.000E")]
+    // 0 keeps its existing S/W label
+    #[case(0.0, true, "0:0:0.000S")]
+    #[case(0.0, false, "0:0:0.000W")]
+    fn test_dd2dms_rounding_carries(#[case] dd: f64, #[case] is_lat: bool, #[case] expected: &str) {
+        assert_eq!(dd2dms(dd, is_lat), expected);
     }
 
     #[rstest]

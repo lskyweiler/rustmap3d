@@ -76,6 +76,10 @@ class TestEdgeCases:
         assert lat == -90.0
         assert abs(alt) < 1e-6
 
+    def test_dd2dms_carries_rounded_seconds(self):
+        assert rustmap3d.dd2dms(10.0166666, True) == "10:1:0.000N"
+        assert rustmap3d.dd2dms(45.9999999, True) == "46:0:0.000N"
+
     def test_ll2dms_uses_longitude(self):
         assert rustmap3d.ll2dms(25.379094, -74.998757) == (
             "25:22:44.738N",
