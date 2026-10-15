@@ -54,6 +54,41 @@ fn ecef_inputs() -> Vec<glam::DVec3> {
     return v;
 }
 
+/// Local-frame or direction vectors [[meters]]: random, axis-aligned, zero, and NaN.
+fn vector_inputs() -> Vec<glam::DVec3> {
+    let mut rng = SplitMix64(2);
+    let mut v: Vec<glam::DVec3> = (0..N_RANDOM)
+        .map(|_| {
+            let scale = 10f64.powf(rng.uniform(-3.0, 7.5));
+            let dir = glam::DVec3::new(
+                rng.uniform(-1.0, 1.0),
+                rng.uniform(-1.0, 1.0),
+                rng.uniform(-1.0, 1.0),
+            );
+            dir * scale
+        })
+        .collect();
+    for axis in [glam::DVec3::X, glam::DVec3::Y, glam::DVec3::Z] {
+        v.push(axis * 1000.0);
+        v.push(-axis * 1000.0);
+    }
+    v.push(glam::DVec3::ZERO);
+    v.push(glam::DVec3::splat(f64::NAN));
+    return v;
+}
+
+/// Reference points [[degrees-degrees-meters]] shared by every point in a batch.
+fn lla_refs() -> Vec<glam::DVec3> {
+    return vec![
+        glam::DVec3::new(0.0, 0.0, 0.0),
+        glam::DVec3::new(38.9, -77.0, 120.0),
+        glam::DVec3::new(-33.9, 151.2, -25.0),
+        glam::DVec3::new(90.0, 0.0, 0.0),
+        glam::DVec3::new(-90.0, 180.0, 10_000.0),
+        glam::DVec3::new(60.0, 179.9999, 36_000_000.0),
+    ];
+}
+
 /// Compares the bits of every component, so -0.0 vs 0.0 and differing NaN payloads both count.
 fn assert_bits_eq(actual: &[glam::DVec3], expected: &[glam::DVec3], ctx: &str) {
     assert_eq!(actual.len(), expected.len(), "{ctx}: length");
@@ -114,6 +149,68 @@ fn lla2ecef_batch_matches_single() {
         |v| lla2ecef(v),
         lla2ecef_batch,
         lla2ecef_batch_into,
+    );
+}
+
+// --- Shared reference point ---
+
+/// Runs `check_batch` once per shared reference in `lla_refs`.
+macro_rules! check_with_ref {
+    ($name:literal, $inputs:expr, $single:ident, $batch:ident, $batch_into:ident) => {
+        let inputs = $inputs;
+        for r in lla_refs() {
+            check_batch(
+                &format!("{} ref {r:?}", $name),
+                &inputs,
+                |v| $single(v, r),
+                |b| $batch(b, r),
+                |b, out| $batch_into(b, r, out),
+            );
+        }
+    };
+}
+
+#[test]
+fn ecef2enu_batch_matches_single() {
+    check_with_ref!(
+        "ecef2enu",
+        ecef_inputs(),
+        ecef2enu,
+        ecef2enu_batch,
+        ecef2enu_batch_into
+    );
+}
+
+#[test]
+fn enu2ecef_batch_matches_single() {
+    check_with_ref!(
+        "enu2ecef",
+        vector_inputs(),
+        enu2ecef,
+        enu2ecef_batch,
+        enu2ecef_batch_into
+    );
+}
+
+#[test]
+fn ecef_uvw2enu_batch_matches_single() {
+    check_with_ref!(
+        "ecef_uvw2enu",
+        vector_inputs(),
+        ecef_uvw2enu,
+        ecef_uvw2enu_batch,
+        ecef_uvw2enu_batch_into
+    );
+}
+
+#[test]
+fn enu2ecef_uvw_batch_matches_single() {
+    check_with_ref!(
+        "enu2ecef_uvw",
+        vector_inputs(),
+        enu2ecef_uvw,
+        enu2ecef_uvw_batch,
+        enu2ecef_uvw_batch_into
     );
 }
 

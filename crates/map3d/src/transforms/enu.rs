@@ -1,6 +1,6 @@
 use crate::{
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
-    transforms::lla,
+    transforms::{batch, lla},
 };
 use glam;
 
@@ -158,6 +158,145 @@ pub(crate) fn enu2ecef_kernel(
     let rot = enu2ecef_quat(lla_ref);
     let ref_ecef = lla::lla2ecef(lla_ref);
     return move |enu| rot * enu + ref_ecef;
+}
+
+/// Converts a batch of ECEF uvw vectors to ENU, sharing one reference. Matches [`ecef_uvw2enu`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecef_uvws` - Vectors represented in ECEF frame [[meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
+///
+/// # Returns
+///
+/// * Vectors represented in ENU coordinates [[meters]].
+pub fn ecef_uvw2enu_batch(
+    ecef_uvws: &[glam::DVec3],
+    ll_ref: impl IntoLatLonTuple,
+) -> Vec<glam::DVec3> {
+    return batch::map(ecef_uvws, ecef_uvw2enu_kernel(ll_ref));
+}
+
+/// Converts a batch of ECEF uvw vectors to ENU, sharing one reference and writing into `out`. Matches
+/// [`ecef_uvw2enu`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecef_uvws` - Vectors represented in ECEF frame [[meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
+/// * `out` - Receives the results. Vectors represented in ENU coordinates [[meters]].
+///
+/// # Panics
+///
+/// If `ecef_uvws` and `out` differ in length.
+pub fn ecef_uvw2enu_batch_into(
+    ecef_uvws: &[glam::DVec3],
+    ll_ref: impl IntoLatLonTuple,
+    out: &mut [glam::DVec3],
+) {
+    batch::map_into(ecef_uvws, out, ecef_uvw2enu_kernel(ll_ref));
+}
+
+/// Converts a batch of absolute ECEF positions to ENU, sharing one reference. Matches [`ecef2enu`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Absolute ECEF locations [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * Vectors represented in ENU coordinates [[meters]].
+pub fn ecef2enu_batch(ecefs: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> Vec<glam::DVec3> {
+    return batch::map(ecefs, ecef2enu_kernel(lla_ref));
+}
+
+/// Converts a batch of absolute ECEF positions to ENU, sharing one reference and writing into `out`. Matches
+/// [`ecef2enu`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Absolute ECEF locations [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `out` - Receives the results. Vectors represented in ENU coordinates [[meters]].
+///
+/// # Panics
+///
+/// If `ecefs` and `out` differ in length.
+pub fn ecef2enu_batch_into(
+    ecefs: &[glam::DVec3],
+    lla_ref: impl IntoLatLonTriple,
+    out: &mut [glam::DVec3],
+) {
+    batch::map_into(ecefs, out, ecef2enu_kernel(lla_ref));
+}
+
+/// Converts a batch of ENU vectors to ECEF uvw, sharing one reference. Matches [`enu2ecef_uvw`] applied to each point.
+///
+/// # Arguments
+///
+/// * `enus` - Vectors represented in ENU coordinates [[meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
+///
+/// # Returns
+///
+/// * Vectors represented in ECEF frame. Not absolute positions [[meters]].
+pub fn enu2ecef_uvw_batch(enus: &[glam::DVec3], ll_ref: impl IntoLatLonTuple) -> Vec<glam::DVec3> {
+    return batch::map(enus, enu2ecef_uvw_kernel(ll_ref));
+}
+
+/// Converts a batch of ENU vectors to ECEF uvw, sharing one reference and writing into `out`. Matches
+/// [`enu2ecef_uvw`] applied to each point.
+///
+/// # Arguments
+///
+/// * `enus` - Vectors represented in ENU coordinates [[meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
+/// * `out` - Receives the results. Vectors represented in ECEF frame. Not absolute positions [[meters]].
+///
+/// # Panics
+///
+/// If `enus` and `out` differ in length.
+pub fn enu2ecef_uvw_batch_into(
+    enus: &[glam::DVec3],
+    ll_ref: impl IntoLatLonTuple,
+    out: &mut [glam::DVec3],
+) {
+    batch::map_into(enus, out, enu2ecef_uvw_kernel(ll_ref));
+}
+
+/// Converts a batch of ENU offsets from `lla_ref` to absolute ECEF, sharing one reference. Matches [`enu2ecef`] applied to each point.
+///
+/// # Arguments
+///
+/// * `enus` - Vectors represented in ENU coordinates [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+///
+/// # Returns
+///
+/// * Absolute ECEF positions [[meters]].
+pub fn enu2ecef_batch(enus: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> Vec<glam::DVec3> {
+    return batch::map(enus, enu2ecef_kernel(lla_ref));
+}
+
+/// Converts a batch of ENU offsets from `lla_ref` to absolute ECEF, sharing one reference and writing into `out`. Matches
+/// [`enu2ecef`] applied to each point.
+///
+/// # Arguments
+///
+/// * `enus` - Vectors represented in ENU coordinates [[meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `out` - Receives the results. Absolute ECEF positions [[meters]].
+///
+/// # Panics
+///
+/// If `enus` and `out` differ in length.
+pub fn enu2ecef_batch_into(
+    enus: &[glam::DVec3],
+    lla_ref: impl IntoLatLonTriple,
+    out: &mut [glam::DVec3],
+) {
+    batch::map_into(enus, out, enu2ecef_kernel(lla_ref));
 }
 
 /// Calculates heading angle from ENU.
