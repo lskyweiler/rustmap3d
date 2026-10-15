@@ -39,6 +39,9 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_function(wrap_pyfunction!(ned2aer, m)?)?;
         m.add_function(wrap_pyfunction!(aer2ned, m)?)?;
 
+        m.add_function(wrap_pyfunction!(ecef2lla_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(lla2ecef_batch, m)?)?;
+
         m.add_function(wrap_pyfunction!(rand_lla, m)?)?;
         m.add_function(wrap_pyfunction!(rand_ecef, m)?)?;
         m.add_function(wrap_pyfunction!(rand_orientation, m)?)?;

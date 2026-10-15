@@ -5,6 +5,9 @@ import builtins
 import enum
 import typing
 
+import numpy
+import numpy.typing
+
 __all__ = [
     "DQuat",
     "DVec3",
@@ -25,6 +28,7 @@ __all__ = [
     "ecef2enu_dcm",
     "ecef2enu_quat",
     "ecef2lla",
+    "ecef2lla_batch",
     "ecef2ned",
     "ecef2ned_dcm",
     "ecef2ned_quat",
@@ -41,6 +45,7 @@ __all__ = [
     "enu2lla",
     "ll2dms",
     "lla2ecef",
+    "lla2ecef_batch",
     "lla2enu",
     "lla2ned",
     "mach",
@@ -1939,6 +1944,24 @@ def ecef2lla(
     * `lla` - Vector represented in WGS84 LLA [degrees-degrees-meters].
     """
 
+def ecef2lla_batch(ecef: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ecef2lla`: converts each row of `ecef` from ECEF positions in meters to
+    WGS84 LLA [degrees-degrees-meters].
+
+    # Arguments
+
+    * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ecef` is not of shape (N, 3)
+    """
+
 def ecef2ned(
     x_m: builtins.float,
     y_m: builtins.float,
@@ -2281,6 +2304,24 @@ def lla2ecef(
     # Returns
 
     * `ecef` - Vector represented in ECEF coordinates [meters].
+    """
+
+def lla2ecef_batch(lla: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `lla2ecef`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
+    ECEF positions in meters.
+
+    # Arguments
+
+    * `lla` - Array-like of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of ECEF positions in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `lla` is not of shape (N, 3)
     """
 
 def lla2enu(
