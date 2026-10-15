@@ -69,10 +69,16 @@ REFS = [
 CASES = [
     ("ecef2lla", ECEF, None),
     ("lla2ecef", LLA, None),
+    ("enu2aer", VECTORS, None),
+    ("aer2enu", AER, None),
+    ("ned2aer", VECTORS, None),
+    ("aer2ned", AER, None),
     ("ecef_uvw2enu", VECTORS, "ll"),
     ("enu2ecef_uvw", VECTORS, "ll"),
     ("ecef_uvw2ned", VECTORS, "ll"),
     ("ned2ecef_uvw", VECTORS, "ll"),
+    ("ecef_uvw2aer", VECTORS, "ll"),
+    ("aer2ecef_uvw", AER, "ll"),
     ("ecef2enu", ECEF, "lla"),
     ("lla2enu", LLA, "lla"),
     ("enu2ecef", VECTORS, "lla"),
@@ -81,6 +87,8 @@ CASES = [
     ("lla2ned", LLA, "lla"),
     ("ned2ecef", VECTORS, "lla"),
     ("ned2lla", VECTORS, "lla"),
+    ("ecef2aer", ECEF, "lla"),
+    ("aer2ecef", AER, "lla"),
 ]
 
 

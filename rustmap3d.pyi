@@ -17,13 +17,18 @@ __all__ = [
     "GeoVector",
     "GeoVelocity",
     "aer2ecef",
+    "aer2ecef_batch",
     "aer2ecef_uvw",
+    "aer2ecef_uvw_batch",
     "aer2enu",
+    "aer2enu_batch",
     "aer2ned",
+    "aer2ned_batch",
     "angle_between",
     "dd2dms",
     "dms2dd",
     "ecef2aer",
+    "ecef2aer_batch",
     "ecef2enu",
     "ecef2enu_batch",
     "ecef2enu_dcm",
@@ -36,11 +41,13 @@ __all__ = [
     "ecef2ned_quat",
     "ecef_quat2heading",
     "ecef_uvw2aer",
+    "ecef_uvw2aer_batch",
     "ecef_uvw2enu",
     "ecef_uvw2enu_batch",
     "ecef_uvw2ned",
     "ecef_uvw2ned_batch",
     "enu2aer",
+    "enu2aer_batch",
     "enu2ecef",
     "enu2ecef_batch",
     "enu2ecef_dcm",
@@ -59,6 +66,7 @@ __all__ = [
     "lla2ned_batch",
     "mach",
     "ned2aer",
+    "ned2aer_batch",
     "ned2ecef",
     "ned2ecef_batch",
     "ned2ecef_dcm",
@@ -1728,6 +1736,32 @@ def aer2ecef(
     * `ecef` - Absolute ECEF position in meters
     """
 
+def aer2ecef_batch(
+    aer: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `aer2ecef`: converts each row of `aer` from AER [degrees-degrees-meters] to
+    ECEF positions in meters.
+
+    # Arguments
+
+    * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of ECEF positions in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `aer` is not of shape (N, 3)
+    """
+
 def aer2ecef_uvw(
     a_d: builtins.float,
     e_d: builtins.float,
@@ -1751,6 +1785,28 @@ def aer2ecef_uvw(
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
+def aer2ecef_uvw_batch(
+    aer: numpy.typing.ArrayLike, lat_ref_d: builtins.float, lon_ref_d: builtins.float
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `aer2ecef_uvw`: converts each row of `aer` from AER [degrees-degrees-meters] to
+    ECEF uvw vectors in meters.
+
+    # Arguments
+
+    * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of ECEF uvw vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `aer` is not of shape (N, 3)
+    """
+
 def aer2enu(
     a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -1768,6 +1824,24 @@ def aer2enu(
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
+def aer2enu_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `aer2enu`: converts each row of `aer` from AER [degrees-degrees-meters] to
+    ENU vectors in meters.
+
+    # Arguments
+
+    * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of ENU vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `aer` is not of shape (N, 3)
+    """
+
 def aer2ned(
     a_d: builtins.float, e_d: builtins.float, r_m: builtins.float
 ) -> tuple[builtins.float, builtins.float, builtins.float]:
@@ -1783,6 +1857,24 @@ def aer2ned(
     # Returns
 
     * `ned` - Vector represented in NED coordinates [meters].
+    """
+
+def aer2ned_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `aer2ned`: converts each row of `aer` from AER [degrees-degrees-meters] to
+    NED vectors in meters.
+
+    # Arguments
+
+    * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of NED vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `aer` is not of shape (N, 3)
     """
 
 def angle_between(
@@ -1870,6 +1962,32 @@ def ecef2aer(
     # Returns
 
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+    """
+
+def ecef2aer_batch(
+    ecef: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ecef2aer`: converts each row of `ecef` from ECEF positions in meters to
+    AER [degrees-degrees-meters].
+
+    # Arguments
+
+    * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of AER [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ecef` is not of shape (N, 3)
     """
 
 def ecef2enu(
@@ -2141,6 +2259,30 @@ def ecef_uvw2aer(
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
+def ecef_uvw2aer_batch(
+    ecef_uvw: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ecef_uvw2aer`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
+    AER [degrees-degrees-meters].
+
+    # Arguments
+
+    * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of AER [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ecef_uvw` is not of shape (N, 3)
+    """
+
 def ecef_uvw2enu(
     u_m: builtins.float,
     v_m: builtins.float,
@@ -2250,6 +2392,24 @@ def enu2aer(
     # Returns
 
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+    """
+
+def enu2aer_batch(enu: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `enu2aer`: converts each row of `enu` from ENU vectors in meters to
+    AER [degrees-degrees-meters].
+
+    # Arguments
+
+    * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of AER [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `enu` is not of shape (N, 3)
     """
 
 def enu2ecef(
@@ -2646,6 +2806,24 @@ def ned2aer(
     # Returns
 
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
+    """
+
+def ned2aer_batch(ned: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ned2aer`: converts each row of `ned` from NED vectors in meters to
+    AER [degrees-degrees-meters].
+
+    # Arguments
+
+    * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+
+    # Returns
+
+    * Array of shape (N, 3) of AER [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ned` is not of shape (N, 3)
     """
 
 def ned2ecef(
