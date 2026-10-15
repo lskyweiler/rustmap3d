@@ -53,12 +53,12 @@ pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
 }
 
 /// Converts Absolute ECEF to AER.
-/// This is a vector that is not in relation to an ECEF location
+/// The result is the direction and distance from `lla_ref` to `ecef`.
 ///
 /// # Arguments
 ///
 /// * `ecef` - Absolute ECEF position [m, m, m]
-/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
@@ -102,11 +102,11 @@ pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 /// # Arguments
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[radians-radians-meters]].
+/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
-/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `ecef` - Absolute ECEF position [[meters]].
 pub fn aer2ecef(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = aer2enu(aer);
     return enu::enu2ecef(&enu, lla_ref);
