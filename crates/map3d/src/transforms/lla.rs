@@ -61,6 +61,10 @@ pub fn ecef2lla_ferarri(ecef: impl IntoDVec3) -> glam::DVec3 {
 /// Converts ECEF to LLA using formulation from `pymap3d`:
 /// https://github.com/geospace-code/pymap3d/blob/b4dcee4cd7a43641666cef840c97dd73d4e5ed61/src/pymap3d/ecef.py#L87
 ///
+/// This applies a single correction step, so its accuracy degrades with altitude. Latitude error is
+/// ~1e-14 rad near the surface, ~3.5e-11 rad (0.2 mm) at 400 km, and ~1.5e-6 rad (~60 m) at
+/// geostationary altitude. Prefer [`ecef2lla`] for anything above low Earth orbit.
+///
 /// # Arguments
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
