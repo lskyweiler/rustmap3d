@@ -31,6 +31,7 @@ __all__ = [
     "ecef2lla",
     "ecef2lla_batch",
     "ecef2ned",
+    "ecef2ned_batch",
     "ecef2ned_dcm",
     "ecef2ned_quat",
     "ecef_quat2heading",
@@ -38,6 +39,7 @@ __all__ = [
     "ecef_uvw2enu",
     "ecef_uvw2enu_batch",
     "ecef_uvw2ned",
+    "ecef_uvw2ned_batch",
     "enu2aer",
     "enu2ecef",
     "enu2ecef_batch",
@@ -54,13 +56,17 @@ __all__ = [
     "lla2enu",
     "lla2enu_batch",
     "lla2ned",
+    "lla2ned_batch",
     "mach",
     "ned2aer",
     "ned2ecef",
+    "ned2ecef_batch",
     "ned2ecef_dcm",
     "ned2ecef_quat",
     "ned2ecef_uvw",
+    "ned2ecef_uvw_batch",
     "ned2lla",
+    "ned2lla_batch",
     "rand_ecef",
     "rand_lla",
     "rand_orientation",
@@ -2019,6 +2025,32 @@ def ecef2ned(
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
+def ecef2ned_batch(
+    ecef: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ecef2ned`: converts each row of `ecef` from ECEF positions in meters to
+    NED vectors in meters.
+
+    # Arguments
+
+    * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of NED vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ecef` is not of shape (N, 3)
+    """
+
 def ecef2ned_dcm(
     lat_d: builtins.float, lon_d: builtins.float
 ) -> tuple[
@@ -2177,6 +2209,30 @@ def ecef_uvw2ned(
     # Returns
 
     * `ned` - Vector represented in NED coordinates [meters].
+    """
+
+def ecef_uvw2ned_batch(
+    ecef_uvw: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ecef_uvw2ned`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
+    NED vectors in meters.
+
+    # Arguments
+
+    * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of NED vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ecef_uvw` is not of shape (N, 3)
     """
 
 def enu2aer(
@@ -2530,6 +2586,32 @@ def lla2ned(
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
+def lla2ned_batch(
+    lla: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `lla2ned`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
+    NED vectors in meters.
+
+    # Arguments
+
+    * `lla` - Array-like of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of NED vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `lla` is not of shape (N, 3)
+    """
+
 def mach(speed_mps: builtins.float, alt_m: builtins.float) -> builtins.float:
     r"""
     Compute the mach number at a given altitude
@@ -2589,6 +2671,32 @@ def ned2ecef(
     # Returns
 
     * `ecef` - Absolute ECEF position in meters
+    """
+
+def ned2ecef_batch(
+    ned: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ned2ecef`: converts each row of `ned` from NED vectors in meters to
+    ECEF positions in meters.
+
+    # Arguments
+
+    * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of ECEF positions in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ned` is not of shape (N, 3)
     """
 
 def ned2ecef_dcm(
@@ -2656,6 +2764,28 @@ def ned2ecef_uvw(
     * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
     """
 
+def ned2ecef_uvw_batch(
+    ned: numpy.typing.ArrayLike, lat_ref_d: builtins.float, lon_ref_d: builtins.float
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ned2ecef_uvw`: converts each row of `ned` from NED vectors in meters to
+    ECEF uvw vectors in meters.
+
+    # Arguments
+
+    * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of ECEF uvw vectors in meters [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ned` is not of shape (N, 3)
+    """
+
 def ned2lla(
     n_m: builtins.float,
     e_m: builtins.float,
@@ -2679,6 +2809,32 @@ def ned2lla(
     # Returns
 
     * `lla` - Absolute lat lon alt [deg-deg-m]
+    """
+
+def ned2lla_batch(
+    ned: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    alt_ref_m: builtins.float = ...,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Batched `ned2lla`: converts each row of `ned` from NED vectors in meters to
+    WGS84 LLA [degrees-degrees-meters].
+
+    # Arguments
+
+    * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+    * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+    * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+
+    # Returns
+
+    * Array of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.ndarray[float64]]
+
+    # Raises
+
+    * `ValueError` if `ned` is not of shape (N, 3)
     """
 
 def rand_ecef() -> tuple[builtins.float, builtins.float, builtins.float]:

@@ -47,6 +47,12 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_function(wrap_pyfunction!(enu2ecef_uvw_batch, m)?)?;
         m.add_function(wrap_pyfunction!(enu2ecef_batch, m)?)?;
         m.add_function(wrap_pyfunction!(enu2lla_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(ecef_uvw2ned_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(ecef2ned_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(lla2ned_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(ned2ecef_uvw_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(ned2ecef_batch, m)?)?;
+        m.add_function(wrap_pyfunction!(ned2lla_batch, m)?)?;
 
         m.add_function(wrap_pyfunction!(rand_lla, m)?)?;
         m.add_function(wrap_pyfunction!(rand_ecef, m)?)?;

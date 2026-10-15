@@ -71,10 +71,16 @@ CASES = [
     ("lla2ecef", LLA, None),
     ("ecef_uvw2enu", VECTORS, "ll"),
     ("enu2ecef_uvw", VECTORS, "ll"),
+    ("ecef_uvw2ned", VECTORS, "ll"),
+    ("ned2ecef_uvw", VECTORS, "ll"),
     ("ecef2enu", ECEF, "lla"),
     ("lla2enu", LLA, "lla"),
     ("enu2ecef", VECTORS, "lla"),
     ("enu2lla", VECTORS, "lla"),
+    ("ecef2ned", ECEF, "lla"),
+    ("lla2ned", LLA, "lla"),
+    ("ned2ecef", VECTORS, "lla"),
+    ("ned2lla", VECTORS, "lla"),
 ]
 
 
@@ -121,6 +127,12 @@ def test_batch_empty_and_single_row(name, inputs, kind):
     one = batch(inputs[:1], *args, **kwargs)
     expected = getattr(rustmap3d, name)(*inputs[0], *args, **kwargs)
     np.testing.assert_array_equal(one, [expected])
+
+
+def test_batch_alt_ref_defaults_to_zero():
+    with_default = rustmap3d.ecef2ned_batch(ECEF, 38.9, -77.0)
+    explicit = rustmap3d.ecef2ned_batch(ECEF, 38.9, -77.0, alt_ref_m=0.0)
+    np.testing.assert_array_equal(with_default, explicit)
 
 
 def test_batch_accepts_non_contiguous_input():
