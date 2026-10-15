@@ -357,6 +357,35 @@ fn lla2ecef_matches_reference() {
     }
 }
 
+#[rstest]
+#[case::ferrari(|v| ecef2lla_ferarri(v))]
+#[case::default(|v| ecef2lla(v))]
+fn ecef2lla_matches_reference(#[case] under_test: fn(glam::DVec3) -> glam::DVec3) {
+    for ecef in ecef2lla_inputs() {
+        let expected = lla_rad2deg(kl::ecef_to_lla(ecef));
+        if !expected.is_finite() {
+            // The reference's Ferrari solution can take the square root of a slightly negative
+            // number within ~1e-9 m of the polar axis and return NaN. Those points are covered
+            // against their true LLA by ecef2lla_near_polar_axis_round_trips.
+            let axis_dist = f64::hypot(ecef.x, ecef.y);
+            assert!(
+                axis_dist < 1e-6,
+                "reference NaN away from the polar axis at {ecef:?}"
+            );
+            continue;
+        }
+        let actual = under_test(ecef);
+        assert_lla_near(
+            actual,
+            expected,
+            LATLON_TOL_RAD,
+            POS_TOL_M,
+            true,
+            &format!("ecef2lla({ecef:?})"),
+        );
+    }
+}
+
 #[test]
 fn ecef2lla_map3d_accuracy_by_altitude() {
     // A single Bowring-style correction step: matches the reference near the surface, but its
@@ -378,6 +407,58 @@ fn ecef2lla_map3d_accuracy_by_altitude() {
             &format!("ecef2lla_map3d round trip {lla:?}"),
         );
     }
+}
+
+#[test]
+fn ecef2lla_inverts_lla2ecef() {
+    for lla in lla_grid() {
+        let actual = ecef2lla(lla2ecef(lla));
+        let at_pole = f64::abs(lla.x) == 90.0;
+        assert_lla_near(
+            actual,
+            lla,
+            LATLON_TOL_RAD,
+            POS_TOL_M,
+            !at_pole,
+            &format!("round trip {lla:?}"),
+        );
+    }
+}
+
+#[test]
+fn ecef2lla_near_polar_axis_round_trips() {
+    for pole in [90.0, -90.0] {
+        for offset_deg in [0.0, 1e-12, 1e-9, 1e-6, 1e-4] {
+            for lon in [-180.0, -45.0, 0.0, 135.0] {
+                for alt in ALTS_M {
+                    let lla = glam::DVec3::new(pole - f64::signum(pole) * offset_deg, lon, alt);
+                    let ecef = kl::lla_to_ecef(lla_deg2rad(lla));
+                    let actual = ecef2lla(ecef);
+                    let ctx = format!("ecef2lla({ecef:?}) from {lla:?}");
+                    assert!(actual.is_finite(), "{ctx}: not finite {actual:?}");
+                    // longitude is only well conditioned once the point is measurably off the axis
+                    let check_lon = offset_deg >= 1e-6;
+                    assert_lla_near(actual, lla, LATLON_TOL_RAD, POS_TOL_M, check_lon, &ctx);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn ecef2lla_polar_axis_is_plus_minus_90() {
+    let north = ecef2lla(glam::DVec3::new(0.0, 0.0, 6356752.314245179));
+    let south = ecef2lla(glam::DVec3::new(0.0, 0.0, -6356752.314245179));
+    assert_eq!(north.x, 90.0, "north pole latitude: {north:?}");
+    assert_eq!(south.x, -90.0, "south pole latitude: {south:?}");
+    assert!(
+        f64::abs(north.z) <= POS_TOL_M,
+        "north pole altitude: {north:?}"
+    );
+    assert!(
+        f64::abs(south.z) <= POS_TOL_M,
+        "south pole altitude: {south:?}"
+    );
 }
 
 #[test]
@@ -472,6 +553,33 @@ fn enu_matches_reference() {
                 &format!("ecef_uvw2enu {ctx}"),
             );
         }
+    }
+}
+
+#[test]
+fn lla_ned_composites_match_reference() {
+    for t in target_refs() {
+        let ctx = format!("{:?} at {:?}", t.lla, t.lla_ref);
+        let expected = kl::lla_to_ned(lla_deg2rad(t.lla), lla_deg2rad(t.lla_ref));
+        assert_vec_near(
+            ecef2ned(lla2ecef(t.lla), t.lla_ref),
+            expected,
+            POS_TOL_M,
+            &format!("lla2ned {ctx}"),
+        );
+
+        // ned2lla is checked against the target's true LLA, since the reference ned_to_lla
+        // inherits the NaN of its ecef_to_lla near the polar axis
+        let ned = kl::lla_to_ned(lla_deg2rad(t.lla), lla_deg2rad(t.lla_ref));
+        let at_pole = f64::abs(t.lla.x) == 90.0;
+        assert_lla_near(
+            ecef2lla(ned2ecef(ned, t.lla_ref)),
+            t.lla,
+            LATLON_TOL_RAD,
+            POS_TOL_M,
+            !at_pole,
+            &format!("ned2lla {ctx}"),
+        );
     }
 }
 

@@ -37,3 +37,13 @@ class TestGoldenVectors:
         )
         np.testing.assert_allclose(el, math.degrees(-0.6981317), rtol=0, atol=1e-4)
         np.testing.assert_allclose(r, 70.0, rtol=0, atol=1e-6)
+
+
+class TestEdgeCases:
+    def test_ecef2lla_polar_axis(self):
+        lat, _, alt = rustmap3d.ecef2lla(0.0, 0.0, 6356752.314245179)
+        assert lat == 90.0
+        assert abs(alt) < 1e-6
+        lat, _, alt = rustmap3d.ecef2lla(0.0, 0.0, -6356752.314245179)
+        assert lat == -90.0
+        assert abs(alt) < 1e-6

@@ -45,11 +45,8 @@ pub fn ecef2lla_ferarri(ecef: impl IntoDVec3) -> glam::DVec3 {
     let v_term: f64 = f64::sqrt(uv_subterm + (1. - wgs84::ECEF2LLA_E2) * z_ecef_squared);
     let z0_term: f64 = f64::powf(wgs84::EARTH_SEMI_MINOR_AXIS, 2.) * ecef.z
         / (wgs84::EARTH_SEMI_MAJOR_AXIS * v_term);
-    let lat_rad: f64 = if range_ != 0. {
-        f64::atan2(ecef.z + wgs84::ECEF2LLA_EP2 * z0_term, range_)
-    } else {
-        0.0
-    };
+    // atan2 yields +-pi/2 on the polar axis (range_ == 0) and 0 at the origin
+    let lat_rad: f64 = f64::atan2(ecef.z + wgs84::ECEF2LLA_EP2 * z0_term, range_);
     let lon_rad: f64 = f64::atan2(ecef.y, ecef.x);
     let alt: f64 = u_term
         * (1.
