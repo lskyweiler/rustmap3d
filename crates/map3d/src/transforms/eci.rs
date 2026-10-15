@@ -39,16 +39,26 @@ pub fn linear_velocity_from_earth_rotation(earth_pos: &glam::DVec3) -> glam::DVe
 /// Converts ecef to eci assuming ecef and eci were aligned time_since_eci_lock seconds ago
 /// This uses a simple constant rotation assumption for earth
 pub fn ecef2eci(ecef: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
+    return ecef2eci_kernel(time_since_eci_lock)(*ecef);
+}
+
+/// Per-time setup for [`ecef2eci`], shared with its batched form.
+fn ecef2eci_kernel(time_since_eci_lock: f64) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * wgs84::EARTH_ANGULAR_VEL_RADPS;
 
-    let eci = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*ecef);
-    return eci;
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle);
+    return move |ecef| rot * ecef;
 }
 
 pub fn eci2ecef(eci: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
+    return eci2ecef_kernel(time_since_eci_lock)(*eci);
+}
+
+/// Per-time setup for [`eci2ecef`], shared with its batched form.
+fn eci2ecef_kernel(time_since_eci_lock: f64) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * -wgs84::EARTH_ANGULAR_VEL_RADPS;
-    let ecef = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*eci);
-    return ecef;
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle);
+    return move |eci| rot * eci;
 }
 
 /// Converts ECEF to an Earth-rotation-only ECI frame at a UTC time.
@@ -73,10 +83,23 @@ pub fn ecef2eci_j2000(
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
 ) -> glam::DVec3 {
+    return ecef2eci_j2000_kernel(utc_time_str, utc_time_str_fmt)(*ecef);
+}
+
+/// Earth Rotation Angle at a UTC time, IERS Conventions (2010) eq. 5.15 [[radians]].
+fn earth_rotation_angle(utc_time_str: String, utc_time_str_fmt: Option<String>) -> f64 {
     let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
     let tu = jd - 2451545.0;
-    let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
-    return glam::DQuat::from_rotation_z(earth_rot_angle) * (*ecef);
+    return std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
+}
+
+/// Per-time setup for [`ecef2eci_j2000`], shared with its batched form.
+fn ecef2eci_j2000_kernel(
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle(utc_time_str, utc_time_str_fmt));
+    return move |ecef| rot * ecef;
 }
 
 /// Converts from the Earth-rotation-only ECI frame of [`ecef2eci_j2000`] back to ECEF.
@@ -98,10 +121,16 @@ pub fn eci2ecef_j2000(
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
 ) -> glam::DVec3 {
-    let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
-    let tu = jd - 2451545.0;
-    let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
-    return glam::DMat3::from_rotation_z(-earth_rot_angle) * (*eci);
+    return eci2ecef_j2000_kernel(utc_time_str, utc_time_str_fmt)(*eci);
+}
+
+/// Per-time setup for [`eci2ecef_j2000`], shared with its batched form.
+fn eci2ecef_j2000_kernel(
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let rot = glam::DMat3::from_rotation_z(-earth_rotation_angle(utc_time_str, utc_time_str_fmt));
+    return move |eci| rot * eci;
 }
 
 #[cfg(test)]

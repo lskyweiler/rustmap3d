@@ -64,8 +64,15 @@ pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
 pub fn ecef2aer(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let enu = enu::ecef2enu(ecef, lla_ref);
-    return enu2aer(&enu);
+    return ecef2aer_kernel(lla_ref)(ecef.into_dvec3());
+}
+
+/// Per-reference setup for [`ecef2aer`], shared with its batched form.
+pub(crate) fn ecef2aer_kernel(
+    lla_ref: impl IntoLatLonTriple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let to_enu = enu::ecef2enu_kernel(lla_ref);
+    return move |ecef| enu2aer(to_enu(ecef));
 }
 /// Converts ECEF uvw to AER.
 /// This is a vector that is not an absolute ECEF location
@@ -79,8 +86,15 @@ pub fn ecef2aer(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::D
 ///
 /// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
 pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let enu = enu::ecef_uvw2enu(ecef_uvw, ll_ref);
-    return enu2aer(&enu);
+    return ecef_uvw2aer_kernel(ll_ref)(ecef_uvw.into_dvec3());
+}
+
+/// Per-reference setup for [`ecef_uvw2aer`], shared with its batched form.
+pub(crate) fn ecef_uvw2aer_kernel(
+    ll_ref: impl IntoLatLonTuple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let to_enu = enu::ecef_uvw2enu_kernel(ll_ref);
+    return move |ecef_uvw| enu2aer(to_enu(ecef_uvw));
 }
 
 /// Converts AER to ECEF uvw.
@@ -94,8 +108,15 @@ pub fn ecef_uvw2aer(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> g
 ///
 /// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let enu = aer2enu(aer);
-    return enu::enu2ecef_uvw(&enu, ll_ref);
+    return aer2ecef_uvw_kernel(ll_ref)(aer.into_dvec3());
+}
+
+/// Per-reference setup for [`aer2ecef_uvw`], shared with its batched form.
+pub(crate) fn aer2ecef_uvw_kernel(
+    ll_ref: impl IntoLatLonTuple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let from_enu = enu::enu2ecef_uvw_kernel(ll_ref);
+    return move |aer| from_enu(aer2enu(aer));
 }
 /// Converts AER to Absolute ECEF.
 ///
@@ -108,8 +129,15 @@ pub fn aer2ecef_uvw(aer: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 ///
 /// * `ecef` - Absolute ECEF position [[meters]].
 pub fn aer2ecef(aer: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let enu = aer2enu(aer);
-    return enu::enu2ecef(&enu, lla_ref);
+    return aer2ecef_kernel(lla_ref)(aer.into_dvec3());
+}
+
+/// Per-reference setup for [`aer2ecef`], shared with its batched form.
+pub(crate) fn aer2ecef_kernel(
+    lla_ref: impl IntoLatLonTriple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let from_enu = enu::enu2ecef_kernel(lla_ref);
+    return move |aer| from_enu(aer2enu(aer));
 }
 
 /// Converts NED to AER.

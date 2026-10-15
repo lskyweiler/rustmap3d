@@ -77,10 +77,15 @@ pub fn ecef2enu_dcm(ll_deg: impl IntoLatLonTuple) -> glam::DMat3 {
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
 pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ecef_uvw = ecef_uvw.into_dvec3();
+    return ecef_uvw2enu_kernel(ll_ref)(ecef_uvw.into_dvec3());
+}
 
+/// Per-reference setup for [`ecef_uvw2enu`], shared with its batched form.
+pub(crate) fn ecef_uvw2enu_kernel(
+    ll_ref: impl IntoLatLonTuple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let rot = ecef2enu_quat(ll_ref);
-    return rot * ecef_uvw;
+    return move |ecef_uvw| rot * ecef_uvw;
 }
 /// Converts Absolute ECEF to ENU
 ///
@@ -93,12 +98,18 @@ pub fn ecef_uvw2enu(ecef_uvw: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> g
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
 pub fn ecef2enu(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3();
+    return ecef2enu_kernel(lla_ref)(ecef.into_dvec3());
+}
+
+/// Per-reference setup for [`ecef2enu`], shared with its batched form.
+pub(crate) fn ecef2enu_kernel(
+    lla_ref: impl IntoLatLonTriple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let lla_ref = lla_ref.into_lat_lon_triple();
 
-    let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
+    let ref_ecef = lla::lla2ecef(lla_ref);
     let rot = ecef2enu_quat(lla_ref);
-    return rot * ecef_uvw;
+    return move |ecef| rot * (ecef - ref_ecef);
 }
 
 /// Converts ENU to ECEF uvw.
@@ -113,10 +124,15 @@ pub fn ecef2enu(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::D
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
 pub fn enu2ecef_uvw(enu: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let enu = enu.into_dvec3();
+    return enu2ecef_uvw_kernel(ll_ref)(enu.into_dvec3());
+}
 
+/// Per-reference setup for [`enu2ecef_uvw`], shared with its batched form.
+pub(crate) fn enu2ecef_uvw_kernel(
+    ll_ref: impl IntoLatLonTuple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let rot = enu2ecef_quat(ll_ref);
-    return rot * enu;
+    return move |enu| rot * enu;
 }
 /// Converts ENU to Absolute ECEF.
 /// The ENU vector is treated as an offset from `lla_ref`.
@@ -130,12 +146,18 @@ pub fn enu2ecef_uvw(enu: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 ///
 /// * `ecef` - Absolute ECEF position [[meters]].
 pub fn enu2ecef(enu: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let enu = enu.into_dvec3();
+    return enu2ecef_kernel(lla_ref)(enu.into_dvec3());
+}
+
+/// Per-reference setup for [`enu2ecef`], shared with its batched form.
+pub(crate) fn enu2ecef_kernel(
+    lla_ref: impl IntoLatLonTriple,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let rot = enu2ecef_quat(lla_ref);
-    let ecef_uvw = rot * enu;
-    return ecef_uvw + lla::lla2ecef(lla_ref);
+    let ref_ecef = lla::lla2ecef(lla_ref);
+    return move |enu| rot * enu + ref_ecef;
 }
 
 /// Calculates heading angle from ENU.
