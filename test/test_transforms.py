@@ -47,3 +47,9 @@ class TestEdgeCases:
         lat, _, alt = rustmap3d.ecef2lla(0.0, 0.0, -6356752.314245179)
         assert lat == -90.0
         assert abs(alt) < 1e-6
+
+    def test_ll2dms_uses_longitude(self):
+        assert rustmap3d.ll2dms(25.379094, -74.998757) == (
+            "25:22:44.738N",
+            "74:59:55.525W",
+        )

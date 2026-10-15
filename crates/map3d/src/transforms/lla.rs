@@ -317,7 +317,7 @@ pub fn dd2dms(dd: f64, is_lat: bool) -> String {
 /// ```
 pub fn ll2dms(ll_deg: impl IntoLatLonTuple) -> (String, String) {
     let ll_deg = ll_deg.into_lat_lon_tuple();
-    return (dd2dms(ll_deg.0, true), dd2dms(ll_deg.0, false));
+    return (dd2dms(ll_deg.0, true), dd2dms(ll_deg.1, false));
 }
 /// Convenience function to convert lat lon degrees minutes seconds to decimal lat lon
 ///
@@ -662,5 +662,24 @@ mod test_lla {
         let lon_dms = dd2dms(lon_dd, false);
         assert!(lat_dms == "25:22:44.738N");
         assert!(lon_dms == "74:59:55.525W");
+    }
+
+    #[test]
+    fn test_ll2dms_uses_longitude() {
+        let (lat_dms, lon_dms) = ll2dms((25.379094, -74.998757));
+        assert_eq!(lat_dms, "25:22:44.738N");
+        assert_eq!(lon_dms, "74:59:55.525W");
+    }
+
+    #[rstest]
+    #[case(25.379094)]
+    #[case(-74.998757)]
+    #[case(89.123456)]
+    #[case(-179.987654)]
+    fn test_dd2dms_round_trip(#[case] dd: f64) {
+        let dms = dd2dms(dd, true);
+        let back = dms2dd(&dms).unwrap();
+        // DMS keeps milliseconds of arc: half a millisecond is ~1.4e-7 degrees
+        assert!(f64::abs(back - dd) < 1.5e-7, "{dd} -> {dms} -> {back}");
     }
 }
