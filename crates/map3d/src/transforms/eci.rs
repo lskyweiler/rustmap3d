@@ -51,6 +51,23 @@ pub fn eci2ecef(eci: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
     return ecef;
 }
 
+/// Converts ECEF to an Earth-rotation-only ECI frame at a UTC time.
+///
+/// Rotates about the z axis by the Earth Rotation Angle (IERS Conventions 2010, eq. 5.15). This
+/// does **not** apply precession, nutation, or polar motion, so the result is not the J2000/GCRF
+/// frame. Precession alone moves it away from J2000 by ~0.14 degrees per decade from the epoch,
+/// ~0.36 degrees by 2026: about 40 km at the equator and 270 km at geostationary range. UTC is
+/// used in place of UT1, which adds up to ~0.9 s of rotation (~400 m at the equator).
+///
+/// # Arguments
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
+/// * `utc_time_str` - UTC date and time.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+///
+/// # Returns
+///
+/// * `eci` - Vector represented in the rotated frame [[meters]].
 pub fn ecef2eci_j2000(
     ecef: &glam::DVec3,
     utc_time_str: String,
@@ -62,6 +79,20 @@ pub fn ecef2eci_j2000(
     return glam::DQuat::from_rotation_z(earth_rot_angle) * (*ecef);
 }
 
+/// Converts from the Earth-rotation-only ECI frame of [`ecef2eci_j2000`] back to ECEF.
+///
+/// Inverse of [`ecef2eci_j2000`], with the same limitations: no precession, nutation, or polar
+/// motion, and UTC in place of UT1.
+///
+/// # Arguments
+///
+/// * `eci` - Vector represented in the rotated frame [[meters]].
+/// * `utc_time_str` - UTC date and time.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+///
+/// # Returns
+///
+/// * `ecef` - Vector represented in ECEF coordinates [[meters]].
 pub fn eci2ecef_j2000(
     eci: &glam::DVec3,
     utc_time_str: String,
