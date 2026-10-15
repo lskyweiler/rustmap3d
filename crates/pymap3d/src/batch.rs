@@ -86,3 +86,201 @@ pub fn lla2ecef_batch<'py>(
     let out = py.detach(|| map3d::lla2ecef_batch(&v));
     return Ok(dvec3s_to_rows(py, out));
 }
+
+/// Batched `ecef_uvw2enu`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
+/// ENU vectors in meters.
+///
+/// # Arguments
+///
+/// * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of ENU vectors in meters [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn ecef_uvw2enu_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    ecef_uvw: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
+    let out = py.detach(|| map3d::ecef_uvw2enu_batch(&v, r));
+    return Ok(dvec3s_to_rows(py, out));
+}
+
+/// Batched `ecef2enu`: converts each row of `ecef` from ECEF positions in meters to
+/// ENU vectors in meters.
+///
+/// # Arguments
+///
+/// * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of ENU vectors in meters [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `ecef` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ecef2enu_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    ecef: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&ecef, "ecef")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
+    let out = py.detach(|| map3d::ecef2enu_batch(&v, r));
+    return Ok(dvec3s_to_rows(py, out));
+}
+
+/// Batched `lla2enu`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
+/// ENU vectors in meters.
+///
+/// # Arguments
+///
+/// * `lla` - Array-like of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of ENU vectors in meters [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `lla` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn lla2enu_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    lla: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&lla, "lla")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
+    let out = py.detach(|| map3d::ecef2enu_batch(&map3d::lla2ecef_batch(&v), r));
+    return Ok(dvec3s_to_rows(py, out));
+}
+
+/// Batched `enu2ecef_uvw`: converts each row of `enu` from ENU vectors in meters to
+/// ECEF uvw vectors in meters.
+///
+/// # Arguments
+///
+/// * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of ECEF uvw vectors in meters [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `enu` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+pub fn enu2ecef_uvw_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&enu, "enu")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
+    let out = py.detach(|| map3d::enu2ecef_uvw_batch(&v, r));
+    return Ok(dvec3s_to_rows(py, out));
+}
+
+/// Batched `enu2ecef`: converts each row of `enu` from ENU vectors in meters to
+/// ECEF positions in meters.
+///
+/// # Arguments
+///
+/// * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of ECEF positions in meters [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `enu` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn enu2ecef_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&enu, "enu")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
+    let out = py.detach(|| map3d::enu2ecef_batch(&v, r));
+    return Ok(dvec3s_to_rows(py, out));
+}
+
+/// Batched `enu2lla`: converts each row of `enu` from ENU vectors in meters to
+/// WGS84 LLA [degrees-degrees-meters].
+///
+/// # Arguments
+///
+/// * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+/// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
+/// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+///
+/// # Returns
+///
+/// * Array of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.ndarray[float64]]
+///
+/// # Raises
+///
+/// * `ValueError` if `enu` is not of shape (N, 3)
+#[gen_stub_pyfunction]
+#[pyfunction]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn enu2lla_batch<'py>(
+    py: Python<'py>,
+    #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
+    enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let v = rows_to_dvec3s(&enu, "enu")?;
+    let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
+    let out = py.detach(|| map3d::ecef2lla_batch(&map3d::enu2ecef_batch(&v, r)));
+    return Ok(dvec3s_to_rows(py, out));
+}

@@ -69,6 +69,12 @@ REFS = [
 CASES = [
     ("ecef2lla", ECEF, None),
     ("lla2ecef", LLA, None),
+    ("ecef_uvw2enu", VECTORS, "ll"),
+    ("enu2ecef_uvw", VECTORS, "ll"),
+    ("ecef2enu", ECEF, "lla"),
+    ("lla2enu", LLA, "lla"),
+    ("enu2ecef", VECTORS, "lla"),
+    ("enu2lla", VECTORS, "lla"),
 ]
 
 
