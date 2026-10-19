@@ -74,3 +74,5 @@ target/
 .ruff_cache/
 
 .env
+
+taskfile.yml

@@ -840,15 +840,24 @@ class GeoPosition:
         """
     @staticmethod
     def from_rand(
-        min_lat_deg: builtins.float = ...,
-        max_lat_deg: builtins.float = ...,
-        min_lon_deg: builtins.float = ...,
-        max_lon_deg: builtins.float = ...,
+        min_lat_d: builtins.float = ...,
+        max_lat_d: builtins.float = ...,
+        min_lon_d: builtins.float = ...,
+        max_lon_d: builtins.float = ...,
         min_alt_m: builtins.float = ...,
         max_alt_m: builtins.float = ...,
     ) -> GeoPosition:
         r"""
-        Generate a random GeoPosition inside a lat lon alt bounding box
+        Generate a random GeoPosition inside a lat, lon, alt bounding box
+
+        # Arguments
+
+        - `min_lat_d` (`f64`) - Minimum latitude for bounding box in degrees
+        - `max_lat_d` (`f64`) - Maximum latitude for bounding box in degrees
+        - `min_lon_d` (`f64`) - Minimum longitude for bounding box in degrees
+        - `max_lon_d` (`f64`) - Maximum longitude for bounding box in degrees
+        - `min_alt_m` (`f64`) - Minimum altitude for bounding box in msl meters
+        - `max_alt_m` (`f64`) - Maximum altitude for bounding box in msl meters
         """
     def alt(self) -> builtins.float:
         r"""
