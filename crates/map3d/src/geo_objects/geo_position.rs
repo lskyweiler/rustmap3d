@@ -328,6 +328,29 @@ impl GeoPosition {
             ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
         }
     }
+
+    /// Generate a random GeoPosition inside a lat lon alt bounding box
+    #[staticmethod]
+    #[pyo3(signature = (min_lat_deg = -90., max_lat_deg = 90., min_lon_deg = -180., max_lon_deg = 180., min_alt_m = 0., max_alt_m = 10_000.))]
+    pub fn from_rand(
+        min_lat_deg: f64,
+        max_lat_deg: f64,
+        min_lon_deg: f64,
+        max_lon_deg: f64,
+        min_alt_m: f64,
+        max_alt_m: f64,
+    ) -> Self {
+        let lla = rand_lla_in_range(
+            min_lat_deg,
+            max_lat_deg,
+            min_lon_deg,
+            max_lon_deg,
+            min_alt_m,
+            max_alt_m,
+        );
+        Self::from_lla(lla.into())
+    }
+
     /// Get the MSL altitude in meters
     pub fn alt(&self) -> f64 {
         self.lla().2
