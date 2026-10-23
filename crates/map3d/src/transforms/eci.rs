@@ -107,7 +107,6 @@ pub fn eci2ecef_j2000(
 #[cfg(test)]
 mod test_eci {
     use super::*;
-    use crate::transforms::reference as kl;
     use rstest::*;
 
     /// Earth Rotation Angle at the J2000 epoch, IERS Conventions (2010) eq. 5.15 [[radians]].
@@ -126,12 +125,6 @@ mod test_eci {
         assert!(
             f64::abs(actual - expected) < 1e-8,
             "juliandate{utc:?} = {actual}, expected {expected}"
-        );
-        // and the reference implementation agrees with the same published values
-        let reference = kl::juliandate(year, month, day, hour, min, sec as f64);
-        assert!(
-            f64::abs(reference - expected) < 1e-8,
-            "reference juliandate{utc:?} = {reference}"
         );
     }
 
