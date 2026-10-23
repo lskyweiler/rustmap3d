@@ -1,8 +1,11 @@
 //! Validates the transforms against the C kinematics-library: its published golden vectors, and
 //! recorded outputs of a reference implementation (`reference_vectors.rs`) over a lat/lon/alt grid
 //! with edge cases.
-use super::reference_vectors::*;
+#[rustfmt::skip]
+mod reference_vectors;
+
 use crate::{transforms::*, utils};
+use reference_vectors::*;
 use rstest::*;
 
 /// Angular agreement required with the reference, matching the C library's own tests.

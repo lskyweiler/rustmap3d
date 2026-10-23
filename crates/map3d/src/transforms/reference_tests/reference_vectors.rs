@@ -1,5 +1,5 @@
 //! Recorded outputs of a reference implementation of the WGS84 transforms, used as the expected
-//! values in `reference_tests.rs`.
+//! values in the parent `reference_tests` module.
 //!
 //! The reference was written independently of this crate: Heikkinen's closed form for ECEF to LLA,
 //! and WGS84 constants derived from the defining parameters `a` and `1/f`. Its outputs were

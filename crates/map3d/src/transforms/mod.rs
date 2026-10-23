@@ -14,6 +14,3 @@ pub use ned::*;
 
 #[cfg(test)]
 mod reference_tests;
-#[cfg(test)]
-#[rustfmt::skip]
-mod reference_vectors;

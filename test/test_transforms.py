@@ -1,6 +1,6 @@
 """Checks the Python bindings against the C kinematics-library golden vectors.
 
-The Rust side is validated in depth in crates/map3d/src/transforms/reference_tests.rs; these tests
+The Rust side is validated in depth in crates/map3d/src/transforms/reference_tests/; these tests
 make sure the bindings pass arguments and units through correctly.
 """
 
