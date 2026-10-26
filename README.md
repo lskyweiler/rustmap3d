@@ -6,12 +6,16 @@
 [![crates.io](https://img.shields.io/crates/v/map3d.svg)](https://crates.io/crates/map3d)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
+<!-- markdownlint-disable-next-line -->
 <p align="center"><img src="docs/rustmap3d.logo.svg" width="300px" height="300px"/></p>
 
+<!-- markdownlint-disable-next-line -->
 **Simple, fast, and ergonomic geodetic coordinate conversions**
 
 ---
-### Installation
+
+## Installation
+
 ```bash
 # add to an existing project
 uv add rustmap3d
@@ -21,9 +25,10 @@ uv pip install rustmap3d
 # pip install without uv
 pip install rustmap3d
 ```
+
 ---
 
-### Examples
+## Examples
 
 Low-level transforms api similar to [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 
@@ -63,6 +68,7 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 ```
 
 High-level GeoObject API
+
 ```python
 import math
 import pydantic
@@ -76,9 +82,9 @@ rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100.0, 0.0, 0.0), reference)
 pos = rustmap3d.GeoPosition.from_aer(rustmap3d.DVec3(90.0, 0.0, 100.0), (0.0, 0.0, 0.0))
 
 # Conversions
-reference.aer_to(pos)
-reference.ned_to(pos)
-reference.enu_to(pos)
+reference.aer_to(pos)  # > DVec3
+reference.ned_to(pos)  # > DVec3
+reference.enu_to(pos)  # > DVec3
 
 # Operations
 vec = pos - reference  # > GeoVector
@@ -90,13 +96,13 @@ pos = reference + vel * dt  # > GeoPosition
 
 rotation = rustmap3d.GeoOrientation.from_ecef_euler(rustmap3d.DVec3(0.0, math.pi, 0.0))
 vec = rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(100.0, 0, 0.0), reference)
-vec = rotation * vec
+vec = rotation * vec  # > GeoVector
 
 # Orientations
 rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0.0, 0.0, 1), math.pi)
-rot.x_axis()
-rot.y_axis()
-rot.z_axis()
+rot.x_axis()  # > DVec3
+rot.y_axis()  # > DVec3
+rot.z_axis()  # > DVec3
 
 
 # There is also native pydantic integration for geo objects
@@ -126,11 +132,12 @@ Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
 - *~50x* faster for lla2ecef
 - *~400x* faster for ecef2lla
 
+<!-- markdownlint-disable-next-line -->
 <p align="center"><img src="docs/benchmarks.svg"></p>
 
 ```bash
 # Run benchmarks
-uv run pytest --benchmark-histogram="./docs/benchmarks" bench/
+uv run pytest --benchmark-histogram="./docs/benchmarks" bench/*.py
 ```
 
 ## Build From Source
