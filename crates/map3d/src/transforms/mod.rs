@@ -13,6 +13,4 @@ pub use lla::*;
 pub use ned::*;
 
 #[cfg(test)]
-mod reference;
-#[cfg(test)]
 mod reference_tests;
