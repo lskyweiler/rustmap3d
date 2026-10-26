@@ -1,6 +1,5 @@
-//! Validates the transforms against the C kinematics-library: its published golden vectors, and
-//! recorded outputs of a reference implementation (`reference_vectors.rs`) over a lat/lon/alt grid
-//! with edge cases.
+//! Validates the transforms against published test vectors, and against recorded outputs of a
+//! reference implementation (`reference_vectors.rs`) over a lat/lon/alt grid with edge cases.
 #[rustfmt::skip]
 mod reference_vectors;
 
@@ -8,7 +7,7 @@ use crate::{transforms::*, utils};
 use reference_vectors::*;
 use rstest::*;
 
-/// Angular agreement required with the reference, matching the C library's own tests.
+/// Angular agreement required with the reference.
 const LATLON_TOL_RAD: f64 = 1e-12;
 /// Positional agreement required with the reference. Bounded by this crate's rounded semi-minor
 /// axis (6356752.314245 vs 6356752.3142451793), which moves positions by up to ~2e-7 m.
@@ -102,7 +101,7 @@ fn assert_aer_near(
     );
 }
 
-/// AER [[radians-radians-meters]], az in [-pi, pi], as the golden vectors give it, to this crate's
+/// AER [[radians-radians-meters]], az in [-pi, pi], as the test vectors give it, to this crate's
 /// convention [[degrees-degrees-meters]], az in [0, 360].
 fn aer_rad2deg(aer: glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(
@@ -116,16 +115,16 @@ fn enu2ned_axes(enu: glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(enu.y, enu.x, -enu.z);
 }
 
-/// LLA [[radians-radians-meters]], as the golden vectors give it, to [[degrees-degrees-meters]].
+/// LLA [[radians-radians-meters]], as the test vectors give it, to [[degrees-degrees-meters]].
 fn lla_rad2deg(lla_rad: glam::DVec3) -> glam::DVec3 {
     return glam::DVec3::new(lla_rad.x.to_degrees(), lla_rad.y.to_degrees(), lla_rad.z);
 }
 
-// --- Golden vectors from kinematics-library tests/cpp/transforms.test.cpp and tests/c/ ---
+// --- Test vectors ---
 
 #[test]
 fn golden_aer2ned() {
-    // C input: (30 deg, 40 deg, -70) in radians-radians-meters
+    // test-vector input (30 deg, 40 deg, -70), given in radians-radians-meters
     let actual = aer2ned(glam::DVec3::new(30.0, 40.0, -70.0));
     let expected = glam::DVec3::new(-46.43897628, -26.81155573, 44.99513264);
     assert_vec_near(actual, expected, 1e-6, "aer_to_ned golden");
@@ -134,7 +133,7 @@ fn golden_aer2ned() {
 #[test]
 fn golden_ecef2lla() {
     let actual = ecef2lla(glam::DVec3::new(4040000.0, 4813000.0, 1100000.0));
-    // altitude from kinematics-library python/tests/ecef_to_lla_test.py, which carries more digits
+    // altitude given to more digits than the latitude and longitude
     let expected = lla_rad2deg(glam::DVec3::new(
         0.174440593201424,
         0.872492313234789,
@@ -148,7 +147,7 @@ fn golden_ecef2ned() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(2.1, -1.1, 1250.0));
     let actual = ecef2ned(glam::DVec3::new(-1465000.0, 2880000.0, 5483500.0), lla_ref);
     let expected = glam::DVec3::new(2220.90854391709, 738.047215659648, -1205.58533167388);
-    // the C test asks for 1e-8, below what the rounded semi-minor axis allows; see POS_TOL_M
+    // the test vector is given to 1e-8, below what the rounded semi-minor axis allows; see POS_TOL_M
     assert_vec_near(actual, expected, POS_TOL_M, "ecef_to_ned golden");
 }
 
@@ -165,7 +164,7 @@ fn golden_lla2ned() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(-0.7, 0.5, 6000.0));
     let actual = ecef2ned(lla2ecef(lla), lla_ref);
     let expected = glam::DVec3::new(-44576.5574572138, -19432.24609638221, 3785.6580070712043);
-    // the C test asks for 1e-14, finer than f64 resolves the ~6e6 m intermediate ECEF values
+    // the test vector is given to 1e-14, finer than f64 resolves the ~6e6 m intermediate ECEF values
     assert_vec_near(actual, expected, POS_TOL_M, "lla_to_ned golden");
 }
 
@@ -188,7 +187,7 @@ fn golden_ned2ecef() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(-2.9, -0.5, 6000.0));
     let actual = ned2ecef(glam::DVec3::new(-6500.0, -4800.0, 2400.0), lla_ref);
     let expected = glam::DVec3::new(-5442559.838214509, 2967814.4198892456, -1510590.1708055406);
-    // the C test asks for 1e-14, finer than f64 resolves values of this magnitude
+    // the test vector is given to 1e-14, finer than f64 resolves values of this magnitude
     assert_vec_near(actual, expected, POS_TOL_M, "ned_to_ecef golden");
 }
 
