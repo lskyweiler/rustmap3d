@@ -14,6 +14,7 @@ pub mod wgs84 {
     pub static ECEF2LLA_A2: f64 = ECEF2LLA_A * ECEF2LLA_A;
     pub static ECEF2LLA_B2: f64 = ECEF2LLA_B * ECEF2LLA_B;
     pub static ECEF2LLA_E2: f64 = 1.0 - ECEF2LLA_B2 / ECEF2LLA_A2;
+    pub static ECEF2LLA_E4: f64 = ECEF2LLA_E2 * ECEF2LLA_E2;
     pub static ECEF2LLA_EP2: f64 = ECEF2LLA_A2 / ECEF2LLA_B2 - 1.0;
     pub static ECEF2LLA_EP22: f64 = ECEF2LLA_EP2 * ECEF2LLA_EP2;
 }

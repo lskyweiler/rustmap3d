@@ -107,7 +107,7 @@ pub fn ecef2enu(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::D
 /// # Arguments
 ///
 /// * `enu` - Vector represented in ENU coordinates [[meters]].
-/// * * `ll_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
+/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 ///
 /// # Returns
 ///
@@ -119,7 +119,7 @@ pub fn enu2ecef_uvw(enu: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
     return rot * enu;
 }
 /// Converts ENU to Absolute ECEF.
-/// This is a vector that is not in relation to an ECEF location
+/// The ENU vector is treated as an offset from `lla_ref`.
 ///
 /// # Arguments
 ///
@@ -128,7 +128,7 @@ pub fn enu2ecef_uvw(enu: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 ///
 /// # Returns
 ///
-/// * `ecef` - Vector represented in ECEF frame. Not an absolute position [[meters]].
+/// * `ecef` - Absolute ECEF position [[meters]].
 pub fn enu2ecef(enu: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
     let enu = enu.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
