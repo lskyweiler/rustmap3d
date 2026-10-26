@@ -26,6 +26,7 @@ tasks:
     cmds:
       - uv run ruff format
       - uv run ruff check --fix
+      - uv run pylint .
       - cargo fix --allow-dirty --allow-staged && cargo fmt --all
 
   test:
