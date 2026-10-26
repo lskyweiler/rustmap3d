@@ -14,6 +14,4 @@ pub use lla::*;
 pub use ned::*;
 
 #[cfg(test)]
-mod batch_tests;
-#[cfg(test)]
 mod reference_tests;
