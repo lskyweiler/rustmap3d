@@ -15,7 +15,7 @@ def lla_rad2deg(lat, lon, alt):
     return math.degrees(lat), math.degrees(lon), alt
 
 
-class TestGoldenVectors:
+class TestVectors:
     def test_ecef2lla(self):
         actual = rustmap3d.ecef2lla(4040000.0, 4813000.0, 1100000.0)
         expected = lla_rad2deg(0.174440593201424, 0.872492313234789, 1888.1851099917756)

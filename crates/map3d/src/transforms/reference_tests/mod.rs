@@ -123,15 +123,15 @@ fn lla_rad2deg(lla_rad: glam::DVec3) -> glam::DVec3 {
 // --- Test vectors ---
 
 #[test]
-fn golden_aer2ned() {
+fn test_vector_aer2ned() {
     // test-vector input (30 deg, 40 deg, -70), given in radians-radians-meters
     let actual = aer2ned(glam::DVec3::new(30.0, 40.0, -70.0));
     let expected = glam::DVec3::new(-46.43897628, -26.81155573, 44.99513264);
-    assert_vec_near(actual, expected, 1e-6, "aer_to_ned golden");
+    assert_vec_near(actual, expected, 1e-6, "aer2ned test vector");
 }
 
 #[test]
-fn golden_ecef2lla() {
+fn test_vector_ecef2lla() {
     let actual = ecef2lla(glam::DVec3::new(4040000.0, 4813000.0, 1100000.0));
     // altitude given to more digits than the latitude and longitude
     let expected = lla_rad2deg(glam::DVec3::new(
@@ -139,37 +139,37 @@ fn golden_ecef2lla() {
         0.872492313234789,
         1888.1851099917756,
     ));
-    assert_lla_near(actual, expected, 1e-12, 1e-4, true, "ecef_to_lla golden");
+    assert_lla_near(actual, expected, 1e-12, 1e-4, true, "ecef2lla test vector");
 }
 
 #[test]
-fn golden_ecef2ned() {
+fn test_vector_ecef2ned() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(2.1, -1.1, 1250.0));
     let actual = ecef2ned(glam::DVec3::new(-1465000.0, 2880000.0, 5483500.0), lla_ref);
     let expected = glam::DVec3::new(2220.90854391709, 738.047215659648, -1205.58533167388);
     // the test vector is given to 1e-8, below what the rounded semi-minor axis allows; see POS_TOL_M
-    assert_vec_near(actual, expected, POS_TOL_M, "ecef_to_ned golden");
+    assert_vec_near(actual, expected, POS_TOL_M, "ecef2ned test vector");
 }
 
 #[test]
-fn golden_lla2ecef() {
+fn test_vector_lla2ecef() {
     let actual = lla2ecef(lla_rad2deg(glam::DVec3::new(-0.8, 1.7, 4750.0)));
     let expected = glam::DVec3::new(-573960.23482409, 4417543.57131158, -4556021.90733023);
-    assert_vec_near(actual, expected, POS_TOL_M, "lla_to_ecef golden");
+    assert_vec_near(actual, expected, POS_TOL_M, "lla2ecef test vector");
 }
 
 #[test]
-fn golden_lla2ned() {
+fn test_vector_lla2ned() {
     let lla = lla_rad2deg(glam::DVec3::new(-0.707, 0.496, 2400.0));
     let lla_ref = lla_rad2deg(glam::DVec3::new(-0.7, 0.5, 6000.0));
     let actual = ecef2ned(lla2ecef(lla), lla_ref);
     let expected = glam::DVec3::new(-44576.5574572138, -19432.24609638221, 3785.6580070712043);
     // the test vector is given to 1e-14, finer than f64 resolves the ~6e6 m intermediate ECEF values
-    assert_vec_near(actual, expected, POS_TOL_M, "lla_to_ned golden");
+    assert_vec_near(actual, expected, POS_TOL_M, "lla2ned test vector");
 }
 
 #[test]
-fn golden_ned2aer() {
+fn test_vector_ned2aer() {
     let actual = ned2aer(glam::DVec3::new(-46.43897628, -26.81155573, 44.99513264));
     let expected = aer_rad2deg(glam::DVec3::new(-2.61799388, -0.6981317, 70.0));
     assert_aer_near(
@@ -178,21 +178,21 @@ fn golden_ned2aer() {
         f64::to_degrees(1e-6),
         1e-6,
         0.0,
-        "ned_to_aer golden",
+        "ned2aer test vector",
     );
 }
 
 #[test]
-fn golden_ned2ecef() {
+fn test_vector_ned2ecef() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(-2.9, -0.5, 6000.0));
     let actual = ned2ecef(glam::DVec3::new(-6500.0, -4800.0, 2400.0), lla_ref);
     let expected = glam::DVec3::new(-5442559.838214509, 2967814.4198892456, -1510590.1708055406);
     // the test vector is given to 1e-14, finer than f64 resolves values of this magnitude
-    assert_vec_near(actual, expected, POS_TOL_M, "ned_to_ecef golden");
+    assert_vec_near(actual, expected, POS_TOL_M, "ned2ecef test vector");
 }
 
 #[test]
-fn golden_ned2lla() {
+fn test_vector_ned2lla() {
     let lla_ref = lla_rad2deg(glam::DVec3::new(0.1, 2.5, 9200.0));
     let actual = ecef2lla(ned2ecef(
         glam::DVec3::new(12300.0, -8000.0, 6500.0),
@@ -203,7 +203,7 @@ fn golden_ned2lla() {
         2.49873974993884,
         2716.948501356757,
     ));
-    assert_lla_near(actual, expected, 1e-14, 1e-4, true, "ned_to_lla golden");
+    assert_lla_near(actual, expected, 1e-14, 1e-4, true, "ned2lla test vector");
 }
 
 // --- Sweeps against the recorded reference outputs ---
