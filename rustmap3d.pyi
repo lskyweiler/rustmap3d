@@ -96,12 +96,6 @@ class DQuat:
 
         - `PyResult<Self>` - Describe the return value.
         """
-    def __unpack_dump__(self) -> list:
-        r"""
-        Serializes as [x, y, z, w]
-        """
-    @staticmethod
-    def __unpack_load__(value: list) -> DQuat: ...
     @staticmethod
     def from_axis_angle(axis: DVec3, angle: builtins.float) -> DQuat:
         r"""
@@ -213,9 +207,6 @@ class DVec3:
         r"""
         Generates a random unit vector, normalized to 1.
         """
-    def __unpack_dump__(self) -> list: ...
-    @staticmethod
-    def __unpack_load__(value: list) -> DVec3: ...
     def to_tuple(self) -> tuple[builtins.float, builtins.float, builtins.float]:
         r"""
         Convert this vector to a 3 component tuple

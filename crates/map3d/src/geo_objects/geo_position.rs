@@ -18,6 +18,7 @@ use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
+#[cfg(feature = "pyo3")]
 use std::hash::{Hash, Hasher};
 use std::{
     fmt::Debug,
