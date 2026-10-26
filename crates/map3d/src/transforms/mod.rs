@@ -7,6 +7,7 @@ mod lla;
 mod ned;
 
 pub use aer::*;
+pub use batch::BatchLengthError;
 pub use ecef::*;
 pub use eci::*;
 pub use enu::*;

@@ -1,7 +1,7 @@
 use crate::{
     constants::wgs84,
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
-    transforms::batch,
+    transforms::batch::{self, BatchLengthError},
     utils,
 };
 use almost;
@@ -185,11 +185,15 @@ pub fn ecef2lla_batch(ecefs: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
 /// * `out` - Receives the LLAs [[degrees-degrees-meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecefs` and `out` differ in length.
-pub fn ecef2lla_batch_into(ecefs: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(ecefs, out, ecef2lla);
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn ecef2lla_batch_into(
+    ecefs: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecefs, out, ecef2lla);
 }
 
 /// Converts a batch of LLAs to ECEF. Matches [`lla2ecef`] applied to each point.
@@ -213,11 +217,15 @@ pub fn lla2ecef_batch(llas: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `llas` - LLAs [[degrees-degrees-meters]].
 /// * `out` - Receives the ECEF positions [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `llas` and `out` differ in length.
-pub fn lla2ecef_batch_into(llas: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(llas, out, lla2ecef);
+/// [`BatchLengthError`] if `llas` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn lla2ecef_batch_into(
+    llas: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(llas, out, lla2ecef);
 }
 
 /// Generates a uniform random ECEF point on the surface of a spherical Earth.

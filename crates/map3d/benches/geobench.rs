@@ -109,7 +109,7 @@ fn bench_batch(c: &mut Criterion) {
         })
     });
     group.bench_function("ecef2lla_batch_into", |b| {
-        b.iter(|| map3d::ecef2lla_batch_into(black_box(&ecefs), &mut out))
+        b.iter(|| map3d::ecef2lla_batch_into(black_box(&ecefs), &mut out).unwrap())
     });
     group.bench_function("lla2ecef_loop", |b| {
         b.iter(|| {
@@ -119,7 +119,7 @@ fn bench_batch(c: &mut Criterion) {
         })
     });
     group.bench_function("lla2ecef_batch_into", |b| {
-        b.iter(|| map3d::lla2ecef_batch_into(black_box(&llas), &mut out))
+        b.iter(|| map3d::lla2ecef_batch_into(black_box(&llas), &mut out).unwrap())
     });
     group.bench_function("ecef2aer_loop", |b| {
         b.iter(|| {
@@ -129,7 +129,9 @@ fn bench_batch(c: &mut Criterion) {
         })
     });
     group.bench_function("ecef2aer_batch_into", |b| {
-        b.iter(|| map3d::ecef2aer_batch_into(black_box(&ecefs), black_box(lla_ref), &mut out))
+        b.iter(|| {
+            map3d::ecef2aer_batch_into(black_box(&ecefs), black_box(lla_ref), &mut out).unwrap()
+        })
     });
     group.finish();
 }

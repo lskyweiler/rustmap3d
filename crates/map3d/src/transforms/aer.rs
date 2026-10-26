@@ -1,6 +1,9 @@
 use crate::{
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
-    transforms::{batch, enu},
+    transforms::{
+        batch::{self, BatchLengthError},
+        enu,
+    },
     utils,
 };
 use glam::{self, Vec3Swizzles};
@@ -163,15 +166,16 @@ pub fn ecef2aer_batch(ecefs: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> 
 /// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 /// * `out` - Receives the results. Vectors represented in AER coordinates [[degrees-degrees-meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecefs` and `out` differ in length.
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn ecef2aer_batch_into(
     ecefs: &[glam::DVec3],
     lla_ref: impl IntoLatLonTriple,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(ecefs, out, ecef2aer_kernel(lla_ref));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecefs, out, ecef2aer_kernel(lla_ref));
 }
 
 /// Converts a batch of ECEF uvw vectors to AER, sharing one reference. Matches [`ecef_uvw2aer`] applied to each point.
@@ -200,15 +204,16 @@ pub fn ecef_uvw2aer_batch(
 /// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 /// * `out` - Receives the results. Vectors represented in AER coordinates [[degrees-degrees-meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecef_uvws` and `out` differ in length.
+/// [`BatchLengthError`] if `ecef_uvws` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn ecef_uvw2aer_batch_into(
     ecef_uvws: &[glam::DVec3],
     ll_ref: impl IntoLatLonTuple,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(ecef_uvws, out, ecef_uvw2aer_kernel(ll_ref));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecef_uvws, out, ecef_uvw2aer_kernel(ll_ref));
 }
 
 /// Converts a batch of AERs to ECEF uvw, sharing one reference. Matches [`aer2ecef_uvw`] applied to each point.
@@ -234,15 +239,16 @@ pub fn aer2ecef_uvw_batch(aers: &[glam::DVec3], ll_ref: impl IntoLatLonTuple) ->
 /// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
 /// * `out` - Receives the results. Vectors represented in ECEF frame. Not absolute positions [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `aers` and `out` differ in length.
+/// [`BatchLengthError`] if `aers` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn aer2ecef_uvw_batch_into(
     aers: &[glam::DVec3],
     ll_ref: impl IntoLatLonTuple,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(aers, out, aer2ecef_uvw_kernel(ll_ref));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(aers, out, aer2ecef_uvw_kernel(ll_ref));
 }
 
 /// Converts a batch of AERs from `lla_ref` to absolute ECEF, sharing one reference. Matches [`aer2ecef`] applied to each point.
@@ -268,15 +274,16 @@ pub fn aer2ecef_batch(aers: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> V
 /// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
 /// * `out` - Receives the results. Absolute ECEF positions [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `aers` and `out` differ in length.
+/// [`BatchLengthError`] if `aers` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn aer2ecef_batch_into(
     aers: &[glam::DVec3],
     lla_ref: impl IntoLatLonTriple,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(aers, out, aer2ecef_kernel(lla_ref));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(aers, out, aer2ecef_kernel(lla_ref));
 }
 
 /// Converts NED to AER.
@@ -335,11 +342,15 @@ pub fn enu2aer_batch(enus: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `enus` - Vectors represented in ENU coordinates [[meters]].
 /// * `out` - Receives the results. Vectors represented in AER coordinates [[degrees-degrees-meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `enus` and `out` differ in length.
-pub fn enu2aer_batch_into(enus: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(enus, out, enu2aer);
+/// [`BatchLengthError`] if `enus` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn enu2aer_batch_into(
+    enus: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(enus, out, enu2aer);
 }
 
 /// Converts a batch of AERs to ENU. Matches [`aer2enu`] applied to each point.
@@ -362,11 +373,15 @@ pub fn aer2enu_batch(aers: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `aers` - Vectors represented in AER coordinates [[degrees-degrees-meters]].
 /// * `out` - Receives the results. Vectors represented in ENU coordinates [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `aers` and `out` differ in length.
-pub fn aer2enu_batch_into(aers: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(aers, out, aer2enu);
+/// [`BatchLengthError`] if `aers` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn aer2enu_batch_into(
+    aers: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(aers, out, aer2enu);
 }
 
 /// Converts a batch of NED vectors to AER. Matches [`ned2aer`] applied to each point.
@@ -389,11 +404,15 @@ pub fn ned2aer_batch(neds: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `neds` - Vectors represented in NED coordinates [[meters]].
 /// * `out` - Receives the results. Vectors represented in AER coordinates [[degrees-degrees-meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `neds` and `out` differ in length.
-pub fn ned2aer_batch_into(neds: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(neds, out, ned2aer);
+/// [`BatchLengthError`] if `neds` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn ned2aer_batch_into(
+    neds: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(neds, out, ned2aer);
 }
 
 /// Converts a batch of AERs to NED. Matches [`aer2ned`] applied to each point.
@@ -416,11 +435,15 @@ pub fn aer2ned_batch(aers: &[glam::DVec3]) -> Vec<glam::DVec3> {
 /// * `aers` - Vectors represented in AER coordinates [[degrees-degrees-meters]].
 /// * `out` - Receives the results. Vectors represented in NED coordinates [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `aers` and `out` differ in length.
-pub fn aer2ned_batch_into(aers: &[glam::DVec3], out: &mut [glam::DVec3]) {
-    batch::map_into(aers, out, aer2ned);
+/// [`BatchLengthError`] if `aers` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn aer2ned_batch_into(
+    aers: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(aers, out, aer2ned);
 }
 
 #[cfg(test)]

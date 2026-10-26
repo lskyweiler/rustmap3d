@@ -1,4 +1,7 @@
-use crate::{constants::wgs84, transforms::batch};
+use crate::{
+    constants::wgs84,
+    transforms::batch::{self, BatchLengthError},
+};
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam;
 
@@ -85,15 +88,16 @@ pub fn ecef2eci_batch(ecefs: &[glam::DVec3], time_since_eci_lock: f64) -> Vec<gl
 /// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
 /// * `out` - Receives the vectors in ECI coordinates [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecefs` and `out` differ in length.
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn ecef2eci_batch_into(
     ecefs: &[glam::DVec3],
     time_since_eci_lock: f64,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(ecefs, out, ecef2eci_kernel(time_since_eci_lock));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecefs, out, ecef2eci_kernel(time_since_eci_lock));
 }
 
 /// Converts a batch of ECI vectors to ECEF, sharing one time. Matches [`eci2ecef`] applied to each
@@ -120,15 +124,16 @@ pub fn eci2ecef_batch(ecis: &[glam::DVec3], time_since_eci_lock: f64) -> Vec<gla
 /// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
 /// * `out` - Receives the vectors in ECEF coordinates [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecis` and `out` differ in length.
+/// [`BatchLengthError`] if `ecis` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn eci2ecef_batch_into(
     ecis: &[glam::DVec3],
     time_since_eci_lock: f64,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(ecis, out, eci2ecef_kernel(time_since_eci_lock));
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecis, out, eci2ecef_kernel(time_since_eci_lock));
 }
 
 /// Converts ECEF to an Earth-rotation-only ECI frame at a UTC time.
@@ -202,16 +207,17 @@ pub fn ecef2eci_j2000_batch(
 /// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
 /// * `out` - Receives the vectors in the rotated frame [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecefs` and `out` differ in length.
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn ecef2eci_j2000_batch_into(
     ecefs: &[glam::DVec3],
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(
         ecefs,
         out,
         ecef2eci_j2000_kernel(utc_time_str, utc_time_str_fmt),
@@ -279,16 +285,17 @@ pub fn eci2ecef_j2000_batch(
 /// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
 /// * `out` - Receives the vectors in ECEF coordinates [[meters]].
 ///
-/// # Panics
+/// # Errors
 ///
-/// If `ecis` and `out` differ in length.
+/// [`BatchLengthError`] if `ecis` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub fn eci2ecef_j2000_batch_into(
     ecis: &[glam::DVec3],
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
     out: &mut [glam::DVec3],
-) {
-    batch::map_into(
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(
         ecis,
         out,
         eci2ecef_j2000_kernel(utc_time_str, utc_time_str_fmt),

@@ -3,28 +3,47 @@
 //! Every `*_batch` / `*_batch_into` function does its per-batch setup once (rotations, reference
 //! ECEF position, parsed time), then applies the same per-point kernel as its single-point
 //! counterpart to each input, so the results match that function bit for bit.
+use std::fmt;
+
+/// Returned by the `*_batch_into` transforms when the output slice is not the same length as the
+/// input slice.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BatchLengthError {
+    pub inputs_len: usize,
+    pub out_len: usize,
+}
+
+impl fmt::Display for BatchLengthError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "batch output length must match input length. Got {} inputs and {} outputs",
+            self.inputs_len, self.out_len,
+        )
+    }
+}
+
+impl std::error::Error for BatchLengthError {}
 
 /// Applies `kernel` to each input, writing the results to `out`.
 ///
-/// This is the only place the batched transforms iterate, so it is where parallel iteration would
-/// go.
+/// # Errors
 ///
-/// # Panics
-///
-/// If `inputs` and `out` differ in length.
+/// [`BatchLengthError`] if `inputs` and `out` differ in length, in which case `out` is left
+/// untouched.
 pub(crate) fn map_into(
     inputs: &[glam::DVec3],
     out: &mut [glam::DVec3],
     kernel: impl Fn(glam::DVec3) -> glam::DVec3,
-) {
-    assert_eq!(
-        inputs.len(),
-        out.len(),
-        "batch output length must match input length"
-    );
-    for (o, &v) in out.iter_mut().zip(inputs) {
-        *o = kernel(v);
+) -> Result<(), BatchLengthError> {
+    if inputs.len() != out.len() {
+        return Err(BatchLengthError {
+            inputs_len: inputs.len(),
+            out_len: out.len(),
+        });
     }
+    apply(inputs, out, kernel);
+    return Ok(());
 }
 
 /// Applies `kernel` to each input, returning the results in a new `Vec`.
@@ -33,8 +52,23 @@ pub(crate) fn map(
     kernel: impl Fn(glam::DVec3) -> glam::DVec3,
 ) -> Vec<glam::DVec3> {
     let mut out = vec![glam::DVec3::ZERO; inputs.len()];
-    map_into(inputs, &mut out, kernel);
+    apply(inputs, &mut out, kernel);
     return out;
+}
+
+/// Applies `kernel` to each input, writing the results to `out`, which must be the same length.
+///
+/// This is the only place the batched transforms iterate, so it is where parallel iteration would
+/// go.
+fn apply(
+    inputs: &[glam::DVec3],
+    out: &mut [glam::DVec3],
+    kernel: impl Fn(glam::DVec3) -> glam::DVec3,
+) {
+    debug_assert_eq!(inputs.len(), out.len());
+    for (o, &v) in out.iter_mut().zip(inputs) {
+        *o = kernel(v);
+    }
 }
 
 #[cfg(test)]
@@ -183,18 +217,18 @@ mod test_batch {
         inputs: &[glam::DVec3],
         single: impl Fn(glam::DVec3) -> glam::DVec3,
         batch: impl Fn(&[glam::DVec3]) -> Vec<glam::DVec3>,
-        batch_into: impl Fn(&[glam::DVec3], &mut [glam::DVec3]),
+        batch_into: impl Fn(&[glam::DVec3], &mut [glam::DVec3]) -> Result<(), BatchLengthError>,
     ) {
         let expected: Vec<glam::DVec3> = inputs.iter().map(|&v| single(v)).collect();
         assert_bits_eq(&batch(inputs), &expected, &format!("{ctx} batch"));
 
         // pre-fill with a sentinel so an unwritten slot can't pass by accident
         let mut out = vec![glam::DVec3::splat(-12345.0); inputs.len()];
-        batch_into(inputs, &mut out);
+        assert_eq!(batch_into(inputs, &mut out), Ok(()), "{ctx} batch_into");
         assert_bits_eq(&out, &expected, &format!("{ctx} batch_into"));
 
         assert!(batch(&[]).is_empty(), "{ctx}: empty batch");
-        batch_into(&[], &mut []);
+        assert_eq!(batch_into(&[], &mut []), Ok(()), "{ctx}: empty batch_into");
         assert_bits_eq(
             &batch(&inputs[..1]),
             &expected[..1],
@@ -482,18 +516,50 @@ mod test_batch {
 
     // --- Output length checks ---
 
-    #[test]
-    #[should_panic(expected = "length")]
-    fn batch_into_rejects_short_output() {
-        let inputs = ecef_inputs();
-        let mut out = vec![glam::DVec3::ZERO; inputs.len() - 1];
-        ecef2lla_batch_into(&inputs, &mut out);
+    /// Checks that a mismatched `out` is reported with both lengths and left untouched.
+    fn check_rejects(
+        inputs: &[glam::DVec3],
+        out_len: usize,
+        batch_into: impl Fn(&[glam::DVec3], &mut [glam::DVec3]) -> Result<(), BatchLengthError>,
+    ) {
+        let sentinel = glam::DVec3::splat(-12345.0);
+        let mut out = vec![sentinel; out_len];
+        let expected = BatchLengthError {
+            inputs_len: inputs.len(),
+            out_len,
+        };
+        assert_eq!(batch_into(inputs, &mut out), Err(expected));
+        assert!(out.iter().all(|&o| o == sentinel), "out was written");
     }
 
     #[test]
-    #[should_panic(expected = "length")]
+    fn batch_into_rejects_short_output() {
+        let inputs = ecef_inputs();
+        check_rejects(&inputs, inputs.len() - 1, ecef2lla_batch_into);
+    }
+
+    #[test]
     fn batch_into_rejects_long_output() {
-        let mut out = vec![glam::DVec3::ZERO; lla_inputs().len() + 1];
-        lla2ecef_batch_into(&lla_inputs(), &mut out);
+        let inputs = lla_inputs();
+        check_rejects(&inputs, inputs.len() + 1, lla2ecef_batch_into);
+    }
+
+    #[test]
+    fn batch_into_rejects_empty_output() {
+        check_rejects(&aer_inputs(), 0, |b, out| {
+            aer2ecef_batch_into(b, lla_refs()[1], out)
+        });
+    }
+
+    #[test]
+    fn batch_length_error_message_has_both_lengths() {
+        let err = BatchLengthError {
+            inputs_len: 3,
+            out_len: 2,
+        };
+        assert_eq!(
+            err.to_string(),
+            "batch output length must match input length. Got 3 inputs and 2 outputs"
+        );
     }
 }
