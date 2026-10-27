@@ -40,8 +40,15 @@ mod threading {
     pub fn set_global_thread_limits(num_threads: Option<usize>) -> PyResult<()> {
         match THREAD_POOL.lock() {
             Ok(mut locked) => {
-                let n_threads =
-                    num_threads.unwrap_or(std::thread::available_parallelism().unwrap().get());
+                let n_available = std::thread::available_parallelism().unwrap().get();
+                let n_threads = num_threads.unwrap_or(n_available);
+
+                if n_threads > n_available {
+                    return Err(PyRuntimeError::new_err(format!(
+                        "Requested more threads than available: {n_threads}, {n_available} available"
+                    )));
+                }
+
                 if n_threads != locked.current_num_threads() {
                     // no need to delete the current if it's the same size
                     *locked = rayon::ThreadPoolBuilder::new()
@@ -62,19 +69,19 @@ mod threading {
         n_threads: usize,
         previous_n_threads: usize,
     }
-
-    #[gen_stub_pymethods]
-    #[pymethods]
     impl ThreadScope {
-        #[new]
-        fn py_new(n_threads: usize) -> Self {
+        fn new(n_threads: usize) -> Self {
             let previous_n_threads = THREAD_POOL.lock().unwrap().current_num_threads();
             Self {
                 n_threads,
                 previous_n_threads,
             }
         }
+    }
 
+    #[gen_stub_pymethods]
+    #[pymethods]
+    impl ThreadScope {
         // __enter__ is called when entering the `with` block.
         // Returning `PyRef<Self>` exposes this object to the `as` clause in Python.
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
@@ -95,7 +102,7 @@ mod threading {
         }
     }
 
-    /// Create a scope that restricts the number of threads available inside the scope
+    /// Create a context that restricts the number of threads available inside the scope
     ///
     /// # Arguments
     ///
@@ -113,7 +120,7 @@ mod threading {
     #[gen_stub_pyfunction]
     #[pyfunction]
     pub fn threadpool_limits(num_threads: usize) -> ThreadScope {
-        ThreadScope::py_new(num_threads)
+        ThreadScope::new(num_threads)
     }
 
     /// Helper function to execute a batch function using the module's thread pool
