@@ -1,4 +1,4 @@
-"""Checks the Python bindings against the C kinematics-library golden vectors.
+"""Checks the Python bindings against published test vectors.
 
 The Rust side is validated in depth in crates/map3d/src/transforms/reference_tests/; these tests
 make sure the bindings pass arguments and units through correctly.
@@ -15,7 +15,7 @@ def lla_rad2deg(lat, lon, alt):
     return math.degrees(lat), math.degrees(lon), alt
 
 
-class TestGoldenVectors:
+class TestVectors:
     def test_ecef2lla(self):
         actual = rustmap3d.ecef2lla(4040000.0, 4813000.0, 1100000.0)
         expected = lla_rad2deg(0.174440593201424, 0.872492313234789, 1888.1851099917756)
@@ -31,7 +31,7 @@ class TestGoldenVectors:
 
     def test_ned2aer(self):
         az, el, r = rustmap3d.ned2aer(-46.43897628, -26.81155573, 44.99513264)
-        # C returns azimuth in [-pi, pi]; rustmap3d in [0, 360]
+        # the test vector gives azimuth in [-pi, pi]; rustmap3d in [0, 360]
         np.testing.assert_allclose(
             az, math.degrees(-2.61799388) + 360.0, rtol=0, atol=1e-4
         )

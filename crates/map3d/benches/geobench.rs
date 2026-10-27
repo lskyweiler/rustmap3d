@@ -90,5 +90,51 @@ fn bench_geo(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, bench_geo);
+const BATCH_N: usize = 10_000;
+
+/// Batched transforms against a loop of single-point calls over the same `BATCH_N` points.
+fn bench_batch(c: &mut Criterion) {
+    let ecefs: Vec<glam::DVec3> = (0..BATCH_N).map(|_| map3d::rand_ecef()).collect();
+    let llas: Vec<glam::DVec3> = (0..BATCH_N).map(|_| map3d::rand_lla()).collect();
+    let lla_ref = glam::DVec3::new(38.9, -77.0, 120.0);
+    let mut out = vec![glam::DVec3::ZERO; BATCH_N];
+
+    let mut group = c.benchmark_group("batch_10k");
+    group.throughput(criterion::Throughput::Elements(BATCH_N as u64));
+    group.bench_function("ecef2lla_loop", |b| {
+        b.iter(|| {
+            for (o, v) in out.iter_mut().zip(&ecefs) {
+                *o = map3d::ecef2lla(black_box(v));
+            }
+        })
+    });
+    group.bench_function("ecef2lla_batch_into", |b| {
+        b.iter(|| map3d::ecef2lla_batch_into(black_box(&ecefs), &mut out).unwrap())
+    });
+    group.bench_function("lla2ecef_loop", |b| {
+        b.iter(|| {
+            for (o, v) in out.iter_mut().zip(&llas) {
+                *o = map3d::lla2ecef(black_box(v));
+            }
+        })
+    });
+    group.bench_function("lla2ecef_batch_into", |b| {
+        b.iter(|| map3d::lla2ecef_batch_into(black_box(&llas), &mut out).unwrap())
+    });
+    group.bench_function("ecef2aer_loop", |b| {
+        b.iter(|| {
+            for (o, v) in out.iter_mut().zip(&ecefs) {
+                *o = map3d::ecef2aer(black_box(v), black_box(lla_ref));
+            }
+        })
+    });
+    group.bench_function("ecef2aer_batch_into", |b| {
+        b.iter(|| {
+            map3d::ecef2aer_batch_into(black_box(&ecefs), black_box(lla_ref), &mut out).unwrap()
+        })
+    });
+    group.finish();
+}
+
+criterion_group!(benches, bench_geo, bench_batch);
 criterion_main!(benches);
