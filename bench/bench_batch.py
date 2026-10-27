@@ -1,7 +1,11 @@
+"""Benchmark batched operations vs vectorized pymap3d equivalents"""
+
 import numpy
 import pymap3d
 
 import rustmap3d
+
+rustmap3d.configure_threads(1)
 
 # --- Batched (N, 3) NumPy arrays vs pymap3d vectorized ---
 

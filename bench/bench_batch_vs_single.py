@@ -1,3 +1,5 @@
+"""Benchmark batched operations vs python looping over single values"""
+
 import numpy
 
 import rustmap3d

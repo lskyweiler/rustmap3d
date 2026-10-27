@@ -25,6 +25,7 @@ __all__ = [
     "aer2ned",
     "aer2ned_batch",
     "angle_between",
+    "configure_threads",
     "dd2dms",
     "dms2dd",
     "ecef2aer",
@@ -1900,6 +1901,19 @@ def angle_between(
     # Returns
 
     * `angle` - angle between the two vectors in radians
+    """
+
+def configure_threads(num_threads: typing.Optional[builtins.int] = None) -> None:
+    r"""
+    Configures the internal thread pool
+
+    # Arguments
+
+    - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
+
+    # Returns
+
+    - `Result<(), rayon::ThreadPoolBuildError>` - Error if the threadpool could not be created
     """
 
 def dd2dms(dd: builtins.float, is_lat: builtins.bool) -> builtins.str:

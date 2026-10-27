@@ -1,3 +1,5 @@
+"""Benchmark vincenty functions for single points vs pymap3d"""
+
 import random
 
 import pymap3d.vincenty

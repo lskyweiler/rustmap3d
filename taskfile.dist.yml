@@ -40,11 +40,11 @@ tasks:
     desc: Run the benchmarks
     deps: [build-dev]
     cmds:
-      - uv run pytest --benchmark-histogram=./docs/benches/single bench/bench_single.py
-      - uv run pytest --benchmark-histogram=./docs/benches/batch bench/bench_batch.py
-      - RAYON_NUM_THREADS=1 uv run pytest --benchmark-histogram=./docs/benches/batch_vs_single_serial bench/bench_batch_vs_single.py
-      - uv run pytest --benchmark-histogram=./docs/benches/batch_vs_single_parallel bench/bench_batch_vs_single.py
-      - uv run pytest --benchmark-histogram=./docs/benches/vincenty bench/bench_vincenty.py
+      - pytest --benchmark-warmup=on --benchmark-histogram=./docs/benches/single bench/bench_single.py
+      - pytest --benchmark-warmup=on --benchmark-histogram=./docs/benches/batch_vs_pymap3d bench/bench_batch.py
+      - pytest --benchmark-warmup=on --benchmark-histogram=./docs/benches/batch_vs_single bench/bench_batch_vs_single.py
+      - pytest --benchmark-warmup=on --benchmark-histogram=./docs/benches/batch_parallel bench/bench_parallel.py
+      - pytest --benchmark-warmup=on --benchmark-histogram=./docs/benches/vincenty bench/bench_vincenty.py
 
   gen-stubs:
     desc: Generate python stubs
