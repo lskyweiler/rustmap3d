@@ -69,6 +69,15 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 
 Batched conversion functions
 
+Control the number of threads using `RAYON_NUM_THREADS` env var
+
+```bash
+# serial
+RAYON_NUM_THREADS=1 uv run pytest bench/bench_batch_vs_single.py
+# parallel
+uv run pytest bench/bench_batch_vs_single.py
+```
+
 ```python
 import numpy as np
 import rustmap3d
@@ -188,8 +197,8 @@ uv run task bench
 
 Benchmarks for transforming single points
 
-- *~50x* faster for lla2ecef
-- *~400x* faster for ecef2lla
+- _~50x_ faster for lla2ecef
+- _~400x_ faster for ecef2lla
 
 <!-- markdownlint-disable-next-line -->
 <p align="center"><img src="docs/benches/single.svg"></p>
@@ -205,8 +214,15 @@ Benchmarks for direct and inverse vincenty functions on single points
 
 Benchmarks for transforming a batch of points vs looping over single points
 
+#### Serial (1 rayon thread)
+
 <!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/batch_vs_single.svg"></p>
+<p align="center"><img src="docs/benches/batch_vs_single_serial.svg"></p>
+
+#### Parallel
+
+<!-- markdownlint-disable-next-line -->
+<p align="center"><img src="docs/benches/batch_vs_single_parallel.svg"></p>
 
 ### Vectorized Performance vs `pymap3d`
 

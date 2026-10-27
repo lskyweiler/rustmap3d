@@ -3,6 +3,7 @@
 //! Every `*_batch` / `*_batch_into` function does its per-batch setup once (rotations, reference
 //! ECEF position, parsed time), then applies the same per-point kernel as its single-point
 //! counterpart to each input, so the results match that function bit for bit.
+use rayon::prelude::*;
 use std::fmt;
 
 /// Returned by the `*_batch_into` transforms when the output slice is not the same length as the
@@ -34,7 +35,7 @@ impl std::error::Error for BatchLengthError {}
 pub(crate) fn map_into(
     inputs: &[glam::DVec3],
     out: &mut [glam::DVec3],
-    kernel: impl Fn(glam::DVec3) -> glam::DVec3,
+    kernel: impl Fn(glam::DVec3) -> glam::DVec3 + Sync,
 ) -> Result<(), BatchLengthError> {
     if inputs.len() != out.len() {
         return Err(BatchLengthError {
@@ -49,7 +50,7 @@ pub(crate) fn map_into(
 /// Applies `kernel` to each input, returning the results in a new `Vec`.
 pub(crate) fn map(
     inputs: &[glam::DVec3],
-    kernel: impl Fn(glam::DVec3) -> glam::DVec3,
+    kernel: impl Fn(glam::DVec3) -> glam::DVec3 + Sync,
 ) -> Vec<glam::DVec3> {
     let mut out = vec![glam::DVec3::ZERO; inputs.len()];
     apply(inputs, &mut out, kernel);
@@ -57,18 +58,18 @@ pub(crate) fn map(
 }
 
 /// Applies `kernel` to each input, writing the results to `out`, which must be the same length.
-///
-/// This is the only place the batched transforms iterate, so it is where parallel iteration would
-/// go.
 fn apply(
     inputs: &[glam::DVec3],
     out: &mut [glam::DVec3],
-    kernel: impl Fn(glam::DVec3) -> glam::DVec3,
+    kernel: impl Fn(glam::DVec3) -> glam::DVec3 + Sync,
 ) {
+    // Further optimizations:
+    //      kernel should take impl Fn(&glam::DVec3) -> glam::DVec3 to avoid copying, but that would require a larger refactor of the transform codebase
     debug_assert_eq!(inputs.len(), out.len());
-    for (o, &v) in out.iter_mut().zip(inputs) {
-        *o = kernel(v);
-    }
+    inputs
+        .par_iter()
+        .zip(out.par_iter_mut())
+        .for_each(|(&i, out)| *out = kernel(i));
 }
 
 #[cfg(test)]

@@ -3622,6 +3622,7 @@ dependencies = [
  "pyo3-stub-gen",
  "rand 0.9.5",
  "rand_distr",
+ "rayon",
  "rstest",
  "serde",
  "serde_json",
