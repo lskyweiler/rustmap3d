@@ -16,6 +16,7 @@ __all__ = [
     "GeoPosition",
     "GeoVector",
     "GeoVelocity",
+    "ThreadScope",
     "aer2ecef",
     "aer2ecef_batch",
     "aer2ecef_uvw",
@@ -25,7 +26,6 @@ __all__ = [
     "aer2ned",
     "aer2ned_batch",
     "angle_between",
-    "configure_threads",
     "dd2dms",
     "dms2dd",
     "ecef2aer",
@@ -79,6 +79,8 @@ __all__ = [
     "rand_ecef",
     "rand_lla",
     "rand_orientation",
+    "set_global_thread_limits",
+    "threadpool_limits",
     "vincenty_direct",
     "vincenty_inverse",
 ]
@@ -1600,6 +1602,14 @@ class GeoVelocity:
         """
 
 @typing.final
+class ThreadScope:
+    def __new__(cls, n_threads: builtins.int) -> ThreadScope: ...
+    def __enter__(self) -> ThreadScope: ...
+    def __exit__(
+        self, _exc_type: typing.Any, _exc_value: typing.Any, _traceback: typing.Any
+    ) -> builtins.bool: ...
+
+@typing.final
 class EulerRot(enum.Enum):
     r"""
     Euler rotation sequences.
@@ -1901,19 +1911,6 @@ def angle_between(
     # Returns
 
     * `angle` - angle between the two vectors in radians
-    """
-
-def configure_threads(num_threads: typing.Optional[builtins.int] = None) -> None:
-    r"""
-    Configures the internal thread pool
-
-    # Arguments
-
-    - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
-
-    # Returns
-
-    - `Result<(), rayon::ThreadPoolBuildError>` - Error if the threadpool could not be created
     """
 
 def dd2dms(dd: builtins.float, is_lat: builtins.bool) -> builtins.str:
@@ -3056,6 +3053,38 @@ def rand_orientation() -> tuple[
     # Returns
 
     * `quat` - Random normalized quaternion (w, x, y, z).
+    """
+
+def set_global_thread_limits(num_threads: typing.Optional[builtins.int] = None) -> None:
+    r"""
+    Configures the internal thread pool globally. This can be called once and will apply to
+
+    # Arguments
+
+    - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
+
+    # Errors
+
+    - RuntimeError - If the threadpool could not be created using this configuration
+    """
+
+def threadpool_limits(num_threads: builtins.int) -> ThreadScope:
+    r"""
+    Create a scope that restricts the number of threads available inside the scope
+
+    # Arguments
+
+    - `num_threads` (`usize`) - Number of threads to restrict in the scope
+
+    # Examples
+
+    ```python
+    import rustmap3d
+
+    with rustmap3d.threadpool_limits(1):
+        # only use 1 thread here
+        rustmap3d.lla2ecef_batch(...)
+    ```
     """
 
 def vincenty_direct(

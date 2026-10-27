@@ -63,7 +63,7 @@ strip = true # Automatically strip symbols from the binary.
 # if you're building from here, you always want python functionality
 default = ["pyo3", "serde", "map3d/pydantic-serde"]
 # generate python functions in geo_objects
-pyo3 = ["map3d/pyo3", "map3d/set-pyclass-module"]
+pyo3 = ["map3d/pyo3", "map3d/set-pyclass-module", "pymap3d/set-pyclass-module"]
 # generates generic bevy derives (reflect, serde)
 serde = ["map3d/serde"]
 bevy = ["map3d/bevy", "serde"]

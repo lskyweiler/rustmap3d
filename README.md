@@ -74,11 +74,6 @@ import numpy as np
 import rustmap3d
 
 
-# Optional: configures the number of threads available for parallel batch processing
-#   defaults to all threads
-rustmap3d.configure_threads(8)
-
-
 # inputs are anything numpy converts to an (N, 3) float64 array
 llas = np.array(
     [
@@ -118,6 +113,14 @@ try:
     rustmap3d.lla2ecef_batch([0.0, 0.0, 100.0])
 except ValueError:
     ...
+
+# Optional: configures the number of threads available for parallel batch processing
+#   defaults to all threads
+rustmap3d.set_global_thread_limits(8)
+
+# or you can use a scope
+with rustmap3d.threadpool_limits(1):
+    rustmap3d.ecef2lla_batch(ecef_batch)
 ```
 
 High-level GeoObject API

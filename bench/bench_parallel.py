@@ -12,30 +12,27 @@ LLA_REF = (38.9, -77.0, 120.0)
 
 
 def test_ecef2lla_batch_serial(benchmark):
-    rustmap3d.configure_threads(1)
-    benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
+    with rustmap3d.threadpool_limits(1):
+        benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
 
 
 def test_lla2ecef_batch_serial(benchmark):
-    rustmap3d.configure_threads(1)
-    benchmark(rustmap3d.lla2ecef_batch, lla_batch)
+    with rustmap3d.threadpool_limits(1):
+        benchmark(rustmap3d.lla2ecef_batch, lla_batch)
 
 
 def test_ecef2aer_batch_serial(benchmark):
-    rustmap3d.configure_threads(1)
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
+    with rustmap3d.threadpool_limits(1):
+        benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
 
 
 def test_ecef2lla_batch_parallel(benchmark):
-    rustmap3d.configure_threads(None)
     benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
 
 
 def test_lla2ecef_batch_parallel(benchmark):
-    rustmap3d.configure_threads(None)
     benchmark(rustmap3d.lla2ecef_batch, lla_batch)
 
 
 def test_ecef2aer_batch_parallel(benchmark):
-    rustmap3d.configure_threads(None)
     benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)

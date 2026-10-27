@@ -5,7 +5,7 @@ import pymap3d
 
 import rustmap3d
 
-rustmap3d.configure_threads(1)
+rustmap3d.set_global_thread_limits(1)
 
 # --- Batched (N, 3) NumPy arrays vs pymap3d vectorized ---
 

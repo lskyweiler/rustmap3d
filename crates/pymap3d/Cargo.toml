@@ -13,3 +13,6 @@ rayon.workspace = true
 
 [lib]
 doctest = false
+
+[features]
+set-pyclass-module = []

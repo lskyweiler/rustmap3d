@@ -1039,7 +1039,8 @@ pub fn add_to_pymodule(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ned2aer_batch, m)?)?;
     m.add_function(wrap_pyfunction!(aer2ned_batch, m)?)?;
 
-    m.add_function(wrap_pyfunction!(configure_threads, m)?)?;
+    m.add_function(wrap_pyfunction!(set_global_thread_limits, m)?)?;
+    m.add_function(wrap_pyfunction!(threadpool_limits, m)?)?;
 
     m.add_function(wrap_pyfunction!(rand_lla, m)?)?;
     m.add_function(wrap_pyfunction!(rand_ecef, m)?)?;

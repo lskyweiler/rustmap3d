@@ -9,56 +9,124 @@ use pyo3::{exceptions::*, prelude::*};
 use pyo3_stub_gen::derive::*;
 use std::sync::{LazyLock, Mutex};
 
-/// Create a thread pool for this module.
-/// This is done on the python side since we want a rust user to have total control over rayon behavior
-static THREAD_POOL: LazyLock<Mutex<rayon::ThreadPool>> = LazyLock::new(|| {
-    // Initialize a a thread pool for this module
-    Mutex::new(
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(std::thread::available_parallelism().unwrap().get())
-            .build()
-            .expect("Failed to initialize the local threadpool"),
-    )
-});
+mod threading {
+    use super::*;
 
-/// Configures the internal thread pool
-///
-/// # Arguments
-///
-/// - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
-///
-/// # Errors
-///
-/// - RuntimeError - If the threadpool could not be created using this configuration
-///
-#[gen_stub_pyfunction]
-#[pyfunction]
-#[pyo3(signature = (num_threads = None))]
-pub fn configure_threads(num_threads: Option<usize>) -> PyResult<()> {
-    match THREAD_POOL.lock() {
-        Ok(mut locked) => {
-            let n_threads =
-                num_threads.unwrap_or(std::thread::available_parallelism().unwrap().get());
-            if n_threads != locked.current_num_threads() {
-                *locked = rayon::ThreadPoolBuilder::new()
-                    .num_threads(n_threads)
-                    .build()
-                    .expect("Failed to initialize the local threadpool");
+    /// Create a thread pool for this module.
+    /// This is done on the python side since we want a rust user to have total control over rayon behavior
+    static THREAD_POOL: LazyLock<Mutex<rayon::ThreadPool>> = LazyLock::new(|| {
+        // Initialize a a thread pool for this module
+        Mutex::new(
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(std::thread::available_parallelism().unwrap().get())
+                .build()
+                .expect("Failed to initialize the local threadpool"),
+        )
+    });
+
+    /// Configures the internal thread pool globally. This can be called once and will apply to
+    ///
+    /// # Arguments
+    ///
+    /// - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
+    ///
+    /// # Errors
+    ///
+    /// - RuntimeError - If the threadpool could not be created using this configuration
+    ///
+    #[gen_stub_pyfunction]
+    #[pyfunction]
+    #[pyo3(signature = (num_threads = None))]
+    pub fn set_global_thread_limits(num_threads: Option<usize>) -> PyResult<()> {
+        match THREAD_POOL.lock() {
+            Ok(mut locked) => {
+                let n_threads =
+                    num_threads.unwrap_or(std::thread::available_parallelism().unwrap().get());
+                if n_threads != locked.current_num_threads() {
+                    // no need to delete the current if it's the same size
+                    *locked = rayon::ThreadPoolBuilder::new()
+                        .num_threads(n_threads)
+                        .build()
+                        .expect("Failed to initialize the local threadpool");
+                }
+                Ok(())
             }
-            Ok(())
+            Err(what) => Err(PyRuntimeError::new_err(format!("{:?}", what))),
         }
-        Err(what) => Err(PyRuntimeError::new_err(format!("{:?}", what))),
+    }
+
+    #[gen_stub_pyclass]
+    #[cfg_attr(feature = "set-pyclass-module", pyclass(module = "rustmap3d"))]
+    #[cfg_attr(not(feature = "set-pyclass-module"), pyclass)]
+    pub struct ThreadScope {
+        n_threads: usize,
+        previous_n_threads: usize,
+    }
+
+    #[gen_stub_pymethods]
+    #[pymethods]
+    impl ThreadScope {
+        #[new]
+        fn py_new(n_threads: usize) -> Self {
+            let previous_n_threads = THREAD_POOL.lock().unwrap().current_num_threads();
+            Self {
+                n_threads,
+                previous_n_threads,
+            }
+        }
+
+        // __enter__ is called when entering the `with` block.
+        // Returning `PyRef<Self>` exposes this object to the `as` clause in Python.
+        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+            set_global_thread_limits(Some(slf.n_threads))?;
+            Ok(slf)
+        }
+
+        // __exit__ is called when exiting the `with` block.
+        // It accepts the exception type, exception value, and traceback if an error occurs.
+        fn __exit__(
+            &self,
+            _exc_type: &Bound<'_, PyAny>,
+            _exc_value: &Bound<'_, PyAny>,
+            _traceback: &Bound<'_, PyAny>,
+        ) -> PyResult<bool> {
+            set_global_thread_limits(Some(self.previous_n_threads))?;
+            Ok(false)
+        }
+    }
+
+    /// Create a scope that restricts the number of threads available inside the scope
+    ///
+    /// # Arguments
+    ///
+    /// - `num_threads` (`usize`) - Number of threads to restrict in the scope
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// import rustmap3d
+    ///
+    /// with rustmap3d.threadpool_limits(1):
+    ///     # only use 1 thread here
+    ///     rustmap3d.lla2ecef_batch(...)
+    /// ```
+    #[gen_stub_pyfunction]
+    #[pyfunction]
+    pub fn threadpool_limits(num_threads: usize) -> ThreadScope {
+        ThreadScope::py_new(num_threads)
+    }
+
+    /// Helper function to execute a batch function using the module's thread pool
+    pub fn execute_in_local_thread_pool<'py>(
+        py: Python<'py>,
+        kernel: impl FnOnce() -> Vec<glam::DVec3> + Sync + Send,
+    ) -> PyResult<Bound<'py, PyArray2<f64>>> {
+        let out = py.detach(|| THREAD_POOL.lock().expect("msg").install(kernel));
+        return Ok(dvec3s_to_rows(py, out));
     }
 }
-
-/// Helper function to execute a batch function using the module's thread pool
-fn execute_in_local_thread_pool<'py>(
-    py: Python<'py>,
-    kernel: impl FnOnce() -> Vec<glam::DVec3> + Sync + Send,
-) -> PyResult<Bound<'py, PyArray2<f64>>> {
-    let out = py.detach(|| THREAD_POOL.lock().expect("msg").install(kernel));
-    return Ok(dvec3s_to_rows(py, out));
-}
+// reexport so we can add to the python module
+pub use threading::{set_global_thread_limits, threadpool_limits};
 
 /// Copies an (N, 3) array into one vector per row.
 fn rows_to_dvec3s(
@@ -109,7 +177,7 @@ pub fn ecef2lla_batch<'py>(
     ecef: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
-    execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&v))
 }
 
 /// Batched `lla2ecef`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -134,7 +202,7 @@ pub fn lla2ecef_batch<'py>(
     lla: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
-    execute_in_local_thread_pool(py, || map3d::lla2ecef_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::lla2ecef_batch(&v))
 }
 
 /// Batched `ecef_uvw2enu`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -164,7 +232,7 @@ pub fn ecef_uvw2enu_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::ecef_uvw2enu_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2enu_batch(&v, r))
 }
 
 /// Batched `ecef2enu`: converts each row of `ecef` from ECEF positions in meters to
@@ -197,7 +265,7 @@ pub fn ecef2enu_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2enu_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef2enu_batch(&v, r))
 }
 
 /// Batched `lla2enu`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -230,7 +298,9 @@ pub fn lla2enu_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2enu_batch(&map3d::lla2ecef_batch(&v), r))
+    threading::execute_in_local_thread_pool(py, || {
+        map3d::ecef2enu_batch(&map3d::lla2ecef_batch(&v), r)
+    })
 }
 
 /// Batched `enu2ecef_uvw`: converts each row of `enu` from ENU vectors in meters to
@@ -260,7 +330,7 @@ pub fn enu2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::enu2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_uvw_batch(&v, r))
 }
 
 /// Batched `enu2ecef`: converts each row of `enu` from ENU vectors in meters to
@@ -293,7 +363,7 @@ pub fn enu2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::enu2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_batch(&v, r))
 }
 
 /// Batched `enu2lla`: converts each row of `enu` from ENU vectors in meters to
@@ -326,7 +396,9 @@ pub fn enu2lla_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&map3d::enu2ecef_batch(&v, r)))
+    threading::execute_in_local_thread_pool(py, || {
+        map3d::ecef2lla_batch(&map3d::enu2ecef_batch(&v, r))
+    })
 }
 
 /// Batched `ecef_uvw2ned`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -356,7 +428,7 @@ pub fn ecef_uvw2ned_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::ecef_uvw2ned_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2ned_batch(&v, r))
 }
 
 /// Batched `ecef2ned`: converts each row of `ecef` from ECEF positions in meters to
@@ -389,7 +461,7 @@ pub fn ecef2ned_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2ned_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef2ned_batch(&v, r))
 }
 
 /// Batched `lla2ned`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -422,7 +494,9 @@ pub fn lla2ned_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2ned_batch(&map3d::lla2ecef_batch(&v), r))
+    threading::execute_in_local_thread_pool(py, || {
+        map3d::ecef2ned_batch(&map3d::lla2ecef_batch(&v), r)
+    })
 }
 
 /// Batched `ned2ecef_uvw`: converts each row of `ned` from NED vectors in meters to
@@ -452,7 +526,7 @@ pub fn ned2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::ned2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_uvw_batch(&v, r))
 }
 
 /// Batched `ned2ecef`: converts each row of `ned` from NED vectors in meters to
@@ -485,7 +559,7 @@ pub fn ned2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ned2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_batch(&v, r))
 }
 
 /// Batched `ned2lla`: converts each row of `ned` from NED vectors in meters to
@@ -518,7 +592,9 @@ pub fn ned2lla_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&map3d::ned2ecef_batch(&v, r)))
+    threading::execute_in_local_thread_pool(py, || {
+        map3d::ecef2lla_batch(&map3d::ned2ecef_batch(&v, r))
+    })
 }
 
 /// Batched `ecef_uvw2aer`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -548,7 +624,7 @@ pub fn ecef_uvw2aer_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::ecef_uvw2aer_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2aer_batch(&v, r))
 }
 
 /// Batched `ecef2aer`: converts each row of `ecef` from ECEF positions in meters to
@@ -581,7 +657,7 @@ pub fn ecef2aer_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::ecef2aer_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::ecef2aer_batch(&v, r))
 }
 
 /// Batched `aer2ecef_uvw`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -611,7 +687,7 @@ pub fn aer2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    execute_in_local_thread_pool(py, || map3d::aer2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_uvw_batch(&v, r))
 }
 
 /// Batched `aer2ecef`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -644,7 +720,7 @@ pub fn aer2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    execute_in_local_thread_pool(py, || map3d::aer2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_batch(&v, r))
 }
 
 /// Batched `enu2aer`: converts each row of `enu` from ENU vectors in meters to
@@ -669,7 +745,7 @@ pub fn enu2aer_batch<'py>(
     enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
-    execute_in_local_thread_pool(py, || map3d::enu2aer_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::enu2aer_batch(&v))
 }
 
 /// Batched `aer2enu`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -694,7 +770,7 @@ pub fn aer2enu_batch<'py>(
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    execute_in_local_thread_pool(py, || map3d::aer2enu_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::aer2enu_batch(&v))
 }
 
 /// Batched `ned2aer`: converts each row of `ned` from NED vectors in meters to
@@ -719,7 +795,7 @@ pub fn ned2aer_batch<'py>(
     ned: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
-    execute_in_local_thread_pool(py, || map3d::ned2aer_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::ned2aer_batch(&v))
 }
 
 /// Batched `aer2ned`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -744,5 +820,5 @@ pub fn aer2ned_batch<'py>(
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    execute_in_local_thread_pool(py, || map3d::aer2ned_batch(&v))
+    threading::execute_in_local_thread_pool(py, || map3d::aer2ned_batch(&v))
 }
