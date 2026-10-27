@@ -168,9 +168,11 @@ validated = MyModel.model_validate(dumped)
 ## Comparison with similar packages
 
 - 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
+- Has optimizations for single point transformations as well as vectorized batch transforms
 - Zero dependencies
 - Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 - Exposes rotations (both quaternions and 3x3 matrices)
+- High-level `GeoObject` API
 
 ## Benchmarks
 
@@ -190,7 +192,7 @@ Benchmarks for transforming single points
 - *~400x* faster for ecef2lla
 
 <!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/transforms.svg"></p>
+<p align="center"><img src="docs/benches/single.svg"></p>
 
 ### Vincenty performance
 
