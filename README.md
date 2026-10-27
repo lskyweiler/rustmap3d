@@ -68,6 +68,7 @@ range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b
 ```
 
 Batched conversion functions
+
 ```python
 import numpy as np
 import rustmap3d
@@ -174,18 +175,43 @@ validated = MyModel.model_validate(dumped)
 ## Benchmarks
 
 Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
-> Note: This is comparing calls with python scalars. Vectorized batched conversions will be implemented in the future
+
+```bash
+# Run benchmarks
+uv run task bench
+# > outputs histograms to docs/benches/
+```
+
+### Single-call performance
+
+Benchmarks for transforming single points
 
 - *~50x* faster for lla2ecef
 - *~400x* faster for ecef2lla
 
 <!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benchmarks.svg"></p>
+<p align="center"><img src="docs/benches/transforms.svg"></p>
 
-```bash
-# Run benchmarks
-uv run pytest --benchmark-histogram="./docs/benchmarks" bench/*.py
-```
+### Vincenty performance
+
+Benchmarks for direct and inverse vincenty functions on single points
+
+<!-- markdownlint-disable-next-line -->
+<p align="center"><img src="docs/benches/vincenty.svg"></p>
+
+### Vectorized Performance vs Single Points
+
+Benchmarks for transforming a batch of points vs looping over single points
+
+<!-- markdownlint-disable-next-line -->
+<p align="center"><img src="docs/benches/batch_vs_single.svg"></p>
+
+### Vectorized Performance vs `pymap3d`
+
+Benchmarks for transforming a batch of points vs `pymap3d`
+
+<!-- markdownlint-disable-next-line -->
+<p align="center"><img src="docs/benches/batch.svg"></p>
 
 ## Build From Source
 

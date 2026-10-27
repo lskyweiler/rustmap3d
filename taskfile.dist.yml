@@ -40,7 +40,10 @@ tasks:
     desc: Run the benchmarks
     deps: [build-dev]
     cmds:
-      - uv run pytest --benchmark-histogram=./docs/benchmarks bench/*.py
+      - uv run pytest --benchmark-histogram=./docs/benches/transforms bench/bench_transforms.py
+      - uv run pytest --benchmark-histogram=./docs/benches/batch bench/bench_batch.py
+      - uv run pytest --benchmark-histogram=./docs/benches/batch_vs_single bench/bench_batch_vs_single.py
+      - uv run pytest --benchmark-histogram=./docs/benches/vincenty bench/bench_vincenty.py
 
   gen-stubs:
     desc: Generate python stubs
