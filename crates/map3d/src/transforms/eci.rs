@@ -1,4 +1,7 @@
-use crate::constants::wgs84;
+use crate::{
+    constants::wgs84,
+    transforms::batch::{self, BatchLengthError},
+};
 use chrono::{Datelike, NaiveDateTime, Timelike};
 use glam;
 
@@ -39,16 +42,98 @@ pub fn linear_velocity_from_earth_rotation(earth_pos: &glam::DVec3) -> glam::DVe
 /// Converts ecef to eci assuming ecef and eci were aligned time_since_eci_lock seconds ago
 /// This uses a simple constant rotation assumption for earth
 pub fn ecef2eci(ecef: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
+    return ecef2eci_kernel(time_since_eci_lock)(*ecef);
+}
+
+/// Per-time setup for [`ecef2eci`], shared with its batched form.
+fn ecef2eci_kernel(time_since_eci_lock: f64) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * wgs84::EARTH_ANGULAR_VEL_RADPS;
 
-    let eci = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*ecef);
-    return eci;
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle);
+    return move |ecef| rot * ecef;
 }
 
 pub fn eci2ecef(eci: &glam::DVec3, time_since_eci_lock: f64) -> glam::DVec3 {
+    return eci2ecef_kernel(time_since_eci_lock)(*eci);
+}
+
+/// Per-time setup for [`eci2ecef`], shared with its batched form.
+fn eci2ecef_kernel(time_since_eci_lock: f64) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let earth_rotation_angle: f64 = time_since_eci_lock * -wgs84::EARTH_ANGULAR_VEL_RADPS;
-    let ecef = glam::DQuat::from_rotation_z(earth_rotation_angle) * (*eci);
-    return ecef;
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle);
+    return move |eci| rot * eci;
+}
+
+/// Converts a batch of ECEF vectors to ECI, sharing one time. Matches [`ecef2eci`] applied to each
+/// point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+/// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
+///
+/// # Returns
+///
+/// * Vectors represented in ECI coordinates [[meters]].
+pub fn ecef2eci_batch(ecefs: &[glam::DVec3], time_since_eci_lock: f64) -> Vec<glam::DVec3> {
+    return batch::map(ecefs, ecef2eci_kernel(time_since_eci_lock));
+}
+
+/// Converts a batch of ECEF vectors to ECI, sharing one time and writing into `out`. Matches
+/// [`ecef2eci`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+/// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
+/// * `out` - Receives the vectors in ECI coordinates [[meters]].
+///
+/// # Errors
+///
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn ecef2eci_batch_into(
+    ecefs: &[glam::DVec3],
+    time_since_eci_lock: f64,
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecefs, out, ecef2eci_kernel(time_since_eci_lock));
+}
+
+/// Converts a batch of ECI vectors to ECEF, sharing one time. Matches [`eci2ecef`] applied to each
+/// point.
+///
+/// # Arguments
+///
+/// * `ecis` - Vectors represented in ECI coordinates [[meters]].
+/// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
+///
+/// # Returns
+///
+/// * Vectors represented in ECEF coordinates [[meters]].
+pub fn eci2ecef_batch(ecis: &[glam::DVec3], time_since_eci_lock: f64) -> Vec<glam::DVec3> {
+    return batch::map(ecis, eci2ecef_kernel(time_since_eci_lock));
+}
+
+/// Converts a batch of ECI vectors to ECEF, sharing one time and writing into `out`. Matches
+/// [`eci2ecef`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecis` - Vectors represented in ECI coordinates [[meters]].
+/// * `time_since_eci_lock` - Seconds since the ECEF and ECI frames were aligned [[seconds]].
+/// * `out` - Receives the vectors in ECEF coordinates [[meters]].
+///
+/// # Errors
+///
+/// [`BatchLengthError`] if `ecis` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn eci2ecef_batch_into(
+    ecis: &[glam::DVec3],
+    time_since_eci_lock: f64,
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(ecis, out, eci2ecef_kernel(time_since_eci_lock));
 }
 
 /// Converts ECEF to an Earth-rotation-only ECI frame at a UTC time.
@@ -73,10 +158,70 @@ pub fn ecef2eci_j2000(
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
 ) -> glam::DVec3 {
+    return ecef2eci_j2000_kernel(utc_time_str, utc_time_str_fmt)(*ecef);
+}
+
+/// Earth Rotation Angle at a UTC time, IERS Conventions (2010) eq. 5.15 [[radians]].
+fn earth_rotation_angle(utc_time_str: String, utc_time_str_fmt: Option<String>) -> f64 {
     let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
     let tu = jd - 2451545.0;
-    let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
-    return glam::DQuat::from_rotation_z(earth_rot_angle) * (*ecef);
+    return std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
+}
+
+/// Per-time setup for [`ecef2eci_j2000`], shared with its batched form.
+fn ecef2eci_j2000_kernel(
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let rot = glam::DQuat::from_rotation_z(earth_rotation_angle(utc_time_str, utc_time_str_fmt));
+    return move |ecef| rot * ecef;
+}
+
+/// Converts a batch of ECEF vectors to the Earth-rotation-only ECI frame, sharing one UTC time.
+/// Matches [`ecef2eci_j2000`] applied to each point, with the same limitations.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+/// * `utc_time_str` - UTC date and time, parsed once for the whole batch.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+///
+/// # Returns
+///
+/// * Vectors represented in the rotated frame [[meters]].
+pub fn ecef2eci_j2000_batch(
+    ecefs: &[glam::DVec3],
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> Vec<glam::DVec3> {
+    return batch::map(ecefs, ecef2eci_j2000_kernel(utc_time_str, utc_time_str_fmt));
+}
+
+/// Converts a batch of ECEF vectors to the Earth-rotation-only ECI frame, sharing one UTC time and
+/// writing into `out`. Matches [`ecef2eci_j2000`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecefs` - Vectors represented in ECEF coordinates [[meters]].
+/// * `utc_time_str` - UTC date and time, parsed once for the whole batch.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+/// * `out` - Receives the vectors in the rotated frame [[meters]].
+///
+/// # Errors
+///
+/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn ecef2eci_j2000_batch_into(
+    ecefs: &[glam::DVec3],
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(
+        ecefs,
+        out,
+        ecef2eci_j2000_kernel(utc_time_str, utc_time_str_fmt),
+    );
 }
 
 /// Converts from the Earth-rotation-only ECI frame of [`ecef2eci_j2000`] back to ECEF.
@@ -98,10 +243,63 @@ pub fn eci2ecef_j2000(
     utc_time_str: String,
     utc_time_str_fmt: Option<String>,
 ) -> glam::DVec3 {
-    let jd = juliandate_from_utc_str(utc_time_str, utc_time_str_fmt);
-    let tu = jd - 2451545.0;
-    let earth_rot_angle = std::f64::consts::TAU * (0.7790572732640 + 1.00273781191135448 * tu);
-    return glam::DMat3::from_rotation_z(-earth_rot_angle) * (*eci);
+    return eci2ecef_j2000_kernel(utc_time_str, utc_time_str_fmt)(*eci);
+}
+
+/// Per-time setup for [`eci2ecef_j2000`], shared with its batched form.
+fn eci2ecef_j2000_kernel(
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> impl Fn(glam::DVec3) -> glam::DVec3 {
+    let rot = glam::DMat3::from_rotation_z(-earth_rotation_angle(utc_time_str, utc_time_str_fmt));
+    return move |eci| rot * eci;
+}
+
+/// Converts a batch of vectors from the Earth-rotation-only ECI frame to ECEF, sharing one UTC
+/// time. Matches [`eci2ecef_j2000`] applied to each point, with the same limitations.
+///
+/// # Arguments
+///
+/// * `ecis` - Vectors represented in the rotated frame [[meters]].
+/// * `utc_time_str` - UTC date and time, parsed once for the whole batch.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+///
+/// # Returns
+///
+/// * Vectors represented in ECEF coordinates [[meters]].
+pub fn eci2ecef_j2000_batch(
+    ecis: &[glam::DVec3],
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+) -> Vec<glam::DVec3> {
+    return batch::map(ecis, eci2ecef_j2000_kernel(utc_time_str, utc_time_str_fmt));
+}
+
+/// Converts a batch of vectors from the Earth-rotation-only ECI frame to ECEF, sharing one UTC
+/// time and writing into `out`. Matches [`eci2ecef_j2000`] applied to each point.
+///
+/// # Arguments
+///
+/// * `ecis` - Vectors represented in the rotated frame [[meters]].
+/// * `utc_time_str` - UTC date and time, parsed once for the whole batch.
+/// * `utc_time_str_fmt` - `chrono` format of `utc_time_str`, defaults to `%Y-%m-%dT%H:%M:%S`.
+/// * `out` - Receives the vectors in ECEF coordinates [[meters]].
+///
+/// # Errors
+///
+/// [`BatchLengthError`] if `ecis` and `out` differ in length, in which case `out` is left
+/// untouched.
+pub fn eci2ecef_j2000_batch_into(
+    ecis: &[glam::DVec3],
+    utc_time_str: String,
+    utc_time_str_fmt: Option<String>,
+    out: &mut [glam::DVec3],
+) -> Result<(), BatchLengthError> {
+    return batch::map_into(
+        ecis,
+        out,
+        eci2ecef_j2000_kernel(utc_time_str, utc_time_str_fmt),
+    );
 }
 
 #[cfg(test)]

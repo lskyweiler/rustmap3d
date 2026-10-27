@@ -1,5 +1,8 @@
 use map3d;
 use pyo3::{exceptions::PyValueError, prelude::*};
+
+mod batch;
+pub use batch::*;
 use pyo3_stub_gen::derive::*;
 
 /// Vector as a tuple [x, y, z]
