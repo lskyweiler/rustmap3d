@@ -8,7 +8,6 @@ import pymap3d
 import pymap3d.vincenty
 import rustmap3d
 
-
 BATCH_N = 10_000
 ecef_batch = numpy.array([rustmap3d.rand_ecef() for _ in range(BATCH_N)])
 lla_batch = numpy.array([rustmap3d.rand_lla() for _ in range(BATCH_N)])
@@ -78,7 +77,13 @@ def test_geodetic2ecef_vectorized_pymap3d(benchmark):
 
 @pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
 def test_ecef2aer_batch_rustmap3d(benchmark):
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
+    benchmark(
+        lambda b, lat, lon, alt: rustmap3d.ecef2aer_batch(
+            b, lat, lon, alt, parallel=True
+        ),
+        ecef_batch,
+        *LLA_REF,
+    )
 
 
 @pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
@@ -91,35 +96,44 @@ def test_ecef2aer_vectorized_pymap3d(benchmark):
 
 @pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-par-vs-serial")
 def test_ecef2lla_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
+    benchmark(lambda b: rustmap3d.ecef2lla_batch(b, parallel=False), ecef_batch)
 
 
 @pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-par-vs-serial")
 def test_ecef2lla_batch_parallel(benchmark):
-    benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
+    benchmark(lambda b: rustmap3d.ecef2lla_batch(b, parallel=True), ecef_batch)
 
 
 @pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-par-vs-serial")
 def test_lla2ecef_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.lla2ecef_batch, lla_batch)
+    benchmark(lambda b: rustmap3d.lla2ecef_batch(b, parallel=False), lla_batch)
 
 
 @pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-par-vs-serial")
 def test_lla2ecef_batch_parallel(benchmark):
-    benchmark(rustmap3d.lla2ecef_batch, lla_batch)
+    benchmark(lambda b: rustmap3d.lla2ecef_batch(b, parallel=True), lla_batch)
 
 
 @pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-par-vs-serial")
 def test_ecef2aer_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
+    benchmark(
+        lambda b, lat, lon, alt: rustmap3d.ecef2aer_batch(
+            b, lat, lon, alt, parallel=False
+        ),
+        ecef_batch,
+        *LLA_REF,
+    )
 
 
 @pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-par-vs-serial")
 def test_ecef2aer_batch_parallel(benchmark):
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
+    benchmark(
+        lambda b, lat, lon, alt: rustmap3d.ecef2aer_batch(
+            b, lat, lon, alt, parallel=True
+        ),
+        ecef_batch,
+        *LLA_REF,
+    )
 
 
 """Single point transformation benches"""

@@ -129,7 +129,12 @@ mod threading {
         py: Python<'py>,
         kernel: impl FnOnce() -> Vec<glam::DVec3> + Sync + Send,
     ) -> PyResult<Bound<'py, PyArray2<f64>>> {
-        let out = py.detach(|| THREAD_POOL.lock().expect("msg").install(kernel));
+        let out = py.detach(|| {
+            THREAD_POOL
+                .lock()
+                .expect("Failed to lock the threadpool")
+                .install(kernel)
+        });
         return Ok(dvec3s_to_rows(py, out));
     }
 }
@@ -218,7 +223,7 @@ pub fn ecef2lla_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (lla, parallel=true))]
+#[pyo3(signature = (lla, parallel=false))]
 pub fn lla2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -248,7 +253,7 @@ pub fn lla2ecef_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -282,7 +287,7 @@ pub fn ecef_uvw2enu_batch<'py>(
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ecef2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -317,7 +322,7 @@ pub fn ecef2enu_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn lla2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -356,7 +361,7 @@ pub fn lla2enu_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn enu2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -390,7 +395,7 @@ pub fn enu2ecef_uvw_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn enu2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -464,7 +469,7 @@ pub fn enu2lla_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -498,7 +503,7 @@ pub fn ecef_uvw2ned_batch<'py>(
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ecef2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -533,7 +538,7 @@ pub fn ecef2ned_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn lla2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -572,7 +577,7 @@ pub fn lla2ned_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ned2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -606,7 +611,7 @@ pub fn ned2ecef_uvw_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ned2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -680,7 +685,7 @@ pub fn ned2lla_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -748,7 +753,7 @@ pub fn ecef2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, parallel=true))]
+#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn aer2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -782,7 +787,7 @@ pub fn aer2ecef_uvw_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
+#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn aer2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -814,7 +819,7 @@ pub fn aer2ecef_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (enu, parallel=true))]
+#[pyo3(signature = (enu, parallel=false))]
 pub fn enu2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -842,7 +847,7 @@ pub fn enu2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (aer, parallel=true))]
+#[pyo3(signature = (aer, parallel=false))]
 pub fn aer2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -870,7 +875,7 @@ pub fn aer2enu_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ned, parallel=true))]
+#[pyo3(signature = (ned, parallel=false))]
 pub fn ned2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -898,7 +903,7 @@ pub fn ned2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (aer, parallel=true))]
+#[pyo3(signature = (aer, parallel=false))]
 pub fn aer2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
