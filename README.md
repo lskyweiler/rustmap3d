@@ -128,6 +128,9 @@ rustmap3d.set_global_thread_limits(8)
 # or you can use a scope
 with rustmap3d.threadpool_limits(1):
     rustmap3d.ecef2lla_batch(ecef_batch)
+
+# all batched functions have a flag for controlling if parallel threads will be used
+rustmap3d.ecef2lla_batch(ecef_batch, parallel=True)
 ```
 
 High-level GeoObject API
