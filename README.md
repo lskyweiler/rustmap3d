@@ -196,4 +196,9 @@ uv run maturin dev -r     # build a dev package similar to -e
 
 See [benchmarks](docs/benchmarks.md) for more details
 
-Rule of thumb for using `parallelized` batch operations: if that operation touches lla conversions, use `parallel=True`, otherwise it will probably be faster to run serial. This is due to workload complexity and the overhead associated with managing the threads
+```bash
+# runs the benchmarks and creates a summary of the benchmarks in bench/benchmarks.md
+uv run task bench
+```
+
+Rule of thumb for using `parallelized` batch operations: if that operation touches lla conversions, use `parallel=True`, otherwise it will probably be faster to run serial. This is due to workload complexity and the overhead associated with managing thread pool
