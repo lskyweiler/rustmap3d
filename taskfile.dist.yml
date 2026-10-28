@@ -34,7 +34,7 @@ tasks:
     deps: [build-dev]
     cmds:
       - pytest --disable-warnings test/
-      - cd crates/map3d && cargo test
+      - cargo test --no-default-features --workspace
   
   bench:
     desc: Run the benchmarks
