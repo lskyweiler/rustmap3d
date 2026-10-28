@@ -7,8 +7,8 @@ use glam::{self, Vec3Swizzles};
 
 /// Converts ENU to AER.
 ///
-/// Az Domain [0., 360.]
-/// El Domain [-90., 90.]
+/// Az Domain [0., 360.] - Clockwise from local North
+/// El Domain [-90., 90.] - Up from horizontal plane
 ///
 /// # Arguments
 ///
@@ -20,7 +20,7 @@ use glam::{self, Vec3Swizzles};
 pub fn enu2aer(enu: impl IntoDVec3) -> glam::DVec3 {
     let enu = enu.into_dvec3();
 
-    let az = f64::atan2(enu.y, enu.x).to_degrees();
+    let az = f64::atan2(enu.x, enu.y).to_degrees();
     let el = f64::atan2(enu.z, enu.xy().length());
 
     let az = utils::wrap_to_0_360(az);
@@ -34,7 +34,7 @@ pub fn enu2aer(enu: impl IntoDVec3) -> glam::DVec3 {
 ///
 /// # Arguments
 ///
-/// * `aer` - Vector represented in AER coordinates [[degrees-degrees-meters]].
+/// * `aer` - Azimuth, Elevation, Range in [[degrees-degrees-meters]].
 ///
 /// # Returns
 ///
@@ -43,13 +43,13 @@ pub fn aer2enu(aer: impl IntoDVec3) -> glam::DVec3 {
     let aer = aer.into_dvec3();
 
     let r = aer.z;
-    let az = f64::to_radians(aer.x);
-    let el = f64::to_radians(aer.y);
-    let east_north = r * f64::cos(el);
-    let east = east_north * f64::sin(az);
-    let north = east_north * f64::cos(az);
-    let up = r * f64::sin(el);
-    return glam::DVec3::new(east, north, up);
+    let az = aer.x.to_radians();
+    let el = aer.y.to_radians();
+    let east_north = r * el.cos();
+    let east = east_north * az.sin();
+    let north = east_north * az.cos();
+    let up = r * el.sin();
+    return glam::dvec3(east, north, up);
 }
 
 /// Converts Absolute ECEF to AER.

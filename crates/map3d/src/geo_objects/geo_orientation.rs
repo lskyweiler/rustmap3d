@@ -498,7 +498,7 @@ impl GeoOrientation {
         return ecef_quat2heading(&self.ecef_rot.into(), reference);
     }
 
-    /// Gets the azimuthal direction (counter-clockwise off east) in degrees for the body's forward vector
+    /// Gets the azimuthal direction (clockwise off north) in degrees for the body's forward vector
     ///
     /// # Arguments
     ///
@@ -506,7 +506,7 @@ impl GeoOrientation {
     ///
     /// # Returns
     ///
-    /// - `f64` - [0, 360) Azimuth angle in degrees
+    /// - `f64` - [0, 360] Azimuth angle in degrees
     ///
     pub fn azimuth(&self, reference: EitherGeoPosOrLLATup) -> f64 {
         let aer = ecef_uvw2aer(self.x_axis(), reference);
@@ -786,14 +786,34 @@ mod test_geo_orientation {
     use approx::assert_relative_eq;
 
     mod test_azimuth {
+        use core::f64;
+
         use super::*;
 
         #[test]
-        fn test_azimuth_zero() {
+        fn test_azimuth_90() {
             let lla = (0., 90., 0.).into_either();
             let rot = GeoOrientation::from_enu_frame(lla);
             let az = rot.azimuth(lla);
+            assert_relative_eq!(az, 90.);
+        }
+        #[test]
+        fn test_azimuth_0() {
+            let lla = (0., 0., 0.).into_either();
+            let rot = GeoOrientation::from_ned_frame(lla);
+            let az = rot.azimuth(lla);
             assert_relative_eq!(az, 0.);
+        }
+        #[test]
+        fn test_azimuth_270() {
+            let lla = (0., 0., 0.).into_either();
+            let rot = GeoOrientation::from_enu_euler(
+                &pyglam::dvec3(0., 0., f64::consts::PI),
+                lla,
+                EulerRot::XYZEx,
+            );
+            let az = rot.azimuth(lla);
+            assert_relative_eq!(az, 270.);
         }
     }
     mod test_elevation {

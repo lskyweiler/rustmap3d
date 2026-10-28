@@ -488,6 +488,40 @@ class GeoOrientation:
 
         - `f64` - Heading angle in degrees
         """
+    def azimuth(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.float:
+        r"""
+        Gets the azimuthal direction (clockwise off north) in degrees for the body's forward vector
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
+
+        # Returns
+
+        - `f64` - [0, 360] Azimuth angle in degrees
+        """
+    def elevation(
+        self,
+        reference: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.float:
+        r"""
+        Gets the elevation angle (angle between up and earth's tangent) in degrees for the body's forward vector
+
+        # Arguments
+
+        - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
+
+        # Returns
+
+        - `f64` - [-90, 90] Elevation angle in degrees
+        """
     def as_enu(
         self,
         reference: typing.Union[
