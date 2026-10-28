@@ -40,11 +40,18 @@ tasks:
     desc: Run the benchmarks
     deps: [build-dev]
     cmds:
-      - pytest --benchmark-histogram=./docs/benches/single bench/bench_single.py
-      - pytest --benchmark-histogram=./docs/benches/batch_vs_pymap3d bench/bench_batch.py
-      - pytest --benchmark-histogram=./docs/benches/batch_vs_single bench/bench_batch_vs_single.py
-      - pytest --benchmark-histogram=./docs/benches/batch_parallel bench/bench_parallel.py
-      - pytest --benchmark-histogram=./docs/benches/vincenty bench/bench_vincenty.py
+      - pytest --benchmark-json=.benchmarks/single.json --benchmark-histogram=./docs/benches/single bench/bench_single.py
+      - pytest --benchmark-json=.benchmarks/batch_vs_pymap3d.json --benchmark-histogram=./docs/benches/batch_vs_pymap3d bench/bench_batch.py
+      - pytest --benchmark-json=.benchmarks/batch_vs_single.json --benchmark-histogram=./docs/benches/batch_vs_single bench/bench_batch_vs_single.py
+      - pytest --benchmark-json=.benchmarks/batch_parallel.json --benchmark-histogram=./docs/benches/batch_parallel bench/bench_parallel.py
+      - pytest --benchmark-json=.benchmarks/vincenty.json --benchmark-histogram=./docs/benches/vincenty bench/bench_vincenty.py
+      - python 
+          bench/summarize.py 
+          .benchmarks/single.json 
+          .benchmarks/batch_vs_pymap3d.json 
+          .benchmarks/batch_vs_single.json 
+          .benchmarks/batch_parallel.json 
+          .benchmarks/vincenty.json > docs/benches/benchmarks.md
 
   gen-stubs:
     desc: Generate python stubs

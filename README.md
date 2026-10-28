@@ -10,6 +10,7 @@
 <p align="center"><img src="docs/rustmap3d.logo.svg" width="300px" height="300px"/></p>
 
 <!-- markdownlint-disable-next-line -->
+
 **Simple, fast, and ergonomic geodetic coordinate conversions**
 
 ---
@@ -186,47 +187,16 @@ validated = MyModel.model_validate(dumped)
 
 Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
 
-```bash
-# Run benchmarks
-uv run task bench
-# > outputs histograms to docs/benches/
-```
+| Package     | Function        | Single point | Batch of 10k points | Speedup |
+| ----------- | --------------- | ------------ | ------------------- | ------- |
+| `rustmap3d` | `ecef2lla`      | 0.13 µs      | 757 µs              |         |
+| `rustmap3d` | `lla2ecef`      | 0.06 µs      | 206 µs              |         |
+| `rustmap3d` | `ecef2aer`      | —            | 345 µs              |         |
+| `pymap3d`   | `ecef2geodedic` | 33.0 µs      | 586 µs              |         |
+| `pymap3d`   | `geodedic2ecef` | 2.64 µs      | 244 µs              |         |
+| `pymap3d`   | `ecef2aer`      | —            | 273 µs              |         |
 
-### Single-call performance
-
-Benchmarks for transforming single points
-
-- _~50x_ faster for lla2ecef
-- _~400x_ faster for ecef2lla
-
-<!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/single.svg"></p>
-
-### Vincenty performance
-
-Benchmarks for direct and inverse vincenty functions on single points
-
-<!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/vincenty.svg"></p>
-
-### Vectorized Performance vs Single Points
-
-Benchmarks for transforming a batch of points vs looping over single points
-
-<!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/batch_vs_single.svg"></p>
-
-### Vectorized Performance for Parallel vs Serial Execution
-
-<!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/batch_parallel.svg"></p>
-
-### Vectorized Performance vs `pymap3d`
-
-Benchmarks for transforming a batch of points vs `pymap3d`
-
-<!-- markdownlint-disable-next-line -->
-<p align="center"><img src="docs/benches/batch_vs_pymap3d.svg"></p>
+See [benchmarks](docs/benches/benchmarks.md) for more details
 
 ## Build From Source
 
