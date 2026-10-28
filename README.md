@@ -191,15 +191,6 @@ uv run maturin dev -r     # build a dev package similar to -e
 
 ## Benchmarks
 
-Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
+See [benchmarks](docs/benchmarks.md) for more details
 
-| Package     | Function        | Single point | Batch of 10k points | Speedup |
-| ----------- | --------------- | ------------ | ------------------- | ------- |
-| `rustmap3d` | `ecef2lla`      | 0.13 µs      | 757 µs              |         |
-| `rustmap3d` | `lla2ecef`      | 0.06 µs      | 206 µs              |         |
-| `rustmap3d` | `ecef2aer`      | —            | 345 µs              |         |
-| `pymap3d`   | `ecef2geodedic` | 33.0 µs      | 586 µs              |         |
-| `pymap3d`   | `geodedic2ecef` | 2.64 µs      | 244 µs              |         |
-| `pymap3d`   | `ecef2aer`      | —            | 273 µs              |         |
-
-See [benchmarks](docs/benches/benchmarks.md) for more details
+Rule of thumb for using `parallelized` batch operations: if that operation touches lla conversions, use `parallel=True`, otherwise it will probably be faster to run serial. This is due to workload complexity and the overhead associated with managing the threads

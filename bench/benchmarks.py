@@ -8,10 +8,9 @@ import pymap3d
 import pymap3d.vincenty
 import rustmap3d
 
-
 BATCH_N = 10_000
-ecef_batch = numpy.array([rustmap3d.rand_ecef() for _ in range(BATCH_N)])
-lla_batch = numpy.array([rustmap3d.rand_lla() for _ in range(BATCH_N)])
+ECEF_BATCH = numpy.array([rustmap3d.rand_ecef() for _ in range(BATCH_N)])
+LLA_BATCH = numpy.array([rustmap3d.rand_lla() for _ in range(BATCH_N)])
 LLA_REF = (38.9, -77.0, 120.0)
 
 
@@ -20,115 +19,13 @@ def loop_rows(fn_to_test, rows, *args):
         fn_to_test(*row, *args)
 
 
-"""Benchmark batched operations vs python looping over single values"""
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-vs-single")
-def test_ecef2lla_loop(benchmark):
-    benchmark(loop_rows, rustmap3d.ecef2lla, ecef_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-vs-single")
-def test_ecef2lla_batch(benchmark):
-    benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-vs-single")
-def test_lla2ecef_loop(benchmark):
-    benchmark(loop_rows, rustmap3d.lla2ecef, lla_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-vs-single")
-def test_lla2ecef_batch(benchmark):
-    benchmark(rustmap3d.lla2ecef_batch, lla_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-vs-single")
-def test_ecef2aer_loop(benchmark):
-    benchmark(loop_rows, rustmap3d.ecef2aer, ecef_batch, *LLA_REF)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-vs-single")
-def test_ecef2aer_batch(benchmark):
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
-
-
-"""Benchmark batched operations vs vectorized pymap3d equivalents"""
-
-
-@pytest.mark.benchmark(group="ecef2lla-batch-vs-pymap3d")
-def test_ecef2lla_batch_rustmap3d(benchmark):
-    benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
-
-
-@pytest.mark.benchmark(group="ecef2lla-batch-vs-pymap3d")
-def test_ecef2geodetic_vectorized_pymap3d(benchmark):
-    benchmark(pymap3d.ecef2geodetic, *ecef_batch.T)
-
-
-@pytest.mark.benchmark(group="lla2ecef-batch-vs-pymap3d")
-def test_lla2ecef_batch_rustmap3d(benchmark):
-    benchmark(rustmap3d.lla2ecef_batch, lla_batch)
-
-
-@pytest.mark.benchmark(group="lla2ecef-batch-vs-pymap3d")
-def test_geodetic2ecef_vectorized_pymap3d(benchmark):
-    benchmark(pymap3d.geodetic2ecef, *lla_batch.T)
-
-
-@pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
-def test_ecef2aer_batch_rustmap3d(benchmark):
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
-
-
-@pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
-def test_ecef2aer_vectorized_pymap3d(benchmark):
-    benchmark(pymap3d.ecef2aer, *ecef_batch.T, *LLA_REF)
-
-
-"""Benchmark batch functions using parallel threads vs serial execution"""
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-par-vs-serial")
-def test_ecef2lla_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-par-vs-serial")
-def test_ecef2lla_batch_parallel(benchmark):
-    benchmark(rustmap3d.ecef2lla_batch, ecef_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-par-vs-serial")
-def test_lla2ecef_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.lla2ecef_batch, lla_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-par-vs-serial")
-def test_lla2ecef_batch_parallel(benchmark):
-    benchmark(rustmap3d.lla2ecef_batch, lla_batch)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-par-vs-serial")
-def test_ecef2aer_batch_serial(benchmark):
-    with rustmap3d.threadpool_limits(1):
-        benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
-
-
-@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-par-vs-serial")
-def test_ecef2aer_batch_parallel(benchmark):
-    benchmark(rustmap3d.ecef2aer_batch, ecef_batch, *LLA_REF)
-
-
 """Single point transformation benches"""
 
 ITERATIONS = 1000
 ROUNDS = 10
 N = 10
-ecef_points = [rustmap3d.rand_ecef() for _ in range(N)]
-lla_points = [rustmap3d.rand_lla() for _ in range(N)]
+ECEF_POINTS = [rustmap3d.rand_ecef() for _ in range(N)]
+LLA_POINTS = [rustmap3d.rand_lla() for _ in range(N)]
 
 
 def iter_points(fn_to_test, points):
@@ -136,41 +33,41 @@ def iter_points(fn_to_test, points):
         fn_to_test(*p)
 
 
-@pytest.mark.benchmark(group="single-ecef2lla")
+@pytest.mark.benchmark(group="single-point-ecef2lla")
 def test_ecef2lla_rustmap3d(benchmark):
     benchmark.pedantic(
         iter_points,
-        args=(rustmap3d.ecef2lla, ecef_points),
+        args=(rustmap3d.ecef2lla, ECEF_POINTS),
         iterations=ITERATIONS,
         rounds=ROUNDS,
     )
 
 
-@pytest.mark.benchmark(group="single-ecef2lla")
+@pytest.mark.benchmark(group="single-point-ecef2lla")
 def test_ecef2geodetic_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
-        args=(pymap3d.ecef2geodetic, ecef_points),
+        args=(pymap3d.ecef2geodetic, ECEF_POINTS),
         iterations=ITERATIONS,
         rounds=ROUNDS,
     )
 
 
-@pytest.mark.benchmark(group="single-lla2ecef")
+@pytest.mark.benchmark(group="single-point-lla2ecef")
 def test_lla2ecef_rustmap3d(benchmark):
     benchmark.pedantic(
         iter_points,
-        args=(rustmap3d.lla2ecef, lla_points),
+        args=(rustmap3d.lla2ecef, LLA_POINTS),
         iterations=ITERATIONS,
         rounds=ROUNDS,
     )
 
 
-@pytest.mark.benchmark(group="single-lla2ecef")
+@pytest.mark.benchmark(group="single-point-lla2ecef")
 def test_geodetic2ecef_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
-        args=(pymap3d.geodetic2ecef, lla_points),
+        args=(pymap3d.geodetic2ecef, LLA_POINTS),
         iterations=ITERATIONS,
         rounds=ROUNDS,
     )
@@ -200,7 +97,7 @@ inverse_points = [
 ]
 
 
-@pytest.mark.benchmark(group="single-vincenty-direct")
+@pytest.mark.benchmark(group="single-point-vincenty-direct")
 def test_vincenty_direct_rustmap3d(benchmark):
     benchmark.pedantic(
         iter_points,
@@ -210,7 +107,7 @@ def test_vincenty_direct_rustmap3d(benchmark):
     )
 
 
-@pytest.mark.benchmark(group="single-vincenty-direct")
+@pytest.mark.benchmark(group="single-point-vincenty-direct")
 def test_vreckon_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
@@ -220,7 +117,7 @@ def test_vreckon_pymap3d(benchmark):
     )
 
 
-@pytest.mark.benchmark(group="single-vincenty-inverse")
+@pytest.mark.benchmark(group="single-point-vincenty-inverse")
 def test_vincenty_inverse_rustmap3d(benchmark):
     benchmark.pedantic(
         iter_points,
@@ -230,7 +127,7 @@ def test_vincenty_inverse_rustmap3d(benchmark):
     )
 
 
-@pytest.mark.benchmark(group="single-vincenty-inverse")
+@pytest.mark.benchmark(group="single-point-vincenty-inverse")
 def test_vdist_pymap3d(benchmark):
     benchmark.pedantic(
         iter_points,
@@ -238,3 +135,155 @@ def test_vdist_pymap3d(benchmark):
         iterations=ITERATIONS,
         rounds=ROUNDS,
     )
+
+
+"""Benchmark batched operations vs python looping over single values"""
+
+
+@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-vs-single")
+def test_ecef2lla_loop(benchmark):
+    benchmark(loop_rows, rustmap3d.ecef2lla, ECEF_BATCH)
+
+
+@pytest.mark.benchmark(group="rustmap3d-ecef2lla-batch-vs-single")
+def test_ecef2lla_batch(benchmark):
+    benchmark(rustmap3d.ecef2lla_batch, ECEF_BATCH)
+
+
+@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-vs-single")
+def test_lla2ecef_loop(benchmark):
+    benchmark(loop_rows, rustmap3d.lla2ecef, LLA_BATCH)
+
+
+@pytest.mark.benchmark(group="rustmap3d-lla2ecef-batch-vs-single")
+def test_lla2ecef_batch(benchmark):
+    benchmark(rustmap3d.lla2ecef_batch, LLA_BATCH)
+
+
+@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-vs-single")
+def test_ecef2aer_loop(benchmark):
+    benchmark(loop_rows, rustmap3d.ecef2aer, ECEF_BATCH, *LLA_REF)
+
+
+@pytest.mark.benchmark(group="rustmap3d-ecef2aer-batch-vs-single")
+def test_ecef2aer_batch(benchmark):
+    benchmark(rustmap3d.ecef2aer_batch, ECEF_BATCH, *LLA_REF)
+
+
+"""Benchmark batched operations vs vectorized pymap3d equivalents"""
+
+
+@pytest.mark.benchmark(group="ecef2lla-batch-vs-pymap3d")
+def test_ecef2lla_batch_rustmap3d(benchmark):
+    benchmark(rustmap3d.ecef2lla_batch, ECEF_BATCH)
+
+
+@pytest.mark.benchmark(group="ecef2lla-batch-vs-pymap3d")
+def test_ecef2geodetic_vectorized_pymap3d(benchmark):
+    benchmark(pymap3d.ecef2geodetic, *ECEF_BATCH.T)
+
+
+@pytest.mark.benchmark(group="lla2ecef-batch-vs-pymap3d")
+def test_lla2ecef_batch_rustmap3d(benchmark):
+    benchmark(rustmap3d.lla2ecef_batch, LLA_BATCH)
+
+
+@pytest.mark.benchmark(group="lla2ecef-batch-vs-pymap3d")
+def test_geodetic2ecef_vectorized_pymap3d(benchmark):
+    benchmark(pymap3d.geodetic2ecef, *LLA_BATCH.T)
+
+
+@pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
+def test_ecef2aer_batch_rustmap3d(benchmark):
+    benchmark(
+        lambda b, lat, lon, alt: rustmap3d.ecef2aer_batch(
+            b, lat, lon, alt, parallel=True
+        ),
+        ECEF_BATCH,
+        *LLA_REF,
+    )
+
+
+@pytest.mark.benchmark(group="ecef2aer-batch-vs-pymap3d")
+def test_ecef2aer_vectorized_pymap3d(benchmark):
+    benchmark(pymap3d.ecef2aer, *ECEF_BATCH.T, *LLA_REF)
+
+
+"""Benchmark batch functions using parallel threads vs serial execution"""
+
+AER_BATCH = numpy.array(
+    [
+        rustmap3d.ecef2aer(row[0], row[1], row[2], LLA_REF[0], LLA_REF[1], LLA_REF[2])
+        for row in ECEF_BATCH
+    ]
+)
+NED_BATCH = numpy.array(
+    [
+        rustmap3d.ecef2ned(row[0], row[1], row[2], LLA_REF[0], LLA_REF[1], LLA_REF[2])
+        for row in ECEF_BATCH
+    ]
+)
+ENU_BATCH = numpy.array(
+    [
+        rustmap3d.ecef2enu(row[0], row[1], row[2], LLA_REF[0], LLA_REF[1], LLA_REF[2])
+        for row in ECEF_BATCH
+    ]
+)
+INPUTS = {
+    "ecef": ECEF_BATCH,
+    "lla": LLA_BATCH,
+    "enu": ENU_BATCH,
+    "ned": NED_BATCH,
+    "aer": AER_BATCH,
+    "ecef_uvw": ECEF_BATCH,
+}
+REF2 = LLA_REF[:2]  # (lat, lon) only, for the uvw transforms
+# transform name -> reference args passed after the batch
+PAR_VS_SERIAL = {
+    "ecef2lla": (),
+    "lla2ecef": (),
+    "ecef2aer": LLA_REF,
+    "ecef2enu": LLA_REF,
+    "ecef2ned": LLA_REF,
+    "enu2ecef": LLA_REF,
+    "enu2lla": LLA_REF,
+    "enu2aer": (),
+    "aer2ecef": LLA_REF,
+    "aer2enu": (),
+    "aer2ned": (),
+    "lla2enu": LLA_REF,
+    "lla2ned": LLA_REF,
+    "ned2ecef": LLA_REF,
+    "ned2lla": LLA_REF,
+    "ned2aer": (),
+    "aer2ecef_uvw": REF2,
+    "enu2ecef_uvw": REF2,
+    "ned2ecef_uvw": REF2,
+    "ecef_uvw2aer": REF2,
+    "ecef_uvw2enu": REF2,
+    "ecef_uvw2ned": REF2,
+}
+
+
+@pytest.mark.parametrize(
+    "mode",
+    ["serial", "parallel"],
+)
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=pytest.mark.benchmark(
+                group=f"rustmap3d-{name}-batch-par-vs-serial",
+            ),
+        )
+        for name in PAR_VS_SERIAL
+    ],
+)
+def test_batch_par_vs_serial(benchmark, name, mode):
+    fn = getattr(rustmap3d, f"{name}_batch")
+    batch = INPUTS[name.split("2")[0]]
+    args = PAR_VS_SERIAL[name]
+    parallel = mode == "parallel"
+    benchmark(fn, batch, *args, parallel=parallel)

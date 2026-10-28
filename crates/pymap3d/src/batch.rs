@@ -7,6 +7,7 @@ use glam;
 use numpy::{ndarray::Array2, AllowTypeChange, PyArray2, PyArrayLikeDyn, PyUntypedArrayMethods};
 use pyo3::{exceptions::*, prelude::*};
 use pyo3_stub_gen::derive::*;
+use rayon::prelude::*;
 use std::sync::{LazyLock, Mutex};
 
 mod threading {
@@ -128,7 +129,12 @@ mod threading {
         py: Python<'py>,
         kernel: impl FnOnce() -> Vec<glam::DVec3> + Sync + Send,
     ) -> PyResult<Bound<'py, PyArray2<f64>>> {
-        let out = py.detach(|| THREAD_POOL.lock().expect("msg").install(kernel));
+        let out = py.detach(|| {
+            THREAD_POOL
+                .lock()
+                .expect("Failed to lock the threadpool")
+                .install(kernel)
+        });
         return Ok(dvec3s_to_rows(py, out));
     }
 }
@@ -162,12 +168,23 @@ fn dvec3s_to_rows<'py>(py: Python<'py>, vecs: Vec<glam::DVec3>) -> Bound<'py, Py
     return PyArray2::from_owned_array(py, arr);
 }
 
+macro_rules! execute_serial_or_parallel {
+    ($kernel:expr, $parallel:expr, $py:expr, $v:expr) => {{
+        if $parallel {
+            threading::execute_in_local_thread_pool($py, || $v.par_iter().map($kernel).collect())
+        } else {
+            Ok(dvec3s_to_rows($py, $v.iter().map($kernel).collect()))
+        }
+    }};
+}
+
 /// Batched `ecef2lla`: converts each row of `ecef` from ECEF positions in meters to
 /// WGS84 LLA [degrees-degrees-meters].
 ///
 /// # Arguments
 ///
 /// * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -178,13 +195,15 @@ fn dvec3s_to_rows<'py>(py: Python<'py>, vecs: Vec<glam::DVec3>) -> Bound<'py, Py
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ecef, parallel=true))]
 pub fn ecef2lla_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ecef: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&v))
+    execute_serial_or_parallel!(map3d::ecef2lla, parallel, py, v)
 }
 
 /// Batched `lla2ecef`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -193,6 +212,7 @@ pub fn ecef2lla_batch<'py>(
 /// # Arguments
 ///
 /// * `lla` - Array-like of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -203,13 +223,15 @@ pub fn ecef2lla_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (lla, parallel=false))]
 pub fn lla2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     lla: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
-    threading::execute_in_local_thread_pool(py, || map3d::lla2ecef_batch(&v))
+    execute_serial_or_parallel!(map3d::lla2ecef, parallel, py, v)
 }
 
 /// Batched `ecef_uvw2enu`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -220,6 +242,7 @@ pub fn lla2ecef_batch<'py>(
 /// * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -230,16 +253,18 @@ pub fn lla2ecef_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ecef_uvw: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2enu_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef_uvw2enu(point, r), parallel, py, v)
 }
 
 /// Batched `ecef2enu`: converts each row of `ecef` from ECEF positions in meters to
@@ -251,6 +276,7 @@ pub fn ecef_uvw2enu_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -261,7 +287,7 @@ pub fn ecef_uvw2enu_batch<'py>(
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ecef2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -269,10 +295,11 @@ pub fn ecef2enu_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2enu_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef2enu(point, r), parallel, py, v)
 }
 
 /// Batched `lla2enu`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -284,6 +311,7 @@ pub fn ecef2enu_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -294,7 +322,7 @@ pub fn ecef2enu_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn lla2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -302,12 +330,16 @@ pub fn lla2enu_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2enu_batch(&map3d::lla2ecef_batch(&v), r)
-    })
+    execute_serial_or_parallel!(
+        |point| map3d::ecef2enu(map3d::lla2ecef(point), r),
+        parallel,
+        py,
+        v
+    )
 }
 
 /// Batched `enu2ecef_uvw`: converts each row of `enu` from ENU vectors in meters to
@@ -318,6 +350,7 @@ pub fn lla2enu_batch<'py>(
 /// * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -328,16 +361,18 @@ pub fn lla2enu_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn enu2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_uvw_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::enu2ecef_uvw(point, r), parallel, py, v)
 }
 
 /// Batched `enu2ecef`: converts each row of `enu` from ENU vectors in meters to
@@ -349,6 +384,7 @@ pub fn enu2ecef_uvw_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -359,7 +395,7 @@ pub fn enu2ecef_uvw_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn enu2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -367,10 +403,11 @@ pub fn enu2ecef_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::enu2ecef(point, r), parallel, py, v)
 }
 
 /// Batched `enu2lla`: converts each row of `enu` from ENU vectors in meters to
@@ -382,6 +419,7 @@ pub fn enu2ecef_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -392,7 +430,7 @@ pub fn enu2ecef_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (enu, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
 pub fn enu2lla_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -400,12 +438,16 @@ pub fn enu2lla_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2lla_batch(&map3d::enu2ecef_batch(&v, r))
-    })
+    execute_serial_or_parallel!(
+        |point| map3d::ecef2lla(map3d::enu2ecef(point, r)),
+        parallel,
+        py,
+        v
+    )
 }
 
 /// Batched `ecef_uvw2ned`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -416,6 +458,7 @@ pub fn enu2lla_batch<'py>(
 /// * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -426,16 +469,18 @@ pub fn enu2lla_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ecef_uvw: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2ned_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef_uvw2ned(point, r), parallel, py, v)
 }
 
 /// Batched `ecef2ned`: converts each row of `ecef` from ECEF positions in meters to
@@ -447,6 +492,7 @@ pub fn ecef_uvw2ned_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -457,7 +503,7 @@ pub fn ecef_uvw2ned_batch<'py>(
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ecef2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -465,10 +511,11 @@ pub fn ecef2ned_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2ned_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef2ned(point, r), parallel, py, v)
 }
 
 /// Batched `lla2ned`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -480,6 +527,7 @@ pub fn ecef2ned_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -490,7 +538,7 @@ pub fn ecef2ned_batch<'py>(
 /// * `ValueError` if `lla` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (lla, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn lla2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -498,12 +546,16 @@ pub fn lla2ned_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2ned_batch(&map3d::lla2ecef_batch(&v), r)
-    })
+    execute_serial_or_parallel!(
+        |point| map3d::ecef2ned(map3d::lla2ecef(point), r),
+        parallel,
+        py,
+        v
+    )
 }
 
 /// Batched `ned2ecef_uvw`: converts each row of `ned` from NED vectors in meters to
@@ -514,6 +566,7 @@ pub fn lla2ned_batch<'py>(
 /// * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -524,16 +577,18 @@ pub fn lla2ned_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ned2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ned: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_uvw_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ned2ecef_uvw(point, r), parallel, py, v)
 }
 
 /// Batched `ned2ecef`: converts each row of `ned` from NED vectors in meters to
@@ -545,6 +600,7 @@ pub fn ned2ecef_uvw_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -555,7 +611,7 @@ pub fn ned2ecef_uvw_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn ned2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -563,10 +619,11 @@ pub fn ned2ecef_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ned2ecef(point, r), parallel, py, v)
 }
 
 /// Batched `ned2lla`: converts each row of `ned` from NED vectors in meters to
@@ -578,6 +635,7 @@ pub fn ned2ecef_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -588,7 +646,7 @@ pub fn ned2ecef_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (ned, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
 pub fn ned2lla_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -596,12 +654,16 @@ pub fn ned2lla_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2lla_batch(&map3d::ned2ecef_batch(&v, r))
-    })
+    execute_serial_or_parallel!(
+        |point| map3d::ecef2lla(map3d::ned2ecef(point, r)),
+        parallel,
+        py,
+        v
+    )
 }
 
 /// Batched `ecef_uvw2aer`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -612,6 +674,7 @@ pub fn ned2lla_batch<'py>(
 /// * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -622,16 +685,18 @@ pub fn ned2lla_batch<'py>(
 /// * `ValueError` if `ecef_uvw` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ecef_uvw, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn ecef_uvw2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ecef_uvw: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2aer_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef_uvw2aer(point, r), parallel, py, v)
 }
 
 /// Batched `ecef2aer`: converts each row of `ecef` from ECEF positions in meters to
@@ -643,6 +708,7 @@ pub fn ecef_uvw2aer_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -653,7 +719,7 @@ pub fn ecef_uvw2aer_batch<'py>(
 /// * `ValueError` if `ecef` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (ecef, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=true))]
 pub fn ecef2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -661,10 +727,11 @@ pub fn ecef2aer_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2aer_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::ecef2aer(point, r), parallel, py, v)
 }
 
 /// Batched `aer2ecef_uvw`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -675,6 +742,7 @@ pub fn ecef2aer_batch<'py>(
 /// * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -685,16 +753,18 @@ pub fn ecef2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, parallel=false))]
 pub fn aer2ecef_uvw_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
     lat_ref_d: f64,
     lon_ref_d: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_uvw_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::aer2ecef_uvw(point, r), parallel, py, v)
 }
 
 /// Batched `aer2ecef`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -706,6 +776,7 @@ pub fn aer2ecef_uvw_batch<'py>(
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
 /// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -716,7 +787,7 @@ pub fn aer2ecef_uvw_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
-#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+#[pyo3(signature = (aer, lat_ref_d, lon_ref_d, alt_ref_m=0.0, parallel=false))]
 pub fn aer2ecef_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
@@ -724,10 +795,11 @@ pub fn aer2ecef_batch<'py>(
     lat_ref_d: f64,
     lon_ref_d: f64,
     alt_ref_m: f64,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_batch(&v, r))
+    execute_serial_or_parallel!(|point| map3d::aer2ecef(point, r), parallel, py, v)
 }
 
 /// Batched `enu2aer`: converts each row of `enu` from ENU vectors in meters to
@@ -736,6 +808,7 @@ pub fn aer2ecef_batch<'py>(
 /// # Arguments
 ///
 /// * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -746,13 +819,15 @@ pub fn aer2ecef_batch<'py>(
 /// * `ValueError` if `enu` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (enu, parallel=false))]
 pub fn enu2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
-    threading::execute_in_local_thread_pool(py, || map3d::enu2aer_batch(&v))
+    execute_serial_or_parallel!(map3d::enu2aer, parallel, py, v)
 }
 
 /// Batched `aer2enu`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -761,6 +836,7 @@ pub fn enu2aer_batch<'py>(
 /// # Arguments
 ///
 /// * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -771,13 +847,15 @@ pub fn enu2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (aer, parallel=false))]
 pub fn aer2enu_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    threading::execute_in_local_thread_pool(py, || map3d::aer2enu_batch(&v))
+    execute_serial_or_parallel!(map3d::aer2enu, parallel, py, v)
 }
 
 /// Batched `ned2aer`: converts each row of `ned` from NED vectors in meters to
@@ -786,6 +864,7 @@ pub fn aer2enu_batch<'py>(
 /// # Arguments
 ///
 /// * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -796,13 +875,15 @@ pub fn aer2enu_batch<'py>(
 /// * `ValueError` if `ned` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (ned, parallel=false))]
 pub fn ned2aer_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     ned: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
-    threading::execute_in_local_thread_pool(py, || map3d::ned2aer_batch(&v))
+    execute_serial_or_parallel!(map3d::ned2aer, parallel, py, v)
 }
 
 /// Batched `aer2ned`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -811,6 +892,7 @@ pub fn ned2aer_batch<'py>(
 /// # Arguments
 ///
 /// * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+/// * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 ///
 /// # Returns
 ///
@@ -821,11 +903,13 @@ pub fn ned2aer_batch<'py>(
 /// * `ValueError` if `aer` is not of shape (N, 3)
 #[gen_stub_pyfunction]
 #[pyfunction]
+#[pyo3(signature = (aer, parallel=false))]
 pub fn aer2ned_batch<'py>(
     py: Python<'py>,
     #[gen_stub(override_type(type_repr = "numpy.typing.ArrayLike", imports = ("numpy.typing")))]
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
+    parallel: bool,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ned_batch(&v))
+    execute_serial_or_parallel!(map3d::aer2ned, parallel, py, v)
 }

@@ -41,8 +41,8 @@ tasks:
     deps: [build-dev]
     cmds:
       - mkdir -p .benchmarks/
-      - pytest --benchmark-json=.benchmarks/benches.json --benchmark-histogram=./docs/benches/benchmark bench/benchmarks.py
-      - python bench/summarize.py .benchmarks/benches.json > docs/benches/benchmarks.md
+      - pytest --benchmark-json=.benchmarks/benches.json bench/benchmarks.py
+      - python bench/summarize.py .benchmarks/benches.json > docs/benchmarks.md
 
   gen-stubs:
     desc: Generate python stubs

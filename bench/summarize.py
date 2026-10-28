@@ -13,6 +13,7 @@ UNITS = ((1.0, "s"), (1e-3, "ms"), (1e-6, "µs"), (1e-9, "ns"))
 
 
 def fmt_time(seconds: float) -> str:
+    """format a timestring to nano seconds"""
     for scale, unit in UNITS:
         if seconds >= scale:
             return f"{seconds / scale:.2f} {unit}"
@@ -38,6 +39,7 @@ def table(benchmarks: list[dict]) -> str:
 
 
 def summarize(paths: list[Path]) -> str:
+    """Summarize all benchmark files to a markdown"""
     sections = []
     for path in paths:
         data = json.loads(path.read_text())
@@ -54,8 +56,11 @@ def summarize(paths: list[Path]) -> str:
 
 
 def main():
+    """main function"""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])  # type: ignore
-    parser.add_argument("files", nargs="+", type=Path, help="pytest-benchmark JSON files")
+    parser.add_argument(
+        "files", nargs="+", type=Path, help="pytest-benchmark JSON files"
+    )
     args = parser.parse_args()
     print(summarize(args.files), end="")
 
