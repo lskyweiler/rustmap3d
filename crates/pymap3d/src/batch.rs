@@ -184,7 +184,7 @@ pub fn ecef2lla_batch<'py>(
     ecef: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2lla_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::ecef2lla).collect())
 }
 
 /// Batched `lla2ecef`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -209,7 +209,7 @@ pub fn lla2ecef_batch<'py>(
     lla: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&lla, "lla")?;
-    threading::execute_in_local_thread_pool(py, || map3d::lla2ecef_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::lla2ecef).collect())
 }
 
 /// Batched `ecef_uvw2enu`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -239,7 +239,11 @@ pub fn ecef_uvw2enu_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2enu_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter()
+            .map(|point| map3d::ecef_uvw2enu(point, r))
+            .collect()
+    })
 }
 
 /// Batched `ecef2enu`: converts each row of `ecef` from ECEF positions in meters to
@@ -272,7 +276,9 @@ pub fn ecef2enu_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2enu_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::ecef2enu(point, r)).collect()
+    })
 }
 
 /// Batched `lla2enu`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -306,7 +312,9 @@ pub fn lla2enu_batch<'py>(
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
     threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2enu_batch(&map3d::lla2ecef_batch(&v), r)
+        v.iter()
+            .map(|point| map3d::ecef2enu(map3d::lla2ecef(point), r))
+            .collect()
     })
 }
 
@@ -337,7 +345,11 @@ pub fn enu2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter()
+            .map(|point| map3d::enu2ecef_uvw(point, r))
+            .collect()
+    })
 }
 
 /// Batched `enu2ecef`: converts each row of `enu` from ENU vectors in meters to
@@ -370,7 +382,9 @@ pub fn enu2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::enu2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::enu2ecef(point, r)).collect()
+    })
 }
 
 /// Batched `enu2lla`: converts each row of `enu` from ENU vectors in meters to
@@ -404,7 +418,9 @@ pub fn enu2lla_batch<'py>(
     let v = rows_to_dvec3s(&enu, "enu")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
     threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2lla_batch(&map3d::enu2ecef_batch(&v, r))
+        v.iter()
+            .map(|point| map3d::ecef2lla(map3d::enu2ecef(point, r)))
+            .collect()
     })
 }
 
@@ -435,7 +451,11 @@ pub fn ecef_uvw2ned_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2ned_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter()
+            .map(|point| map3d::ecef_uvw2ned(point, r))
+            .collect()
+    })
 }
 
 /// Batched `ecef2ned`: converts each row of `ecef` from ECEF positions in meters to
@@ -468,7 +488,9 @@ pub fn ecef2ned_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2ned_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::ecef2ned(point, r)).collect()
+    })
 }
 
 /// Batched `lla2ned`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -502,7 +524,9 @@ pub fn lla2ned_batch<'py>(
     let v = rows_to_dvec3s(&lla, "lla")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
     threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2ned_batch(&map3d::lla2ecef_batch(&v), r)
+        v.iter()
+            .map(|point| map3d::ecef2ned(map3d::lla2ecef(point), r))
+            .collect()
     })
 }
 
@@ -533,7 +557,11 @@ pub fn ned2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter()
+            .map(|point| map3d::ned2ecef_uvw(point, r))
+            .collect()
+    })
 }
 
 /// Batched `ned2ecef`: converts each row of `ned` from NED vectors in meters to
@@ -566,7 +594,9 @@ pub fn ned2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ned2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::ned2ecef(point, r)).collect()
+    })
 }
 
 /// Batched `ned2lla`: converts each row of `ned` from NED vectors in meters to
@@ -600,7 +630,9 @@ pub fn ned2lla_batch<'py>(
     let v = rows_to_dvec3s(&ned, "ned")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
     threading::execute_in_local_thread_pool(py, || {
-        map3d::ecef2lla_batch(&map3d::ned2ecef_batch(&v, r))
+        v.iter()
+            .map(|point| map3d::ecef2lla(map3d::ned2ecef(point, r)))
+            .collect()
     })
 }
 
@@ -631,7 +663,11 @@ pub fn ecef_uvw2aer_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef_uvw, "ecef_uvw")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef_uvw2aer_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter()
+            .map(|point| map3d::ecef_uvw2aer(point, r))
+            .collect()
+    })
 }
 
 /// Batched `ecef2aer`: converts each row of `ecef` from ECEF positions in meters to
@@ -664,7 +700,9 @@ pub fn ecef2aer_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ecef, "ecef")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::ecef2aer_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::ecef2aer(point, r)).collect()
+    })
 }
 
 /// Batched `aer2ecef_uvw`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -694,7 +732,9 @@ pub fn aer2ecef_uvw_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, 0.);
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_uvw_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::aer2ecef_uvw(point, r)).collect()
+    })
 }
 
 /// Batched `aer2ecef`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -727,7 +767,9 @@ pub fn aer2ecef_batch<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
     let r = glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m);
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ecef_batch(&v, r))
+    threading::execute_in_local_thread_pool(py, || {
+        v.iter().map(|point| map3d::aer2ecef(point, r)).collect()
+    })
 }
 
 /// Batched `enu2aer`: converts each row of `enu` from ENU vectors in meters to
@@ -752,7 +794,7 @@ pub fn enu2aer_batch<'py>(
     enu: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&enu, "enu")?;
-    threading::execute_in_local_thread_pool(py, || map3d::enu2aer_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::enu2aer).collect())
 }
 
 /// Batched `aer2enu`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -777,7 +819,7 @@ pub fn aer2enu_batch<'py>(
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    threading::execute_in_local_thread_pool(py, || map3d::aer2enu_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::aer2enu).collect())
 }
 
 /// Batched `ned2aer`: converts each row of `ned` from NED vectors in meters to
@@ -802,7 +844,7 @@ pub fn ned2aer_batch<'py>(
     ned: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&ned, "ned")?;
-    threading::execute_in_local_thread_pool(py, || map3d::ned2aer_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::ned2aer).collect())
 }
 
 /// Batched `aer2ned`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -827,5 +869,5 @@ pub fn aer2ned_batch<'py>(
     aer: PyArrayLikeDyn<'py, f64, AllowTypeChange>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let v = rows_to_dvec3s(&aer, "aer")?;
-    threading::execute_in_local_thread_pool(py, || map3d::aer2ned_batch(&v))
+    threading::execute_in_local_thread_pool(py, || v.iter().map(map3d::aer2ned).collect())
 }
