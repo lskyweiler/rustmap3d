@@ -20,7 +20,7 @@ use glam::{self, Vec3Swizzles};
 pub fn enu2aer(enu: impl IntoDVec3) -> glam::DVec3 {
     let enu = enu.into_dvec3();
 
-    let az = f64::atan2(enu.x, enu.y).to_degrees();
+    let az = f64::atan2(enu.y, enu.x).to_degrees();
     let el = f64::atan2(enu.z, enu.xy().length());
 
     let az = utils::wrap_to_0_360(az);

@@ -498,6 +498,36 @@ impl GeoOrientation {
         return ecef_quat2heading(&self.ecef_rot.into(), reference);
     }
 
+    /// Gets the azimuthal direction (counter-clockwise off east) in degrees for the body's forward vector
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
+    ///
+    /// # Returns
+    ///
+    /// - `f64` - [0, 360) Azimuth angle in degrees
+    ///
+    pub fn azimuth(&self, reference: EitherGeoPosOrLLATup) -> f64 {
+        let aer = ecef_uvw2aer(self.x_axis(), reference);
+        aer.x
+    }
+
+    /// Gets the elevation angle (angle between up and earth's tangent) in degrees for the body's forward vector
+    ///
+    /// # Arguments
+    ///
+    /// - `reference` (`tuple[float, float, float] | GeoPosition`) - Reference location to compute heading in relation to
+    ///
+    /// # Returns
+    ///
+    /// - `f64` - [-90, 90] Elevation angle in degrees
+    ///
+    pub fn elevation(&self, reference: EitherGeoPosOrLLATup) -> f64 {
+        let aer = ecef_uvw2aer(self.x_axis(), reference);
+        aer.y
+    }
+
     /// Express this bodies orientation in a local enu frame
     ///
     /// # Arguments
@@ -749,3 +779,32 @@ ops_with_self!(GeoOrientation, GeoOrientation);
 ops_with_self!(&GeoOrientation, GeoOrientation);
 ops_with_self!(GeoOrientation, &GeoOrientation);
 ops_with_self!(&GeoOrientation, &GeoOrientation);
+
+#[cfg(test)]
+mod test_geo_orientation {
+    use super::*;
+    use approx::assert_relative_eq;
+
+    mod test_azimuth {
+        use super::*;
+
+        #[test]
+        fn test_azimuth_zero() {
+            let lla = (0., 90., 0.).into_either();
+            let rot = GeoOrientation::from_enu_frame(lla);
+            let az = rot.azimuth(lla);
+            assert_relative_eq!(az, 0.);
+        }
+    }
+    mod test_elevation {
+        use super::*;
+
+        #[test]
+        fn test_elevation_zero() {
+            let lla = (0., 0., 0.).into_either();
+            let rot = GeoOrientation::from_enu_frame(lla);
+            let el = rot.elevation(lla);
+            assert_relative_eq!(el, 0.);
+        }
+    }
+}
