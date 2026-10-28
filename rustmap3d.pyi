@@ -16,6 +16,7 @@ __all__ = [
     "GeoPosition",
     "GeoVector",
     "GeoVelocity",
+    "ThreadScope",
     "aer2ecef",
     "aer2ecef_batch",
     "aer2ecef_uvw",
@@ -78,6 +79,8 @@ __all__ = [
     "rand_ecef",
     "rand_lla",
     "rand_orientation",
+    "set_global_thread_limits",
+    "threadpool_limits",
     "vincenty_direct",
     "vincenty_inverse",
 ]
@@ -1599,6 +1602,13 @@ class GeoVelocity:
         """
 
 @typing.final
+class ThreadScope:
+    def __enter__(self) -> ThreadScope: ...
+    def __exit__(
+        self, _exc_type: typing.Any, _exc_value: typing.Any, _traceback: typing.Any
+    ) -> builtins.bool: ...
+
+@typing.final
 class EulerRot(enum.Enum):
     r"""
     Euler rotation sequences.
@@ -1741,6 +1751,7 @@ def aer2ecef_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `aer2ecef`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -1752,6 +1763,7 @@ def aer2ecef_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -1786,7 +1798,10 @@ def aer2ecef_uvw(
     """
 
 def aer2ecef_uvw_batch(
-    aer: numpy.typing.ArrayLike, lat_ref_d: builtins.float, lon_ref_d: builtins.float
+    aer: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `aer2ecef_uvw`: converts each row of `aer` from AER [degrees-degrees-meters] to
@@ -1797,6 +1812,7 @@ def aer2ecef_uvw_batch(
     * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -1824,7 +1840,9 @@ def aer2enu(
     * `enu` - Vector represented in ENU coordinates [meters].
     """
 
-def aer2enu_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def aer2enu_batch(
+    aer: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `aer2enu`: converts each row of `aer` from AER [degrees-degrees-meters] to
     ENU vectors in meters.
@@ -1832,6 +1850,7 @@ def aer2enu_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.flo
     # Arguments
 
     * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -1859,7 +1878,9 @@ def aer2ned(
     * `ned` - Vector represented in NED coordinates [meters].
     """
 
-def aer2ned_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def aer2ned_batch(
+    aer: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `aer2ned`: converts each row of `aer` from AER [degrees-degrees-meters] to
     NED vectors in meters.
@@ -1867,6 +1888,7 @@ def aer2ned_batch(aer: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.flo
     # Arguments
 
     * `aer` - Array-like of shape (N, 3) of AER [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -1969,6 +1991,7 @@ def ecef2aer_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef2aer`: converts each row of `ecef` from ECEF positions in meters to
@@ -1980,6 +2003,7 @@ def ecef2aer_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2020,6 +2044,7 @@ def ecef2enu_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef2enu`: converts each row of `ecef` from ECEF positions in meters to
@@ -2031,6 +2056,7 @@ def ecef2enu_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2100,7 +2126,9 @@ def ecef2lla(
     * `lla` - Vector represented in WGS84 LLA [degrees-degrees-meters].
     """
 
-def ecef2lla_batch(ecef: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def ecef2lla_batch(
+    ecef: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef2lla`: converts each row of `ecef` from ECEF positions in meters to
     WGS84 LLA [degrees-degrees-meters].
@@ -2108,6 +2136,7 @@ def ecef2lla_batch(ecef: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.f
     # Arguments
 
     * `ecef` - Array-like of shape (N, 3) of ECEF positions in meters [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2148,6 +2177,7 @@ def ecef2ned_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef2ned`: converts each row of `ecef` from ECEF positions in meters to
@@ -2159,6 +2189,7 @@ def ecef2ned_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2263,6 +2294,7 @@ def ecef_uvw2aer_batch(
     ecef_uvw: numpy.typing.ArrayLike,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef_uvw2aer`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -2273,6 +2305,7 @@ def ecef_uvw2aer_batch(
     * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2310,6 +2343,7 @@ def ecef_uvw2enu_batch(
     ecef_uvw: numpy.typing.ArrayLike,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef_uvw2enu`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -2320,6 +2354,7 @@ def ecef_uvw2enu_batch(
     * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2357,6 +2392,7 @@ def ecef_uvw2ned_batch(
     ecef_uvw: numpy.typing.ArrayLike,
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ecef_uvw2ned`: converts each row of `ecef_uvw` from ECEF uvw vectors in meters to
@@ -2367,6 +2403,7 @@ def ecef_uvw2ned_batch(
     * `ecef_uvw` - Array-like of shape (N, 3) of ECEF uvw vectors in meters [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2394,7 +2431,9 @@ def enu2aer(
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def enu2aer_batch(enu: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def enu2aer_batch(
+    enu: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `enu2aer`: converts each row of `enu` from ENU vectors in meters to
     AER [degrees-degrees-meters].
@@ -2402,6 +2441,7 @@ def enu2aer_batch(enu: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.flo
     # Arguments
 
     * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2442,6 +2482,7 @@ def enu2ecef_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `enu2ecef`: converts each row of `enu` from ENU vectors in meters to
@@ -2453,6 +2494,7 @@ def enu2ecef_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2529,7 +2571,10 @@ def enu2ecef_uvw(
     """
 
 def enu2ecef_uvw_batch(
-    enu: numpy.typing.ArrayLike, lat_ref_d: builtins.float, lon_ref_d: builtins.float
+    enu: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `enu2ecef_uvw`: converts each row of `enu` from ENU vectors in meters to
@@ -2540,6 +2585,7 @@ def enu2ecef_uvw_batch(
     * `enu` - Array-like of shape (N, 3) of ENU vectors in meters [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2597,6 +2643,7 @@ def enu2lla_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `enu2lla`: converts each row of `enu` from ENU vectors in meters to
@@ -2608,6 +2655,7 @@ def enu2lla_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2652,7 +2700,9 @@ def lla2ecef(
     * `ecef` - Vector represented in ECEF coordinates [meters].
     """
 
-def lla2ecef_batch(lla: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def lla2ecef_batch(
+    lla: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `lla2ecef`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
     ECEF positions in meters.
@@ -2660,6 +2710,7 @@ def lla2ecef_batch(lla: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.fl
     # Arguments
 
     * `lla` - Array-like of shape (N, 3) of WGS84 LLA [degrees-degrees-meters] [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2700,6 +2751,7 @@ def lla2enu_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `lla2enu`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -2711,6 +2763,7 @@ def lla2enu_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2751,6 +2804,7 @@ def lla2ned_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `lla2ned`: converts each row of `lla` from WGS84 LLA [degrees-degrees-meters] to
@@ -2762,6 +2816,7 @@ def lla2ned_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2808,7 +2863,9 @@ def ned2aer(
     * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
     """
 
-def ned2aer_batch(ned: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.float64]:
+def ned2aer_batch(
+    ned: numpy.typing.ArrayLike, parallel: builtins.bool = ...
+) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ned2aer`: converts each row of `ned` from NED vectors in meters to
     AER [degrees-degrees-meters].
@@ -2816,6 +2873,7 @@ def ned2aer_batch(ned: numpy.typing.ArrayLike) -> numpy.typing.NDArray[numpy.flo
     # Arguments
 
     * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2856,6 +2914,7 @@ def ned2ecef_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ned2ecef`: converts each row of `ned` from NED vectors in meters to
@@ -2867,6 +2926,7 @@ def ned2ecef_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2943,7 +3003,10 @@ def ned2ecef_uvw(
     """
 
 def ned2ecef_uvw_batch(
-    ned: numpy.typing.ArrayLike, lat_ref_d: builtins.float, lon_ref_d: builtins.float
+    ned: numpy.typing.ArrayLike,
+    lat_ref_d: builtins.float,
+    lon_ref_d: builtins.float,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ned2ecef_uvw`: converts each row of `ned` from NED vectors in meters to
@@ -2954,6 +3017,7 @@ def ned2ecef_uvw_batch(
     * `ned` - Array-like of shape (N, 3) of NED vectors in meters [numpy.typing.ArrayLike]
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -2994,6 +3058,7 @@ def ned2lla_batch(
     lat_ref_d: builtins.float,
     lon_ref_d: builtins.float,
     alt_ref_m: builtins.float = ...,
+    parallel: builtins.bool = ...,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Batched `ned2lla`: converts each row of `ned` from NED vectors in meters to
@@ -3005,6 +3070,7 @@ def ned2lla_batch(
     * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
     * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
     * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
+    * `parallel` - Process the batch in parallel on the CPU. Set number of threads globally via `rustmap3d.set_global_thread_limits` or locally via `with rustmap3d.threadpool_limits(): ...`
 
     # Returns
 
@@ -3042,6 +3108,38 @@ def rand_orientation() -> tuple[
     # Returns
 
     * `quat` - Random normalized quaternion (w, x, y, z).
+    """
+
+def set_global_thread_limits(num_threads: typing.Optional[builtins.int] = None) -> None:
+    r"""
+    Configures the internal thread pool globally. This can be called once and will apply to
+
+    # Arguments
+
+    - `num_threads` (`u32`) - Set the number of threads to use in the batched functions. None means use all threads
+
+    # Errors
+
+    - RuntimeError - If the threadpool could not be created using this configuration
+    """
+
+def threadpool_limits(num_threads: builtins.int) -> ThreadScope:
+    r"""
+    Create a context that restricts the number of threads available inside the scope
+
+    # Arguments
+
+    - `num_threads` (`usize`) - Number of threads to restrict in the scope
+
+    # Examples
+
+    ```python
+    import rustmap3d
+
+    with rustmap3d.threadpool_limits(1):
+        # only use 1 thread here
+        rustmap3d.lla2ecef_batch(...)
+    ```
     """
 
 def vincenty_direct(

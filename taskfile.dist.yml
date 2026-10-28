@@ -26,6 +26,7 @@ tasks:
     cmds:
       - uv run ruff format
       - uv run ruff check --fix
+      - uv run pylint .
       - cargo fix --allow-dirty --allow-staged && cargo fmt --all
 
   test:
@@ -33,13 +34,15 @@ tasks:
     deps: [build-dev]
     cmds:
       - pytest --disable-warnings test/
-      - cd crates/map3d && cargo test
+      - cargo test --no-default-features --workspace
   
   bench:
     desc: Run the benchmarks
     deps: [build-dev]
     cmds:
-      - uv run pytest --benchmark-histogram=./docs/benchmarks bench/
+      - mkdir -p .benchmarks/
+      - pytest --benchmark-json=.benchmarks/benches.json bench/benchmarks.py
+      - python bench/summarize.py .benchmarks/benches.json > docs/benchmarks.md
 
   gen-stubs:
     desc: Generate python stubs

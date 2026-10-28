@@ -184,3 +184,20 @@ def test_batch_accepts_nested_lists():
 def test_batch_rejects_non_numeric():
     with pytest.raises((ValueError, TypeError)):
         rustmap3d.ecef2lla_batch([["a", "b", "c"]])
+
+
+def test_thread_scope():
+    with rustmap3d.threadpool_limits(1):
+        rustmap3d.ecef2lla_batch(ECEF)
+
+
+def test_global_thread():
+    rustmap3d.set_global_thread_limits(1)
+
+
+def test_global_thread_raises():
+    with pytest.raises(OverflowError):
+        rustmap3d.set_global_thread_limits(-1)
+
+    with pytest.raises(RuntimeError):
+        rustmap3d.set_global_thread_limits(100000)

@@ -1,9 +1,6 @@
 use crate::{
     traits::{IntoDVec3, IntoLatLonTriple, IntoLatLonTuple},
-    transforms::{
-        batch::{self, BatchLengthError},
-        enu, lla,
-    },
+    transforms::{enu, lla},
 };
 use glam;
 
@@ -19,16 +16,10 @@ use glam;
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3, lla_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    return ecef_uvw2ned_kernel(lla_ref)(ecef_uvw.into_dvec3());
+    let rot = ecef2ned_quat(lla_ref.into_lat_lon_tuple());
+    rot * ecef_uvw.into_dvec3()
 }
 
-/// Per-reference setup for [`ecef_uvw2ned`], shared with its batched form.
-pub(crate) fn ecef_uvw2ned_kernel(
-    ll_ref: impl IntoLatLonTuple,
-) -> impl Fn(glam::DVec3) -> glam::DVec3 {
-    let rot = ecef2ned_quat(ll_ref.into_lat_lon_tuple());
-    return move |ecef_uvw| rot * ecef_uvw;
-}
 /// Converts Absolute ECEF to NED.
 ///
 /// # Arguments
@@ -40,18 +31,11 @@ pub(crate) fn ecef_uvw2ned_kernel(
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn ecef2ned(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    return ecef2ned_kernel(lla_ref)(ecef.into_dvec3());
-}
-
-/// Per-reference setup for [`ecef2ned`], shared with its batched form.
-pub(crate) fn ecef2ned_kernel(
-    lla_ref: impl IntoLatLonTriple,
-) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let ref_ecef = lla::lla2ecef(lla_ref);
     let rot = ecef2ned_quat(lla_ref);
-    return move |ecef| rot * (ecef - ref_ecef);
+    rot * (ecef.into_dvec3() - ref_ecef)
 }
 
 /// Converts NED to ECEF uvw
@@ -65,16 +49,10 @@ pub(crate) fn ecef2ned_kernel(
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
 pub fn ned2ecef_uvw(ned: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    return ned2ecef_uvw_kernel(ll_ref)(ned.into_dvec3());
+    let rot = ned2ecef_quat(ll_ref);
+    rot * ned.into_dvec3()
 }
 
-/// Per-reference setup for [`ned2ecef_uvw`], shared with its batched form.
-pub(crate) fn ned2ecef_uvw_kernel(
-    ll_ref: impl IntoLatLonTuple,
-) -> impl Fn(glam::DVec3) -> glam::DVec3 {
-    let rot = ned2ecef_quat(ll_ref);
-    return move |ned| rot * ned;
-}
 /// Converts NED to Absolute ECEF
 ///
 /// # Arguments
@@ -98,149 +76,6 @@ pub(crate) fn ned2ecef_kernel(
     let rot = ned2ecef_quat(lla_ref);
     let ref_ecef = lla::lla2ecef(lla_ref);
     return move |ned| rot * ned + ref_ecef;
-}
-
-/// Converts a batch of ECEF uvw vectors to NED, sharing one reference. Matches [`ecef_uvw2ned`] applied to each point.
-///
-/// # Arguments
-///
-/// * `ecef_uvws` - Vectors represented in ECEF frame [[meters]].
-/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
-///
-/// # Returns
-///
-/// * Vectors represented in NED coordinates [[meters]].
-pub fn ecef_uvw2ned_batch(
-    ecef_uvws: &[glam::DVec3],
-    ll_ref: impl IntoLatLonTuple,
-) -> Vec<glam::DVec3> {
-    return batch::map(ecef_uvws, ecef_uvw2ned_kernel(ll_ref));
-}
-
-/// Converts a batch of ECEF uvw vectors to NED, sharing one reference and writing into `out`. Matches
-/// [`ecef_uvw2ned`] applied to each point.
-///
-/// # Arguments
-///
-/// * `ecef_uvws` - Vectors represented in ECEF frame [[meters]].
-/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
-/// * `out` - Receives the results. Vectors represented in NED coordinates [[meters]].
-///
-/// # Errors
-///
-/// [`BatchLengthError`] if `ecef_uvws` and `out` differ in length, in which case `out` is left
-/// untouched.
-pub fn ecef_uvw2ned_batch_into(
-    ecef_uvws: &[glam::DVec3],
-    ll_ref: impl IntoLatLonTuple,
-    out: &mut [glam::DVec3],
-) -> Result<(), BatchLengthError> {
-    return batch::map_into(ecef_uvws, out, ecef_uvw2ned_kernel(ll_ref));
-}
-
-/// Converts a batch of absolute ECEF positions to NED, sharing one reference. Matches [`ecef2ned`] applied to each point.
-///
-/// # Arguments
-///
-/// * `ecefs` - Absolute ECEF locations [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
-///
-/// # Returns
-///
-/// * Vectors represented in NED coordinates [[meters]].
-pub fn ecef2ned_batch(ecefs: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> Vec<glam::DVec3> {
-    return batch::map(ecefs, ecef2ned_kernel(lla_ref));
-}
-
-/// Converts a batch of absolute ECEF positions to NED, sharing one reference and writing into `out`. Matches
-/// [`ecef2ned`] applied to each point.
-///
-/// # Arguments
-///
-/// * `ecefs` - Absolute ECEF locations [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
-/// * `out` - Receives the results. Vectors represented in NED coordinates [[meters]].
-///
-/// # Errors
-///
-/// [`BatchLengthError`] if `ecefs` and `out` differ in length, in which case `out` is left
-/// untouched.
-pub fn ecef2ned_batch_into(
-    ecefs: &[glam::DVec3],
-    lla_ref: impl IntoLatLonTriple,
-    out: &mut [glam::DVec3],
-) -> Result<(), BatchLengthError> {
-    return batch::map_into(ecefs, out, ecef2ned_kernel(lla_ref));
-}
-
-/// Converts a batch of NED vectors to ECEF uvw, sharing one reference. Matches [`ned2ecef_uvw`] applied to each point.
-///
-/// # Arguments
-///
-/// * `neds` - Vectors represented in NED coordinates [[meters]].
-/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
-///
-/// # Returns
-///
-/// * Vectors represented in ECEF frame. Not absolute positions [[meters]].
-pub fn ned2ecef_uvw_batch(neds: &[glam::DVec3], ll_ref: impl IntoLatLonTuple) -> Vec<glam::DVec3> {
-    return batch::map(neds, ned2ecef_uvw_kernel(ll_ref));
-}
-
-/// Converts a batch of NED vectors to ECEF uvw, sharing one reference and writing into `out`. Matches
-/// [`ned2ecef_uvw`] applied to each point.
-///
-/// # Arguments
-///
-/// * `neds` - Vectors represented in NED coordinates [[meters]].
-/// * `ll_ref` - Reference latitude-longitude [[degrees-degrees]].
-/// * `out` - Receives the results. Vectors represented in ECEF frame. Not absolute positions [[meters]].
-///
-/// # Errors
-///
-/// [`BatchLengthError`] if `neds` and `out` differ in length, in which case `out` is left
-/// untouched.
-pub fn ned2ecef_uvw_batch_into(
-    neds: &[glam::DVec3],
-    ll_ref: impl IntoLatLonTuple,
-    out: &mut [glam::DVec3],
-) -> Result<(), BatchLengthError> {
-    return batch::map_into(neds, out, ned2ecef_uvw_kernel(ll_ref));
-}
-
-/// Converts a batch of NED offsets from `lla_ref` to absolute ECEF, sharing one reference. Matches [`ned2ecef`] applied to each point.
-///
-/// # Arguments
-///
-/// * `neds` - Vectors represented in NED coordinates [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
-///
-/// # Returns
-///
-/// * Absolute ECEF positions [[meters]].
-pub fn ned2ecef_batch(neds: &[glam::DVec3], lla_ref: impl IntoLatLonTriple) -> Vec<glam::DVec3> {
-    return batch::map(neds, ned2ecef_kernel(lla_ref));
-}
-
-/// Converts a batch of NED offsets from `lla_ref` to absolute ECEF, sharing one reference and writing into `out`. Matches
-/// [`ned2ecef`] applied to each point.
-///
-/// # Arguments
-///
-/// * `neds` - Vectors represented in NED coordinates [[meters]].
-/// * `lla_ref` - Reference latitude-longitude-altitude [[degrees-degrees-meters]].
-/// * `out` - Receives the results. Absolute ECEF positions [[meters]].
-///
-/// # Errors
-///
-/// [`BatchLengthError`] if `neds` and `out` differ in length, in which case `out` is left
-/// untouched.
-pub fn ned2ecef_batch_into(
-    neds: &[glam::DVec3],
-    lla_ref: impl IntoLatLonTriple,
-    out: &mut [glam::DVec3],
-) -> Result<(), BatchLengthError> {
-    return batch::map_into(neds, out, ned2ecef_kernel(lla_ref));
 }
 
 /// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
