@@ -10,10 +10,16 @@
 <p align="center"><img src="docs/rustmap3d.logo.svg" width="300px" height="300px"/></p>
 
 <!-- markdownlint-disable-next-line -->
-
 **Simple, fast, and ergonomic geodetic coordinate conversions**
 
----
+## Comparison with similar packages
+
+- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
+- Has optimizations for single point transformations as well as vectorized batch transforms
+- Zero dependencies
+- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
+- Exposes rotations (both quaternions and 3x3 matrices)
+- High-level `GeoObject` API
 
 ## Installation
 
@@ -174,14 +180,14 @@ print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
 validated = MyModel.model_validate(dumped)
 ```
 
-## Comparison with similar packages
+## Build From Source
 
-- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
-- Has optimizations for single point transformations as well as vectorized batch transforms
-- Zero dependencies
-- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
-- Exposes rotations (both quaternions and 3x3 matrices)
-- High-level `GeoObject` API
+Uses standard [maturin](https://github.com/PyO3/maturin) build process
+
+```bash
+uv run maturin build -r   # build a whl
+uv run maturin dev -r     # build a dev package similar to -e
+```
 
 ## Benchmarks
 
@@ -197,12 +203,3 @@ Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
 | `pymap3d`   | `ecef2aer`      | —            | 273 µs              |         |
 
 See [benchmarks](docs/benches/benchmarks.md) for more details
-
-## Build From Source
-
-Uses standard [maturin](https://github.com/PyO3/maturin) build process
-
-```bash
-uv run maturin build -r   # build a whl
-uv run maturin dev -r     # build a dev package similar to -e
-```
