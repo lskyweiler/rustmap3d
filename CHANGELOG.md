@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-10-29
+
+### 🚀 Features
+
+- Added from_rand to GeoPosition
+- Added optional alt_ref_m to python local-frame conversions
+- Added python ecef2lla_batch and lla2ecef_batch
+- Added python batched ENU conversions
+- Added python batched NED conversions
+- Added python batched AER conversions
+- Exposed control of number of threads to python
+- Added thread scope to mimic how numpy handles threadpool control
+- Added script to summarize benchmarks
+- Added parallel flag to all python facing
+- Added azimuth and elevation functions on geo orientation
+
+### 🐛 Bug Fixes
+
+- Ecef2lla Ferrari solution uses e⁴ instead of e′⁴
+- Ecef2lla returns ±90° latitude on the polar axis
+- Juliandate truncates per Vallado; j2000 ECI conversions were off by ~34°
+- Ll2dms formats longitude from the longitude
+- Python aer2ned returned ENU instead of NED
+- Dd2dms carries rounded seconds instead of printing 60
+- Throwing error if requested more threads than available
+- Fixed regressed aer convention change and added better docstrings
+
+### 🚜 Refactor
+
+- Adding all python functions inside pymap3d
+- Split local-frame and ECI transforms into setup and per-point kernels
+- Moved python module function to pymap3d
+- Bench file name reorg
+
+### 📚 Documentation
+
+- Corrected reference units and absolute-position wording for ecef2aer, aer2ecef, enu2ecef
+- Documented Earth-rotation-only limits of the j2000 ECI conversions
+- Documented ecef2lla_map3d accuracy by altitude
+- Reworded validation test comments
+- Added a batched transforms example and updated README
+- Minor readme update
+- Better docstring for geoorientation.elevation
+
+### ⚡ Performance
+
+- Added vincenty benchmarks
+- Refactored benchmarks to use pytest groups
+- Turned off default parallelism for small work transforms
+- Added parallel vs serial benchmarks for all transforms
+
+### 🧪 Testing
+
+- Validated transforms against the C kinematics-library
+- Replaced the reference implementation with recorded test vectors
+- Moved the reference tests and vectors into a reference_tests/ folder
+- Added rust benchmarks of batched transforms against single-point loops
+- Added python benchmarks of batched transforms
+- Renamed validation tests to test vectors
+- Moved batch tests into batch.rs
+
 ## [0.7.2] - 2026-08-24
 
 ### 🐛 Bug Fixes
@@ -13,10 +74,6 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Fixed pyglam module paths
-
-### ⚙️ Miscellaneous Tasks
-
-- *(release)* Prep for release v0.7.1
 
 ## [0.7.0] - 2026-07-28
 
@@ -40,12 +97,6 @@ All notable changes to this project will be documented in this file.
 - Updated bad docstring
 - Minor typo in stubs
 
-### ⚙️ Miscellaneous Tasks
-
-- Cargo locked
-- Updated stub file
-- *(release)* Prep for release v0.7.0
-
 ## [0.6.0] - 2026-04-21
 
 ### 🚀 Features
@@ -67,17 +118,6 @@ All notable changes to this project will be documented in this file.
 - Verifies Geo object pickle/deepcopy support
 - Adds explicit tests for python pickling
 
-### ⚙️ Miscellaneous Tasks
-
-- *(release)* Prep for release v0.6.0
-
-## [0.5.1] - 2026-04-10
-
-### ⚙️ Miscellaneous Tasks
-
-- Updated bevy to 18
-- *(release)* Prep for release v0.5.1
-
 ## [0.5.0] - 2026-04-02
 
 ### 🚀 Features
@@ -90,11 +130,6 @@ All notable changes to this project will be documented in this file.
 - Added either vec or tuple in geopos constructor
 - Added to owned stub export derive
 
-### ⚙️ Miscellaneous Tasks
-
-- Locked
-- *(release)* Prep for release v0.5.0
-
 ## [0.4.1] - 2026-03-17
 
 ### 🚀 Features
@@ -105,11 +140,6 @@ All notable changes to this project will be documented in this file.
 
 - Put all pydantic utility functions behind a cfg guarded mod
 - Minor typing fix
-
-### ⚙️ Miscellaneous Tasks
-
-- Formatted
-- *(release)* Prep for release v0.4.1
 
 ## [0.4.0] - 2026-03-06
 
@@ -133,16 +163,6 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Updated readme with pydantic integration
-
-### ⚙️ Miscellaneous Tasks
-
-- Prep for release v0.4.0
-- Ruff formatted
-- Bumped pyo3 stub gen to 19
-- Updated deps
-- Ruff formatted
-- Ruff formatted/fixed
-- *(release)* Prep for release v0.4.0
 
 ## [0.3.0] - 2026-02-17
 
@@ -210,27 +230,11 @@ All notable changes to this project will be documented in this file.
 - Fixed unit tests
 - Added serde tests for geopos
 
-### ⚙️ Miscellaneous Tasks
-
-- Ruff formatted and checked
-- Ruff formatted
-- Updated deps
-- Minor refactor of toml
-- Bumped pyglam in lock
-- Updated pyglam pointer
-- Fixed cargo warning
-- Prep for release v0.3.0
-- Updated version
-
 ## [0.2.3] - 2026-01-12
 
 ### 🚀 Features
 
 - Added lla to/from relative coords and default parameters for vincenty functions
-
-### ⚙️ Miscellaneous Tasks
-
-- *(release)* Prep for release v0.2.3
 
 ## [0.2.2] - 2026-01-09
 
@@ -243,10 +247,6 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Minor readme and toml updates
-
-### ⚙️ Miscellaneous Tasks
-
-- *(release)* Prep for release v0.2.1
 
 ## [0.2.0] - 2026-01-08
 
@@ -300,16 +300,11 @@ All notable changes to this project will be documented in this file.
 - Change vicenty direct test to use relative eq check
 - Adding single python-based test for now to be kosher with pytest
 
-### ⚙️ Miscellaneous Tasks
+### 🔩 CI
 
-- Added missing meta files
-- Added missing stub_gen file
-- Removed cargo toml
-- Updated version file and ruff fixed
 - *(ci)* Added dagger-based ci
 - *(ci)* Moved ci jobs out of here into dagger repo
 - *(ci)* Removed ci in favor of external dagger project
-- *(release)* Prep for release v0.2.0
 
 ## [0.1.4] - 2025-03-21
 
@@ -325,14 +320,6 @@ All notable changes to this project will be documented in this file.
 - Moved to using uv in docker container
 - Fixed bug in publish job
 
-### ⚙️ Miscellaneous Tasks
-
-- Updated dependency versions
-
 ## [0.1.0] - 2024-06-03
-
-### 💼 Other
-
-- Trying to fix unresolved maturin command
 
 <!-- generated by git-cliff -->

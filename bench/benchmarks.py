@@ -1,11 +1,12 @@
 """Benchmark rustmpa3d vs pymap3d both batched and single transormations"""
 
-import numpy
-import pytest
 import random
-import pymap3d
 
+import numpy
+import pymap3d
 import pymap3d.vincenty
+import pytest
+
 import rustmap3d
 
 BATCH_N = 10_000
