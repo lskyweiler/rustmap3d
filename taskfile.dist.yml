@@ -2,15 +2,9 @@
 
 version: "3"
 
-dotenv: [".env"]
-
 vars:
   APP_VERSION:
     sh: cat VERSION
-
-env:
-  DAGGER_MODULE: https://gitlab.lsde.leidos.com/alphamosaic/utilities/dagger.git/pyo3
-  LSDE_PYPI_REGISTRY: https://gitlab.lsde.leidos.com/api/v4/projects/4091/packages/pypi
 
 tasks:
   default:
@@ -32,6 +26,7 @@ tasks:
     cmds:
       - uv run ruff format
       - uv run ruff check --fix
+      - uv run pylint .
       - cargo fix --allow-dirty --allow-staged && cargo fmt --all
 
   test:
@@ -39,7 +34,15 @@ tasks:
     deps: [build-dev]
     cmds:
       - pytest --disable-warnings test/
-      - cd crates/map3d && cargo test
+      - cargo test --no-default-features --workspace
+  
+  bench:
+    desc: Run the benchmarks
+    deps: [build-dev]
+    cmds:
+      - mkdir -p .benchmarks/
+      - pytest --benchmark-json=.benchmarks/benches.json bench/benchmarks.py
+      - python bench/summarize.py .benchmarks/benches.json > docs/benchmarks.md
 
   gen-stubs:
     desc: Generate python stubs
@@ -48,26 +51,9 @@ tasks:
       - uvx ruff format rustmap3d.pyi
       - uvx ruff check --select I --fix rustmap3d.pyi
 
-  build-whls:
-    desc: Build a matrix of python wheels
-    cmds:
-      - dagger
-          -m=${DAGGER_MODULE}
-        call
-          -v --src=./
-        build-whl-matrix
-          --targets=x86_64-unknown-linux-gnu,x86_64-pc-windows-gnu,aarch64-unknown-linux-gnu,aarch64-apple-darwin
-          --pythons=3.11,3.12,3.13,3.14,3.14t
-          --debian-version=bullseye
-        export
-          --path=./
-
   upload-whls-pypi:
-    desc: Upload locally built whls to pypi
+    desc: Upload locally built whls to pypi. Requires PYPI_TOKEN env var from local .env file
+    dotenv: [".env"]
     cmds:
       - uv publish --token=$PYPI_TOKEN -v dist/*
   
-  upload-whls-lsde:
-    desc: Upload locally built whls to lsde registry
-    cmds:
-      - uv publish --publish-url=$LSDE_PYPI_REGISTRY --username=$LSDE_USERNAME --password=$LSDE_TOKEN -v dist/*

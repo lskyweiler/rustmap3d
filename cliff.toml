@@ -60,6 +60,17 @@ commit_preprocessors = [
 ]
 # regex for parsing and grouping commits
 commit_parsers = [
+  { sha = "49714ac37862b2be266a65a0e0ea89d64bf30de7", skip = true },
+  { sha = "a039b550ff6ea5bd5a7251caeea4b62cb0891d23", skip = true },
+  { sha = "dcdbca3e804a55b934f42e5028946bf8e7ac3499", skip = true },
+  { sha = "6b8a8cff021deae76e81c4bac6537afb1b514275", skip = true },
+  { sha = "7e03ea80fc08a802a2cbe67ead6dc64140ae2f3d", skip = true },
+  { sha = "91ad9b89bb270b27f66d904345e59d6c948555fd", skip = true },
+  { sha = "cb0dcf803f2c029c1fedc056ca5469bade9c7b84", skip = true },
+  { sha = "bfc8448aecc967a0f2da3d89470cfe05ad9891a5", skip = true },
+  { sha = "d3c21a014889416ef8588b22733af06069834682", skip = true },
+  { sha = "3f0759d413ee474dc6ed3af01ce767c212813949", skip = true },
+  { sha = "ae3850ad534493ccd3d68372b0c3a757cfcb434a", skip = true },
   { message = "^feat", group = "<!-- 0 -->🚀 Features" },
   { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
   { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
@@ -67,14 +78,17 @@ commit_parsers = [
   { message = "^refactor", group = "<!-- 2 -->🚜 Refactor" },
   { message = "^style", group = "<!-- 5 -->🎨 Styling" },
   { message = "^test", group = "<!-- 6 -->🧪 Testing" },
-  { message = "^chore\\(release\\): prepare for", skip = true },
+  { message = "^tooling", group = "<!-- 7 -->🛠️ Tooling" },
+  { message = "^chore\\(release\\)", skip = true },
   { message = "^chore\\(deps.*\\)", skip = true },
   { message = "^chore\\(pr\\)", skip = true },
   { message = "^chore\\(pull\\)", skip = true },
-  { message = "^chore|^ci", group = "<!-- 7 -->⚙️ Miscellaneous Tasks" },
-  { body = ".*security", group = "<!-- 8 -->🛡️ Security" },
-  { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
-  { message = ".*", group = "<!-- 10 -->💼 Other" },
+  { message = "^chore\\(ci\\)", group = "<!-- 8 -->🔩 CI" },
+  { message = "^chore", skip = true },
+  { message = "^wip", skip = true },
+  { body = ".*security", group = "<!-- 9 -->🛡️ Security" },
+  { message = "^revert", group = "<!-- 10 -->◀️ Revert" },
+  { message = ".*", group = "<!-- 11 -->💼 Other" },
 ]
 # filter out the commits that are not matched by commit parsers
 filter_commits = false

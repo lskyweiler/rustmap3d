@@ -48,4 +48,4 @@ extend-exclude = [".venv", "target"]
 
 [tool.pylint.main]
 ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target"]
-ignore-pattern = ["^test_*", "rustmap3d.pyi"]
+ignore-pattern = ["^test_*", "^bench_*", "rustmap3d.pyi"]

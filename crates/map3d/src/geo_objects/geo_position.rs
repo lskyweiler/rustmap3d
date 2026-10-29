@@ -18,6 +18,7 @@ use pyo3::{exceptions::PyValueError, prelude::*, types::*};
 use pyo3_stub_gen::derive::*;
 #[cfg(any(feature = "py-bevy", feature = "gen-to-owned-stubs"))]
 use simple_py_bevy::*;
+#[cfg(feature = "pyo3")]
 use std::hash::{Hash, Hasher};
 use std::{
     fmt::Debug,
@@ -328,6 +329,34 @@ impl GeoPosition {
             ecef: aer2ecef(aer_ddm.into_dvec3(), reference).into(),
         }
     }
+
+    /// Generate a random GeoPosition inside a lat, lon, alt bounding box
+    ///
+    /// # Arguments
+    ///
+    /// - `min_lat_d` (`f64`) - Minimum latitude for bounding box in degrees
+    /// - `max_lat_d` (`f64`) - Maximum latitude for bounding box in degrees
+    /// - `min_lon_d` (`f64`) - Minimum longitude for bounding box in degrees
+    /// - `max_lon_d` (`f64`) - Maximum longitude for bounding box in degrees
+    /// - `min_alt_m` (`f64`) - Minimum altitude for bounding box in msl meters
+    /// - `max_alt_m` (`f64`) - Maximum altitude for bounding box in msl meters
+    ///
+    #[staticmethod]
+    #[pyo3(signature = (min_lat_d = -90., max_lat_d = 90., min_lon_d = -180., max_lon_d = 180., min_alt_m = 0., max_alt_m = 10_000.))]
+    pub fn from_rand(
+        min_lat_d: f64,
+        max_lat_d: f64,
+        min_lon_d: f64,
+        max_lon_d: f64,
+        min_alt_m: f64,
+        max_alt_m: f64,
+    ) -> Self {
+        let lla = rand_lla_in_range(
+            min_lat_d, max_lat_d, min_lon_d, max_lon_d, min_alt_m, max_alt_m,
+        );
+        Self::from_lla(lla.into())
+    }
+
     /// Get the MSL altitude in meters
     pub fn alt(&self) -> f64 {
         self.lla().2

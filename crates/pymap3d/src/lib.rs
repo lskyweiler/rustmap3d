@@ -1,5 +1,8 @@
 use map3d;
 use pyo3::{exceptions::PyValueError, prelude::*};
+
+mod batch;
+pub use batch::*;
 use pyo3_stub_gen::derive::*;
 
 /// Vector as a tuple [x, y, z]
@@ -100,16 +103,25 @@ pub fn ecef_uvw2enu(u_m: f64, v_m: f64, w_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `z_m` - ECEF z in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2enu(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (x_m, y_m, z_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ecef2enu(
+    x_m: f64,
+    y_m: f64,
+    z_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let enu = map3d::ecef2enu(
         &glam::dvec3(x_m, y_m, z_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&enu);
 }
@@ -122,15 +134,24 @@ pub fn ecef2enu(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
 /// * `alt_m` - WGS84 MSL alt in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `enu` - Vector represented in ENU coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn lla2enu(lat_d: f64, lon_d: f64, alt_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (lat_d, lon_d, alt_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn lla2enu(
+    lat_d: f64,
+    lon_d: f64,
+    alt_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::lla2ecef(&glam::dvec3(lat_d, lon_d, alt_m));
-    let enu = map3d::ecef2enu(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, 0.));
+    let enu = map3d::ecef2enu(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m));
     return vec3_to_tuple(&enu);
 }
 
@@ -165,16 +186,25 @@ pub fn enu2ecef_uvw(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `u_m` - Up in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `ecef` - Absolute ECEF position in meters
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn enu2ecef(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (e_m, n_m, u_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn enu2ecef(
+    e_m: f64,
+    n_m: f64,
+    u_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::enu2ecef(
         &glam::dvec3(e_m, n_m, u_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&ecef);
 }
@@ -187,16 +217,25 @@ pub fn enu2ecef(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
 /// * `u_m` - Up in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `lla` - Absolute LLA position [deg-deg-m]
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn enu2lla(e_m: f64, n_m: f64, u_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (e_m, n_m, u_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn enu2lla(
+    e_m: f64,
+    n_m: f64,
+    u_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::enu2ecef(
         &glam::dvec3(e_m, n_m, u_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     let lla = map3d::ecef2lla(&ecef);
     return vec3_to_tuple(&lla);
@@ -233,16 +272,25 @@ pub fn ecef_uvw2ned(u_m: f64, v_m: f64, w_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `z_m` - ECEF z in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2ned(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (x_m, y_m, z_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ecef2ned(
+    x_m: f64,
+    y_m: f64,
+    z_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ned = map3d::ecef2ned(
         &glam::dvec3(x_m, y_m, z_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&ned);
 }
@@ -255,15 +303,24 @@ pub fn ecef2ned(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
 /// * `alt_m` - WGS84 MSL alt in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `ned` - Vector represented in NED coordinates [meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn lla2ned(lat_d: f64, lon_d: f64, alt_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (lat_d, lon_d, alt_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn lla2ned(
+    lat_d: f64,
+    lon_d: f64,
+    alt_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::lla2ecef(&glam::dvec3(lat_d, lon_d, alt_m));
-    let ned = map3d::ecef2ned(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, 0.));
+    let ned = map3d::ecef2ned(&ecef, &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m));
     return vec3_to_tuple(&ned);
 }
 /// Converts NED to ECEF uvw
@@ -297,16 +354,25 @@ pub fn ned2ecef_uvw(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `d_m` - Down in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `ecef` - Absolute ECEF position in meters
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ned2ecef(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (n_m, e_m, d_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ned2ecef(
+    n_m: f64,
+    e_m: f64,
+    d_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::ned2ecef(
         &glam::dvec3(n_m, e_m, d_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&ecef);
 }
@@ -319,16 +385,25 @@ pub fn ned2ecef(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64) ->
 /// * `d_m` - Down in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `lla` - Absolute lat lon alt [deg-deg-m]
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ned2lla(n_m: f64, e_m: f64, d_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (n_m, e_m, d_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ned2lla(
+    n_m: f64,
+    e_m: f64,
+    d_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef = map3d::ned2ecef(
         &glam::dvec3(n_m, e_m, d_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     let lla = map3d::ecef2lla(&ecef);
     return vec3_to_tuple(&lla);
@@ -365,16 +440,25 @@ pub fn ecef_uvw2aer(u_m: f64, v_m: f64, w_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `z_m` - ECEF z in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `aer` - Vector represented in AER coordinates [degrees-degrees-meters].
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn ecef2aer(x_m: f64, y_m: f64, z_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (x_m, y_m, z_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn ecef2aer(
+    x_m: f64,
+    y_m: f64,
+    z_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let aer = map3d::ecef2aer(
         &glam::dvec3(x_m, y_m, z_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&aer);
 }
@@ -410,16 +494,25 @@ pub fn aer2ecef_uvw(a_d: f64, e_d: f64, r_m: f64, lat_ref_d: f64, lon_ref_d: f64
 /// * `r_m` - Range in meters [float]
 /// * `lat_ref_d` - Reference WGS84 Lat in degrees [float]
 /// * `lon_ref_d` - Reference WGS84 Lon in degrees [float]
+/// * `alt_ref_m` - Reference WGS84 altitude in meters, defaults to 0 [float]
 ///
 /// # Returns
 ///
 /// * `ecef` - Absolute ECEF position in meters
 #[gen_stub_pyfunction]
 #[pyfunction]
-pub fn aer2ecef(a_d: f64, e_d: f64, r_m: f64, lat_ref_d: f64, lon_ref_d: f64) -> Vec3Tup {
+#[pyo3(signature = (a_d, e_d, r_m, lat_ref_d, lon_ref_d, alt_ref_m=0.0))]
+pub fn aer2ecef(
+    a_d: f64,
+    e_d: f64,
+    r_m: f64,
+    lat_ref_d: f64,
+    lon_ref_d: f64,
+    alt_ref_m: f64,
+) -> Vec3Tup {
     let ecef_uvw = map3d::aer2ecef(
         &glam::dvec3(a_d, e_d, r_m),
-        &glam::dvec3(lat_ref_d, lon_ref_d, 0.),
+        &glam::dvec3(lat_ref_d, lon_ref_d, alt_ref_m),
     );
     return vec3_to_tuple(&ecef_uvw);
 }
@@ -492,7 +585,7 @@ pub fn ned2aer(n_m: f64, e_m: f64, d_m: f64) -> Vec3Tup {
 #[gen_stub_pyfunction]
 #[pyfunction]
 pub fn aer2ned(a_d: f64, e_d: f64, r_m: f64) -> Vec3Tup {
-    let ned = map3d::aer2enu(&glam::dvec3(a_d, e_d, r_m));
+    let ned = map3d::aer2ned(&glam::dvec3(a_d, e_d, r_m));
     return vec3_to_tuple(&ned);
 }
 
@@ -894,4 +987,85 @@ pub fn mach(speed_mps: f64, alt_m: f64) -> PyResult<f64> {
         Ok(m) => Ok(m),
         Err(e) => Err(PyValueError::new_err(format!("{:?}", e))),
     }
+}
+
+/// Adds all python functions to a given python module
+pub fn add_to_pymodule(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(ecef2lla, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2ecef, m)?)?;
+
+    m.add_function(wrap_pyfunction!(ecef2enu, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2ned, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2aer, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ecef, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2ned, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2lla, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2enu, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2lla, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2enu, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef_uvw, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2ned, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef_uvw, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2aer, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ecef_uvw, m)?)?;
+
+    m.add_function(wrap_pyfunction!(enu2aer, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2enu, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2aer, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ned, m)?)?;
+
+    m.add_function(wrap_pyfunction!(ecef2lla_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2ecef_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2enu_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2enu_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2enu_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef_uvw_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2lla_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2ned_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2ned_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(lla2ned_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef_uvw_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2lla_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef_uvw2aer_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2aer_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ecef_uvw_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ecef_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2aer_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2enu_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2aer_batch, m)?)?;
+    m.add_function(wrap_pyfunction!(aer2ned_batch, m)?)?;
+
+    m.add_function(wrap_pyfunction!(set_global_thread_limits, m)?)?;
+    m.add_function(wrap_pyfunction!(threadpool_limits, m)?)?;
+
+    m.add_function(wrap_pyfunction!(rand_lla, m)?)?;
+    m.add_function(wrap_pyfunction!(rand_ecef, m)?)?;
+    m.add_function(wrap_pyfunction!(rand_orientation, m)?)?;
+
+    m.add_function(wrap_pyfunction!(ecef2enu_quat, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef_quat, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2ned_quat, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef_quat, m)?)?;
+
+    m.add_function(wrap_pyfunction!(ecef2enu_dcm, m)?)?;
+    m.add_function(wrap_pyfunction!(enu2ecef_dcm, m)?)?;
+    m.add_function(wrap_pyfunction!(ecef2ned_dcm, m)?)?;
+    m.add_function(wrap_pyfunction!(ned2ecef_dcm, m)?)?;
+
+    m.add_function(wrap_pyfunction!(dms2dd, m)?)?;
+    m.add_function(wrap_pyfunction!(dd2dms, m)?)?;
+    m.add_function(wrap_pyfunction!(ll2dms, m)?)?;
+
+    m.add_function(wrap_pyfunction!(angle_between, m)?)?;
+
+    m.add_function(wrap_pyfunction!(mach, m)?)?;
+
+    m.add_function(wrap_pyfunction!(vincenty_direct, m)?)?;
+    m.add_function(wrap_pyfunction!(vincenty_inverse, m)?)?;
+
+    Ok(())
 }

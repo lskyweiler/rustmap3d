@@ -8,6 +8,11 @@ glam.workspace = true
 pyo3.workspace = true
 map3d.workspace = true
 pyo3-stub-gen.workspace = true
+numpy.workspace = true
+rayon.workspace = true
 
 [lib]
 doctest = false
+
+[features]
+set-pyclass-module = []

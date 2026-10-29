@@ -16,12 +16,10 @@ use glam;
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3, lla_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ecef_uvw = ecef_uvw.into_dvec3();
-    let lla_ref = lla_ref.into_lat_lon_tuple();
-
-    let rot = ecef2ned_quat(lla_ref);
-    return rot * ecef_uvw;
+    let rot = ecef2ned_quat(lla_ref.into_lat_lon_tuple());
+    rot * ecef_uvw.into_dvec3()
 }
+
 /// Converts Absolute ECEF to NED.
 ///
 /// # Arguments
@@ -33,12 +31,11 @@ pub fn ecef_uvw2ned(ecef_uvw: impl IntoDVec3, lla_ref: impl IntoLatLonTuple) -> 
 ///
 /// * `ned` - Vector represented in NED coordinates [[meters]].
 pub fn ecef2ned(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ecef = ecef.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
-    let ecef_uvw = ecef - lla::lla2ecef(lla_ref);
+    let ref_ecef = lla::lla2ecef(lla_ref);
     let rot = ecef2ned_quat(lla_ref);
-    return rot * ecef_uvw;
+    rot * (ecef.into_dvec3() - ref_ecef)
 }
 
 /// Converts NED to ECEF uvw
@@ -52,11 +49,10 @@ pub fn ecef2ned(ecef: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::D
 ///
 /// * `ecef_uvw` - Vector represented in ECEF frame. Not an absolute position [[meters]].
 pub fn ned2ecef_uvw(ned: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::DVec3 {
-    let ned = ned.into_dvec3();
-
     let rot = ned2ecef_quat(ll_ref);
-    return rot * ned;
+    rot * ned.into_dvec3()
 }
+
 /// Converts NED to Absolute ECEF
 ///
 /// # Arguments
@@ -68,12 +64,11 @@ pub fn ned2ecef_uvw(ned: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 ///
 /// * `ecef` - Absolute ECEF vector
 pub fn ned2ecef(ned: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    let ned = ned.into_dvec3();
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let rot = ned2ecef_quat(lla_ref);
-    let ecef_uvw = rot * ned;
-    return ecef_uvw + lla::lla2ecef(lla_ref);
+    let ref_ecef = lla::lla2ecef(lla_ref);
+    rot * ned.into_dvec3() + ref_ecef
 }
 
 /// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.

@@ -6,12 +6,23 @@
 [![crates.io](https://img.shields.io/crates/v/map3d.svg)](https://crates.io/crates/map3d)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
+<!-- markdownlint-disable-next-line -->
 <p align="center"><img src="docs/rustmap3d.logo.svg" width="300px" height="300px"/></p>
 
+<!-- markdownlint-disable-next-line -->
 **Simple, fast, and ergonomic geodetic coordinate conversions**
 
----
-### Installation
+## Comparison with similar packages
+
+- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
+- Has optimizations for single point transformations as well as vectorized batch transforms
+- Zero dependencies
+- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
+- Exposes rotations (both quaternions and 3x3 matrices)
+- High-level `GeoObject` API
+
+## Installation
+
 ```bash
 # add to an existing project
 uv add rustmap3d
@@ -21,9 +32,10 @@ uv pip install rustmap3d
 # pip install without uv
 pip install rustmap3d
 ```
+
 ---
 
-### Examples
+## Examples
 
 Low-level transforms api similar to [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
 
@@ -62,7 +74,67 @@ lat, lon = rustmap3d.vincenty_direct(lat_deg, lon_deg, range_m, bearing_deg)
 range_m, bearing_ab, bearing_ba = rustmap3d.vincenty_inverse(lat_a, lon_a, lat_b, lon_b)
 ```
 
+Batched conversion functions
+
+```python
+import numpy as np
+import rustmap3d
+
+
+# inputs are anything numpy converts to an (N, 3) float64 array
+llas = np.array(
+    [
+        [0.0, 0.0, 100.0],
+        [38.9, -77.0, 120.0],
+        [-33.9, 151.2, 0.0],
+    ]
+)
+
+# wgs84 geodetic conversions
+ecefs = rustmap3d.lla2ecef_batch(llas)  # > (3, 3) array of x, y, z
+llas = rustmap3d.ecef2lla_batch(ecefs)
+llas = rustmap3d.ecef2lla_batch([[6378137.0, 0.0, 0.0]])  # lists of rows work too
+...
+
+# local conversions share one reference for the whole batch
+lat_ref, lon_ref, alt_ref = 38.9, -77.0, 120.0
+enus = rustmap3d.ecef2enu_batch(ecefs, lat_ref, lon_ref, alt_ref_m=alt_ref)
+ecefs = rustmap3d.enu2ecef_batch(enus, lat_ref, lon_ref, alt_ref_m=alt_ref)
+neds = rustmap3d.lla2ned_batch(llas, lat_ref, lon_ref, alt_ref_m=alt_ref)
+llas = rustmap3d.ned2lla_batch(neds, lat_ref, lon_ref, alt_ref_m=alt_ref)
+ecef_uvws = rustmap3d.enu2ecef_uvw_batch(enus, lat_ref, lon_ref)
+# enu, ned, aer, and their _uvw forms
+...
+
+# aer
+aers = rustmap3d.ecef2aer_batch(ecefs, lat_ref, lon_ref, alt_ref_m=alt_ref)
+az, el, rng = aers.T  # columns are azimuth, elevation, range
+ecefs = rustmap3d.aer2ecef_batch(aers, lat_ref, lon_ref, alt_ref_m=alt_ref)
+enus = rustmap3d.aer2enu_batch(aers)
+aers = rustmap3d.enu2aer_batch(enus)
+# ned2aer, aer2ned, ecef_uvw2aer, aer2ecef_uvw
+...
+
+# anything that isn't shaped (N, 3) raises ValueError
+try:
+    rustmap3d.lla2ecef_batch([0.0, 0.0, 100.0])
+except ValueError:
+    ...
+
+# Optional: configures the number of threads available for parallel batch processing
+#   defaults to all threads
+rustmap3d.set_global_thread_limits(8)
+
+# or you can use a scope
+with rustmap3d.threadpool_limits(1):
+    rustmap3d.ecef2lla_batch(ecef_batch)
+
+# all batched functions have a flag for controlling if parallel threads will be used
+rustmap3d.ecef2lla_batch(ecef_batch, parallel=True)
+```
+
 High-level GeoObject API
+
 ```python
 import math
 import pydantic
@@ -76,9 +148,9 @@ rustmap3d.GeoPosition.from_ned(rustmap3d.DVec3(100.0, 0.0, 0.0), reference)
 pos = rustmap3d.GeoPosition.from_aer(rustmap3d.DVec3(90.0, 0.0, 100.0), (0.0, 0.0, 0.0))
 
 # Conversions
-reference.aer_to(pos)
-reference.ned_to(pos)
-reference.enu_to(pos)
+reference.aer_to(pos)  # > DVec3
+reference.ned_to(pos)  # > DVec3
+reference.enu_to(pos)  # > DVec3
 
 # Operations
 vec = pos - reference  # > GeoVector
@@ -90,13 +162,13 @@ pos = reference + vel * dt  # > GeoPosition
 
 rotation = rustmap3d.GeoOrientation.from_ecef_euler(rustmap3d.DVec3(0.0, math.pi, 0.0))
 vec = rustmap3d.GeoVector.from_ecef(rustmap3d.DVec3(100.0, 0, 0.0), reference)
-vec = rotation * vec
+vec = rotation * vec  # > GeoVector
 
 # Orientations
 rot = rustmap3d.GeoOrientation.from_axis_angle(rustmap3d.DVec3(0.0, 0.0, 1), math.pi)
-rot.x_axis()
-rot.y_axis()
-rot.z_axis()
+rot.x_axis()  # > DVec3
+rot.y_axis()  # > DVec3
+rot.z_axis()  # > DVec3
 
 
 # There is also native pydantic integration for geo objects
@@ -111,28 +183,6 @@ print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
 validated = MyModel.model_validate(dumped)
 ```
 
-## Comparison with similar packages
-
-- 🚀🚀 Blazingly fast - written in rust (see [benchmarks](#benchmarks))
-- Zero dependencies
-- Dead simple api modeled after [pymap3d](https://github.com/geospace-code/pymap3d) and [matlab](https://www.mathworks.com/matlabcentral/fileexchange/15285-geodetic-toolbox)
-- Exposes rotations (both quaternions and 3x3 matrices)
-
-## Benchmarks
-
-Compared to [pymap3d](https://github.com/geospace-code/pymap3d)
-> Note: This is comparing calls with python scalars. Vectorized batched conversions will be implemented in the future
-
-- *~50x* faster for lla2ecef
-- *~400x* faster for ecef2lla
-
-<p align="center"><img src="docs/benchmarks.svg"></p>
-
-```bash
-# Run benchmarks
-uv run pytest --benchmark-histogram="./docs/benchmarks" bench/
-```
-
 ## Build From Source
 
 Uses standard [maturin](https://github.com/PyO3/maturin) build process
@@ -141,3 +191,14 @@ Uses standard [maturin](https://github.com/PyO3/maturin) build process
 uv run maturin build -r   # build a whl
 uv run maturin dev -r     # build a dev package similar to -e
 ```
+
+## Benchmarks
+
+See [benchmarks](docs/benchmarks.md) for more details
+
+```bash
+# runs the benchmarks and creates a summary of the benchmarks in bench/benchmarks.md
+uv run task bench
+```
+
+Rule of thumb for using `parallelized` batch operations: if that operation touches lla conversions, use `parallel=True`, otherwise it will probably be faster to run serial. This is due to workload complexity and the overhead associated with managing thread pool
