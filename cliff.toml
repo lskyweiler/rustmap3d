@@ -70,6 +70,7 @@ commit_parsers = [
   { sha = "bfc8448aecc967a0f2da3d89470cfe05ad9891a5", skip = true },
   { sha = "d3c21a014889416ef8588b22733af06069834682", skip = true },
   { sha = "3f0759d413ee474dc6ed3af01ce767c212813949", skip = true },
+  { sha = "ae3850ad534493ccd3d68372b0c3a757cfcb434a", skip = true },
   { message = "^feat", group = "<!-- 0 -->🚀 Features" },
   { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
   { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
