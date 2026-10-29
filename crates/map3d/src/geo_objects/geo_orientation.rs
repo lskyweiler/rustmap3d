@@ -513,7 +513,7 @@ impl GeoOrientation {
         aer.x
     }
 
-    /// Gets the elevation angle (angle between up and earth's tangent) in degrees for the body's forward vector
+    /// Gets the elevation angle (angle above the local hoirzon) in degrees for the body's forward vector
     ///
     /// # Arguments
     ///
