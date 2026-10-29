@@ -64,18 +64,11 @@ pub fn ned2ecef_uvw(ned: impl IntoDVec3, ll_ref: impl IntoLatLonTuple) -> glam::
 ///
 /// * `ecef` - Absolute ECEF vector
 pub fn ned2ecef(ned: impl IntoDVec3, lla_ref: impl IntoLatLonTriple) -> glam::DVec3 {
-    return ned2ecef_kernel(lla_ref)(ned.into_dvec3());
-}
-
-/// Per-reference setup for [`ned2ecef`], shared with its batched form.
-pub(crate) fn ned2ecef_kernel(
-    lla_ref: impl IntoLatLonTriple,
-) -> impl Fn(glam::DVec3) -> glam::DVec3 {
     let lla_ref = lla_ref.into_lat_lon_triple();
 
     let rot = ned2ecef_quat(lla_ref);
     let ref_ecef = lla::lla2ecef(lla_ref);
-    return move |ned| rot * ned + ref_ecef;
+    rot * ned.into_dvec3() + ref_ecef
 }
 
 /// Calculates the direction cosine matrix that yields an NED to ECEF transformation at this LLA.
