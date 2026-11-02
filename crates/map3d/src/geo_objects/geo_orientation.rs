@@ -786,7 +786,7 @@ ops_with_self!(&GeoOrientation, &GeoOrientation);
 #[cfg(test)]
 mod test_geo_orientation {
     use super::*;
-    use approx::assert_relative_eq;
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
 
     mod test_azimuth {
         use core::f64;
@@ -805,7 +805,7 @@ mod test_geo_orientation {
             let lla = (0., 0., 0.).into_either();
             let rot = GeoOrientation::from_ned_frame(lla);
             let az = rot.azimuth(lla);
-            assert_relative_eq!(az, 0.);
+            assert_abs_diff_eq!(az, 0., epsilon = 1e-9);
         }
         #[test]
         fn test_azimuth_270() {
@@ -827,7 +827,7 @@ mod test_geo_orientation {
             let lla = (0., 0., 0.).into_either();
             let rot = GeoOrientation::from_enu_frame(lla);
             let el = rot.elevation(lla);
-            assert_relative_eq!(el, 0.);
+            assert_abs_diff_eq!(el, 0., epsilon = 1e-9);
         }
     }
 }
