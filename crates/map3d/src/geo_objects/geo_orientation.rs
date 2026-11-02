@@ -29,9 +29,12 @@ use std::ops::Mul;
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
 #[cfg_attr(
     all(feature = "pyo3", feature = "set-pyclass-module"),
-    pyclass(module = "rustmap3d")
+    pyclass(module = "rustmap3d", from_py_object)
 )]
-#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
+#[cfg_attr(
+    all(feature = "pyo3", not(feature = "set-pyclass-module")),
+    pyclass(from_py_object)
+)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -69,11 +72,11 @@ pub struct GeoOrientation {
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass_enum)]
 #[cfg_attr(
     all(feature = "pyo3", not(feature = "set-pyclass-module")),
-    pyclass(eq, eq_int)
+    pyclass(eq, eq_int, from_py_object)
 )]
 #[cfg_attr(
     all(feature = "pyo3", feature = "set-pyclass-module"),
-    pyclass(eq, eq_int, module = "rustmap3d")
+    pyclass(eq, eq_int, module = "rustmap3d", from_py_object)
 )]
 #[derive(PartialEq, Clone, Debug)]
 pub enum EulerRot {
