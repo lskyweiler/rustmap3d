@@ -633,7 +633,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_x(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.x_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.x_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about its local ecef y axis
@@ -643,7 +643,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_y(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.y_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.y_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about its local ecef z axis
@@ -653,7 +653,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_z(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.z_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.z_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef x axis
@@ -663,7 +663,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_x(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(1., 0., 0.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::X, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef y axis
@@ -673,7 +673,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_y(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 1., 0.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::Y, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef z axis
@@ -683,7 +683,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_z(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 0., 1.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::Z, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
 
