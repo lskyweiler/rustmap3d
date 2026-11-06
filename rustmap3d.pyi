@@ -16,6 +16,7 @@ __all__ = [
     "GeoPosition",
     "GeoVector",
     "GeoVelocity",
+    "PolygonZone",
     "ThreadScope",
     "aer2ecef",
     "aer2ecef_batch",
@@ -1642,6 +1643,161 @@ class GeoVelocity:
     ) -> tuple[tuple[builtins.float, builtins.float, builtins.float], builtins.float]:
         r"""
         Support for pickle/deepcopy
+        """
+
+@typing.final
+class PolygonZone:
+    r"""
+    A closed `(lat, lon)` ring in degrees, extruded between `alt_min_m` and `alt_max_m`.
+
+    Containment, segment intersection and distance are computed in a local
+    East-North-Up tangent frame at the ring centroid. The horizontal projection
+    is taken at the floor altitude so a vertical column of points maps to one
+    planar point; altitude is tested separately against the band
+    `[alt_min_m - alt_buffer_m, alt_max_m + alt_buffer_m]` (inclusive).
+    """
+    @property
+    def vertices(self) -> builtins.list[tuple[builtins.float, builtins.float]]:
+        r"""
+        The closed `(lat_deg, lon_deg)` ring exactly as supplied.
+        """
+    @property
+    def alt_min_m(self) -> builtins.float:
+        r"""
+        Floor altitude in meters (without the safety buffer).
+        """
+    @property
+    def alt_max_m(self) -> builtins.float:
+        r"""
+        Ceiling altitude in meters (without the safety buffer).
+        """
+    @property
+    def alt_buffer_m(self) -> builtins.float:
+        r"""
+        Altitude safety buffer in meters applied below the floor and above the ceiling.
+        """
+    def contains(
+        self,
+        point: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.bool:
+        r"""
+        Is the point inside the zone?
+
+        # Arguments
+
+        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `bool` - True if the point is inside the footprint and within the buffered altitude band
+        """
+    def distance_to(
+        self,
+        point: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.float:
+        r"""
+        Shortest distance from the point to the zone, in meters (0 when inside).
+
+        # Arguments
+
+        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `float` - Euclidean distance in the local frame to the extruded solid [[meters]]
+        """
+    def intersects_segment(
+        self,
+        a: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+        b: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.bool:
+        r"""
+        Does the straight segment between two points pass through the zone?
+
+        # Arguments
+
+        - `a`, `b` (`tuple[float, float, float] | GeoPosition`) - Segment endpoints; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `bool` - True if any part of the segment lies inside the zone
+        """
+    def __repr__(self) -> builtins.str:
+        r"""
+        Python repr.
+        """
+    def __new__(
+        cls,
+        vertices: typing.Sequence[tuple[builtins.float, builtins.float]],
+        alt_min_m: builtins.float,
+        alt_max_m: builtins.float,
+        alt_buffer_m: builtins.float = ...,
+    ) -> PolygonZone:
+        r"""
+        Construct from a closed ring of `(lat_deg, lon_deg)` vertices.
+
+        # Arguments
+
+        - `vertices` (`list[tuple[float, float]]`) - Closed ring: the last vertex must equal the first [[degrees]]
+        - `alt_min_m` (`float`) - Floor altitude [[meters]]
+        - `alt_max_m` (`float`) - Ceiling altitude, may be `inf` [[meters]]
+        - `alt_buffer_m` (`float`) - Safety margin added below the floor and above the ceiling [[meters]]
+
+        # Raises
+
+        - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, or the altitudes are invalid
+        """
+    @staticmethod
+    def from_circle(
+        lat_deg: builtins.float,
+        lon_deg: builtins.float,
+        radius_m: builtins.float,
+        alt_min_m: builtins.float,
+        alt_max_m: builtins.float,
+        n_sides: builtins.int = ...,
+        alt_buffer_m: builtins.float = ...,
+    ) -> PolygonZone:
+        r"""
+        Regular polygon inscribed in a geodesic circle.
+
+        Vertices lie on the circle at evenly spaced bearings starting at true
+        north, so points between the inradius `r cos(pi / n_sides)` and `r` near
+        an edge midpoint are outside the zone.
+
+        # Arguments
+
+        - `lat_deg`, `lon_deg` (`float`) - Circle centre [[degrees]]
+        - `radius_m` (`float`) - Circle radius [[meters]]
+        - `alt_min_m`, `alt_max_m` (`float`) - Floor and ceiling [[meters]]
+        - `n_sides` (`int`) - Number of polygon sides, at least 3
+        - `alt_buffer_m` (`float`) - Altitude safety margin [[meters]]
+
+        # Raises
+
+        - `ValueError` if the radius or side count is invalid, or the centre is not a valid lat/lon
+        """
+    def __eq__(self, rhs: PolygonZone) -> builtins.bool:
+        r"""
+        Two zones are equal when their rings, altitudes and buffers are identical.
+        """
+    def __getnewargs__(
+        self,
+    ) -> tuple[
+        builtins.list[tuple[builtins.float, builtins.float]],
+        builtins.float,
+        builtins.float,
+        builtins.float,
+    ]:
+        r"""
+        Support for pickle/deepcopy.
         """
 
 @typing.final
