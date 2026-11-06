@@ -5,6 +5,8 @@ Usage:
     python bench/summarize.py out.json [more.json ...] > summary.md
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path

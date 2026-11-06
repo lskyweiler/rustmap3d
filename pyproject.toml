@@ -36,7 +36,6 @@ dev = [
     # for benchmarks
     "pymap3d",
     "numpy",
-    "matplotlib",
     'maturin[patchelf] ; platform_system != "Windows"',
 ]
 
@@ -44,8 +43,8 @@ dev = [
 features = ["pyo3/extension-module"]
 
 [tool.ruff]
-extend-exclude = [".venv", "target"]
+extend-exclude = [".venv", "target", "*.pyi"]
 
 [tool.pylint.main]
 ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target"]
-ignore-pattern = ["^test_*", "^bench_*", "rustmap3d.pyi"]
+ignore-patterns = ["^test_*", "^bench_*", "rustmap3d.pyi"]
