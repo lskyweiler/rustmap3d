@@ -183,6 +183,30 @@ print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
 validated = MyModel.model_validate(dumped)
 ```
 
+Geodetic zones
+
+```python
+import rustmap3d
+
+# A closed (lat, lon) ring extruded between two altitudes in meters.
+# Queries run in a local ENU tangent frame at the ring centroid, so they are
+# accurate for zones up to a few hundred km across.
+zone = rustmap3d.PolygonZone(
+    [(37.0, -78.0), (37.0, -76.0), (39.0, -76.0), (39.0, -78.0), (37.0, -78.0)],
+    alt_min_m=0.0,
+    alt_max_m=10_000.0,
+)
+zone.contains((38.0, -77.0, 5000.0))  # > True
+zone.contains(rustmap3d.GeoPosition.from_lla((38.0, -77.0, 5000.0)))  # > True
+zone.distance_to((38.0, -77.0, 11_000.0))  # > ~999.0 (1 km above the ceiling, minus the 1 m buffer)
+zone.intersects_segment((36.0, -77.0, 5000.0), (40.0, -77.0, 5000.0))  # > True
+
+# Circles are regular polygons inscribed in a geodesic circle (25 sides by default).
+# A sphere is a circle whose altitude band is centre +/- radius.
+dome = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 10_000.0, alt_min_m=0.0, alt_max_m=10_000.0)
+ball = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36)
+```
+
 ## Build From Source
 
 Uses standard [maturin](https://github.com/PyO3/maturin) build process
