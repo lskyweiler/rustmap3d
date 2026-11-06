@@ -24,11 +24,11 @@ version = "0.8.0"
 map3d = { path = "crates/map3d", features = ["pyo3"] }
 pymap3d = { path = "crates/pymap3d" }
 
-bevy = "0.19"
+bevy = "0.18"
 
 either = "1.15"
-glam = "0.32"
-pyo3 = { version = "0.29", features = [
+glam = "0.30"
+pyo3 = { version = "0.30", features = [
     "either",
     "extension-module",
     "generate-import-lib",
@@ -37,7 +37,7 @@ pyo3-stub-gen = { version = "0.23", default-features = false, features = [
     "either",
     "numpy",
 ] }
-numpy = "0.29"
+numpy = "0.30"
 rayon = "1.12.0"
 
 [lib]

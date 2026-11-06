@@ -107,7 +107,7 @@ def _cases_with_refs():
             yield pytest.param(name, inputs, kind, ref, id=f"{name}-{ref}")
 
 
-@pytest.mark.parametrize("name,inputs,kind,ref", _cases_with_refs())
+@pytest.mark.parametrize("name,inputs,kind,ref", list(_cases_with_refs()))
 def test_batch_matches_single(name, inputs, kind, ref):
     args, kwargs = _ref_args(kind, ref)
     single = getattr(rustmap3d, name)

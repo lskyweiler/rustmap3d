@@ -16,7 +16,7 @@ class TestGeoVelocity:
         actual = rustmap3d.GeoVelocity.from_dir_speed(
             rustmap3d.DVec3(1, 0, 0), 100.0
         ).model_dump()
-        assert "dir_ecef" in actual.keys()
+        assert "dir_ecef" in actual
 
     def test_load_dict(self):
         dumped = rustmap3d.GeoVelocity.from_dir_speed(
