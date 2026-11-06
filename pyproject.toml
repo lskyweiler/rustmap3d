@@ -25,9 +25,7 @@ readme = "README.md"
 [dependency-groups]
 dev = [
     "ruff",
-    "pre-commit",
     "pytest",
-    "pytest-cov",
     "pytest-benchmark[histogram]",
     "pylint",
     "maturin",
