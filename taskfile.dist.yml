@@ -33,7 +33,7 @@ tasks:
     desc: Run the unit tests
     deps: [build-dev]
     cmds:
-      - pytest --disable-warnings test/
+      - pytest test/
       - cargo test --no-default-features --workspace
   
   bench:

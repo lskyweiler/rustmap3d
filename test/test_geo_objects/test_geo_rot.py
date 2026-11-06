@@ -32,7 +32,7 @@ class TestGeoOrientation:
         actual = rustmap3d.GeoOrientation.from_ecef_euler(
             rustmap3d.DVec3(0, 0, math.pi / 2.0)
         ).model_dump()
-        assert "ecef_rot" in actual.keys()
+        assert "ecef_rot" in actual
 
     def test_load_dict(self):
         dumped = rustmap3d.GeoOrientation.from_ecef_euler(

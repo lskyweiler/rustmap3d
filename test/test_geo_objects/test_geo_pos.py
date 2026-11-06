@@ -28,7 +28,7 @@ class TestGeoPosition:
 
     def test_dump_dict(self):
         actual = rustmap3d.GeoPosition.from_lla((0, 0, 0)).model_dump()
-        assert "ecef" in actual.keys()
+        assert "ecef" in actual
 
     def test_load_dict(self):
         dumped = rustmap3d.GeoPosition.from_lla((0, 0, 0)).model_dump()

@@ -29,9 +29,12 @@ use std::ops::Mul;
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
 #[cfg_attr(
     all(feature = "pyo3", feature = "set-pyclass-module"),
-    pyclass(module = "rustmap3d")
+    pyclass(module = "rustmap3d", from_py_object)
 )]
-#[cfg_attr(all(feature = "pyo3", not(feature = "set-pyclass-module")), pyclass)]
+#[cfg_attr(
+    all(feature = "pyo3", not(feature = "set-pyclass-module")),
+    pyclass(from_py_object)
+)]
 #[cfg_attr(
     all(feature = "py-bevy", feature = "pyo3"),
     derive(PyBevyCompRef, PyStructRef)
@@ -69,11 +72,11 @@ pub struct GeoOrientation {
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass_enum)]
 #[cfg_attr(
     all(feature = "pyo3", not(feature = "set-pyclass-module")),
-    pyclass(eq, eq_int)
+    pyclass(eq, eq_int, from_py_object)
 )]
 #[cfg_attr(
     all(feature = "pyo3", feature = "set-pyclass-module"),
-    pyclass(eq, eq_int, module = "rustmap3d")
+    pyclass(eq, eq_int, module = "rustmap3d", from_py_object)
 )]
 #[derive(PartialEq, Clone, Debug)]
 pub enum EulerRot {
@@ -633,7 +636,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_x(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.x_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.x_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about its local ecef y axis
@@ -643,7 +646,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_y(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.y_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.y_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about its local ecef z axis
@@ -653,7 +656,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_local_z(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&self.z_axis(), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(self.z_axis().into(), angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef x axis
@@ -663,7 +666,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_x(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(1., 0., 0.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::X, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef y axis
@@ -673,7 +676,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_y(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 1., 0.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::Y, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
     /// Rotates this orientation about the global ecef z axis
@@ -683,7 +686,7 @@ impl GeoOrientation {
     /// - `angle_rad` `float` - Amount to rotate in radians
     ///
     pub fn rotate_ecef_z(&mut self, angle_rad: f64) {
-        let rot = DQuat::from_axis_angle(&pyglam::dvec3(0., 0., 1.), angle_rad);
+        let rot = glam::DQuat::from_axis_angle(glam::DVec3::Z, angle_rad);
         self.ecef_rot = rot * self.ecef_rot;
     }
 
@@ -783,7 +786,7 @@ ops_with_self!(&GeoOrientation, &GeoOrientation);
 #[cfg(test)]
 mod test_geo_orientation {
     use super::*;
-    use approx::assert_relative_eq;
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
 
     mod test_azimuth {
         use core::f64;
@@ -802,7 +805,7 @@ mod test_geo_orientation {
             let lla = (0., 0., 0.).into_either();
             let rot = GeoOrientation::from_ned_frame(lla);
             let az = rot.azimuth(lla);
-            assert_relative_eq!(az, 0.);
+            assert_abs_diff_eq!(az, 0., epsilon = 1e-9);
         }
         #[test]
         fn test_azimuth_270() {
@@ -824,7 +827,7 @@ mod test_geo_orientation {
             let lla = (0., 0., 0.).into_either();
             let rot = GeoOrientation::from_enu_frame(lla);
             let el = rot.elevation(lla);
-            assert_relative_eq!(el, 0.);
+            assert_abs_diff_eq!(el, 0., epsilon = 1e-9);
         }
     }
 }

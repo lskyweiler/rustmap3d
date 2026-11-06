@@ -36,7 +36,7 @@ class TestGeoVector:
         actual = rustmap3d.GeoVector.from_aer(
             rustmap3d.DVec3(90.0, 0.0, 100.0), (0, 0, 0)
         ).model_dump()
-        assert "ecef_uvw" in actual.keys()
+        assert "ecef_uvw" in actual
 
     def test_load_dict(self):
         dumped = rustmap3d.GeoVector.from_aer(

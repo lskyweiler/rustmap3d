@@ -11,8 +11,6 @@ fn override_pyclass_module<'py, P: PyTypeInfo>(py: Python<'py>, module: &str) ->
 
 #[pymodule]
 fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.gil_used(false)?; // 3.14t support
-
     pymap3d::add_to_pymodule(m)?;
 
     {
