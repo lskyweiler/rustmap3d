@@ -6,3 +6,4 @@ pub mod geo_orientation;
 pub mod geo_position;
 pub mod geo_vector;
 pub mod geo_velocity;
+pub mod polygon_zone;
