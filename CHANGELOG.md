@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-11-06
+
+### 🚀 Features
+
+- Compiling for python 3.15
+
+### 🐛 Bug Fixes
+
+- *(map3d)* Build without the pyo3 feature
+
+### 💼 Other
+
+- *(deps)* Bump pyo3 to 0.29, glam 0.32, numpy 0.29, pyo3-stub-gen 0.23
+
+### 🚜 Refactor
+
+- Opt pyclasses into from_py_object for pyo3 0.28+
+
+### 🧪 Testing
+
+- *(map3d)* Compare zero azimuth/elevation with an absolute epsilon
+
 ## [0.8.0] - 2026-10-29
 
 ### 🚀 Features
