@@ -202,9 +202,8 @@ zone.distance_to((38.0, -77.0, 11_000.0))  # > ~999.0 (1 km above the ceiling, m
 zone.intersects_segment((36.0, -77.0, 5000.0), (40.0, -77.0, 5000.0))  # > True
 
 # Circles are regular polygons inscribed in a geodesic circle (25 sides by default).
-# A sphere is a circle whose altitude band is centre +/- radius.
-dome = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 10_000.0, alt_min_m=0.0, alt_max_m=10_000.0)
-ball = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36)
+# A spherical zone is approximated by a cylinder containing that sphere and height +/- radius.
+zone = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36)
 ```
 
 ## Build From Source

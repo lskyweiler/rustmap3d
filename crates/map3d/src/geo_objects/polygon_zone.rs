@@ -22,7 +22,9 @@ use pyo3_stub_gen::derive::*;
 const EPS_M: f64 = 1e-9;
 /// Default number of sides for [`PolygonZone::from_circle`].
 pub const DEFAULT_CIRCLE_SIDES: usize = 25;
-/// Default altitude safety buffer (meters).
+/// Default altitude safety buffer (meters). This is to prevent floating point error
+/// from throwing containment false negatives (i.e., if a point is 1m under the zone,
+/// then consider it to be in the zone.)
 pub const DEFAULT_ALT_BUFFER_M: f64 = 1.0;
 
 /// Reasons a [`PolygonZone`] could not be built.
