@@ -16,11 +16,6 @@ class TestConstruction:
         assert z.vertices == SQUARE
         assert z.alt_min_m == 0.0
         assert z.alt_max_m == 10_000.0
-        assert z.alt_buffer_m == 1.0
-
-    def test_buffer_override(self):
-        z = rustmap3d.PolygonZone(SQUARE, 0.0, 10_000.0, alt_buffer_m=0.0)
-        assert z.alt_buffer_m == 0.0
 
     def test_unclosed_ring_raises(self):
         with pytest.raises(ValueError, match="closed"):
@@ -34,10 +29,6 @@ class TestConstruction:
         with pytest.raises(ValueError, match="alt_min_m"):
             rustmap3d.PolygonZone(SQUARE, 1000.0, 0.0)
 
-    def test_negative_buffer_raises(self):
-        with pytest.raises(ValueError, match="alt_buffer_m"):
-            rustmap3d.PolygonZone(SQUARE, 0.0, 1000.0, alt_buffer_m=-1.0)
-
     def test_infinite_ceiling(self):
         z = rustmap3d.PolygonZone(SQUARE, 0.0, math.inf)
         assert z.contains((0.0, 0.0, 1e7))
@@ -46,14 +37,12 @@ class TestConstruction:
         z = rustmap3d.PolygonZone.from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0)
         assert len(z.vertices) == 26
         assert z.vertices[0] == z.vertices[-1]
-        assert z.alt_buffer_m == 1.0
 
     def test_from_circle_overrides(self):
         z = rustmap3d.PolygonZone.from_circle(
-            36.15, -115.1, 20_000.0, 0.0, 5000.0, n_sides=8, alt_buffer_m=0.0
+            36.15, -115.1, 20_000.0, 0.0, 5000.0, n_sides=8
         )
         assert len(z.vertices) == 9
-        assert z.alt_buffer_m == 0.0
 
     def test_from_circle_bad_sides_raises(self):
         with pytest.raises(ValueError, match="n_sides"):
@@ -85,17 +74,22 @@ class TestQueries:
         assert square.contains(inside)
         assert not square.contains(outside)
 
-    def test_altitude_buffer(self):
-        with_buffer = rustmap3d.PolygonZone(SQUARE, 0.0, 1000.0)
-        without = rustmap3d.PolygonZone(SQUARE, 0.0, 1000.0, alt_buffer_m=0.0)
-        assert with_buffer.contains((0.0, 0.0, 1000.5))
-        assert not without.contains((0.0, 0.0, 1000.5))
+    def test_altitude_band_has_no_tolerance(self):
+        z = rustmap3d.PolygonZone(SQUARE, 0.0, 1000.0)
+        assert z.contains((0.0, 0.0, 1000.0))
+        assert z.contains((0.0, 0.0, 0.0))
+        assert not z.contains((0.0, 0.0, 1000.5))
+        assert not z.contains((0.0, 0.0, -0.5))
+
+    def test_alt_buffer_m_is_gone(self):
+        with pytest.raises(TypeError):
+            rustmap3d.PolygonZone(SQUARE, 0.0, 1000.0, alt_buffer_m=1.0)
 
     def test_distance_to(self, square):
         assert square.distance_to((0.0, 0.0, 5000.0)) == 0.0
-        # 1 km above the (buffered) ceiling, over the footprint.
+        # 1 km above the ceiling, over the footprint.
         np.testing.assert_allclose(
-            square.distance_to((0.0, 0.0, 11_001.0)), 1000.0, atol=1e-6
+            square.distance_to((0.0, 0.0, 11_000.0)), 1000.0, atol=1e-6
         )
         lat, lon = rustmap3d.vincenty_direct(0.0, 0.05, 1000.0, 90.0)
         np.testing.assert_allclose(
@@ -127,10 +121,10 @@ class TestPythonProtocol:
         assert a != c
 
     def test_pickle(self):
-        a = rustmap3d.PolygonZone(SQUARE, 0.0, 10_000.0, alt_buffer_m=2.0)
+        a = rustmap3d.PolygonZone(SQUARE, 0.0, 10_000.0)
         b = pickle.loads(pickle.dumps(a))
         assert a == b
-        assert b.alt_buffer_m == 2.0
+        assert b.alt_max_m == 10_000.0
 
     def test_deepcopy(self):
         a = rustmap3d.PolygonZone.from_circle(38.0, -77.0, 10_000.0, 0.0, 5000.0)

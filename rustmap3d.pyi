@@ -1654,7 +1654,18 @@ class PolygonZone:
     East-North-Up tangent frame at the ring centroid. The horizontal projection
     is taken at the floor altitude so a vertical column of points maps to one
     planar point; altitude is tested separately against the band
-    `[alt_min_m - alt_buffer_m, alt_max_m + alt_buffer_m]` (inclusive).
+    `[alt_min_m, alt_max_m]` (inclusive, with no tolerance).
+
+    Approximation error to be aware of:
+
+    - Edges are straight in the tangent plane, so they bow poleward of lines of
+      constant latitude: about 150 m at mid-edge for a 2 x 2 degree box at 9 N.
+      Add intermediate vertices along lat/lon box edges if that matters.
+    - Tangent-plane error grows as `d^3 / (6 R^2)` with distance `d` from the
+      centroid (about 4 m at 100 km, 130 m at 300 km).
+    - There is no altitude tolerance. A `GeoPosition` is converted from ECEF to
+      altitude before the test, so a point placed exactly on the floor or
+      ceiling can land a few nanometres either side of it.
     """
     @property
     def vertices(self) -> builtins.list[tuple[builtins.float, builtins.float]]:
@@ -1664,17 +1675,12 @@ class PolygonZone:
     @property
     def alt_min_m(self) -> builtins.float:
         r"""
-        Floor altitude in meters (without the safety buffer).
+        Floor altitude in meters.
         """
     @property
     def alt_max_m(self) -> builtins.float:
         r"""
-        Ceiling altitude in meters (without the safety buffer).
-        """
-    @property
-    def alt_buffer_m(self) -> builtins.float:
-        r"""
-        Altitude safety buffer in meters applied below the floor and above the ceiling.
+        Ceiling altitude in meters.
         """
     def contains(
         self,
@@ -1685,13 +1691,17 @@ class PolygonZone:
         r"""
         Is the point inside the zone?
 
+        The altitude band is inclusive with no tolerance. Near an east-west
+        edge of a lat/lon box, the horizontal verdict follows the tangent-plane
+        edge, which bows poleward of the parallel (see the type docs).
+
         # Arguments
 
         - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
 
         # Returns
 
-        - `bool` - True if the point is inside the footprint and within the buffered altitude band
+        - `bool` - True if the point is inside the footprint and within `[alt_min_m, alt_max_m]`
         """
     def distance_to(
         self,
@@ -1720,7 +1730,21 @@ class PolygonZone:
         ],
     ) -> builtins.bool:
         r"""
-        Does the straight segment between two points pass through the zone?
+        Does the path between two points pass through the zone?
+
+        The path follows the Earth's surface rather than cutting through it: its
+        ground track is the straight line between the endpoints in the zone's
+        local tangent plane, and its altitude is interpolated linearly from `a`
+        to `b`. A path with equal endpoint altitudes therefore stays at that
+        altitude the whole way, even when a true 3D chord between the points
+        would dip below ground.
+
+        The ground track matches the great-circle track exactly when it passes
+        over the zone's centroid. Elsewhere the track is off by roughly
+        `d^2 / 8R · sin(delta)`, where `d` is the path length, `R` is the Earth's radius
+        and `delta` is the angular distance from the centroid to the great circle.
+        That is about 150 m for a 1000 km path passing 50 km from the centroid,
+        so it only matters for long paths that just graze the zone's edge.
 
         # Arguments
 
@@ -1739,7 +1763,6 @@ class PolygonZone:
         vertices: typing.Sequence[tuple[builtins.float, builtins.float]],
         alt_min_m: builtins.float,
         alt_max_m: builtins.float,
-        alt_buffer_m: builtins.float = ...,
     ) -> PolygonZone:
         r"""
         Construct from a closed ring of `(lat_deg, lon_deg)` vertices.
@@ -1749,7 +1772,11 @@ class PolygonZone:
         - `vertices` (`list[tuple[float, float]]`) - Closed ring: the last vertex must equal the first [[degrees]]
         - `alt_min_m` (`float`) - Floor altitude [[meters]]
         - `alt_max_m` (`float`) - Ceiling altitude, may be `inf` [[meters]]
-        - `alt_buffer_m` (`float`) - Safety margin added below the floor and above the ceiling [[meters]]
+
+        Edges are straight lines in the centroid tangent plane, not lines of
+        constant latitude: each east-west edge of a 2 x 2 degree box at 9 N bows
+        poleward by about 150 m at its midpoint. Add intermediate vertices along
+        lat/lon box edges before building the zone if that margin matters.
 
         # Raises
 
@@ -1763,7 +1790,6 @@ class PolygonZone:
         alt_min_m: builtins.float,
         alt_max_m: builtins.float,
         n_sides: builtins.int = ...,
-        alt_buffer_m: builtins.float = ...,
     ) -> PolygonZone:
         r"""
         Regular polygon inscribed in a geodesic circle.
@@ -1778,7 +1804,6 @@ class PolygonZone:
         - `radius_m` (`float`) - Circle radius [[meters]]
         - `alt_min_m`, `alt_max_m` (`float`) - Floor and ceiling [[meters]]
         - `n_sides` (`int`) - Number of polygon sides, at least 3
-        - `alt_buffer_m` (`float`) - Altitude safety margin [[meters]]
 
         # Raises
 
@@ -1786,13 +1811,12 @@ class PolygonZone:
         """
     def __eq__(self, rhs: PolygonZone) -> builtins.bool:
         r"""
-        Two zones are equal when their rings, altitudes and buffers are identical.
+        Two zones are equal when their rings and altitudes are identical.
         """
     def __getnewargs__(
         self,
     ) -> tuple[
         builtins.list[tuple[builtins.float, builtins.float]],
-        builtins.float,
         builtins.float,
         builtins.float,
     ]:

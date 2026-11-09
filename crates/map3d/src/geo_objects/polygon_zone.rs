@@ -6,6 +6,14 @@
 //! distance `d` from the centroid: about 4 m at 100 km, 17 m at 160 km and
 //! 130 m at 300 km. The type is intended for zones up to a few hundred km across.
 //!
+//! Edges are straight lines in that tangent plane, not lines of constant
+//! latitude. An east-west edge therefore bows poleward of its parallel by
+//! roughly `R cos(lat) sin(lat_c) dlon^2 / 8` at its midpoint, where `lat_c` is
+//! the centroid latitude and `dlon` is the edge's longitude span in radians:
+//! about 150 m for each edge of a 2 x 2 degree box at 9 N. The bow shrinks with
+//! the square of the edge length, so zones defined as lat/lon boxes should add
+//! intermediate vertices along those edges when that margin matters.
+//!
 //! Points more than 90 degrees from the centroid would fold back onto the
 //! tangent plane (the antipode projects onto the centroid), so they are treated
 //! as beyond the frame's horizon: never contained, and measured by straight-line
@@ -27,10 +35,6 @@ use pyo3_stub_gen::derive::*;
 const EPS_M: f64 = 1e-9;
 /// Default number of sides for [`PolygonZone::from_circle`].
 pub const DEFAULT_CIRCLE_SIDES: usize = 25;
-/// Default altitude safety buffer (meters). This is to prevent floating point error
-/// from throwing containment false negatives (i.e., if a point is 1m under the zone,
-/// then consider it to be in the zone.)
-pub const DEFAULT_ALT_BUFFER_M: f64 = 1.0;
 
 /// Reasons a [`PolygonZone`] could not be built.
 #[derive(Debug, Clone)]
@@ -41,8 +45,6 @@ pub enum PolygonZoneError {
     TooFewVertices,
     /// `alt_min_m > alt_max_m`, or an altitude is NaN.
     InvalidAltitude,
-    /// Negative or NaN altitude buffer.
-    InvalidBuffer,
     /// `from_circle` with fewer than three sides.
     InvalidSides,
     /// `from_circle` with a non-positive radius.
@@ -62,7 +64,6 @@ impl fmt::Display for PolygonZoneError {
             Self::RingNotClosed => write!(f, "vertices must form a closed ring (first == last)"),
             Self::TooFewVertices => write!(f, "a polygon zone needs at least 3 distinct vertices"),
             Self::InvalidAltitude => write!(f, "alt_min_m must be <= alt_max_m and not NaN"),
-            Self::InvalidBuffer => write!(f, "alt_buffer_m must be >= 0"),
             Self::InvalidSides => write!(f, "n_sides must be >= 3"),
             Self::InvalidRadius => write!(f, "radius_m must be > 0"),
             Self::NonFinite => write!(f, "coordinates must be finite"),
@@ -81,7 +82,18 @@ impl fmt::Display for PolygonZoneError {
 /// East-North-Up tangent frame at the ring centroid. The horizontal projection
 /// is taken at the floor altitude so a vertical column of points maps to one
 /// planar point; altitude is tested separately against the band
-/// `[alt_min_m - alt_buffer_m, alt_max_m + alt_buffer_m]` (inclusive).
+/// `[alt_min_m, alt_max_m]` (inclusive, with no tolerance).
+///
+/// Approximation error to be aware of:
+///
+/// - Edges are straight in the tangent plane, so they bow poleward of lines of
+///   constant latitude: about 150 m at mid-edge for a 2 x 2 degree box at 9 N.
+///   Add intermediate vertices along lat/lon box edges if that matters.
+/// - Tangent-plane error grows as `d^3 / (6 R^2)` with distance `d` from the
+///   centroid (about 4 m at 100 km, 130 m at 300 km).
+/// - There is no altitude tolerance. A `GeoPosition` is converted from ECEF to
+///   altitude before the test, so a point placed exactly on the floor or
+///   ceiling can land a few nanometres either side of it.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "pyo3", gen_stub_pyclass)]
 #[cfg_attr(
@@ -96,12 +108,10 @@ impl fmt::Display for PolygonZoneError {
 pub struct PolygonZone {
     /// Closed `(lat_deg, lon_deg)` ring exactly as supplied; first == last.
     ring: Vec<(f64, f64)>,
-    /// Floor altitude [m], without the buffer.
+    /// Floor altitude [m].
     alt_min_m: f64,
-    /// Ceiling altitude [m], without the buffer; may be `+inf`.
+    /// Ceiling altitude [m]; may be `+inf`.
     alt_max_m: f64,
-    /// Margin added below the floor and above the ceiling [m].
-    alt_buffer_m: f64,
     /// Altitude of the tangent plane [m]: `alt_min_m` if finite, else 0. Every
     /// point is projected at this altitude so a vertical column maps to one
     /// planar point.
@@ -130,12 +140,14 @@ impl PolygonZone {
     /// - `ring` (`Vec<(f64, f64)>`) - Closed ring: the last vertex must equal the first [[degrees]]
     /// - `alt_min_m` (`f64`) - Floor altitude [[meters]]
     /// - `alt_max_m` (`f64`) - Ceiling altitude, may be infinite [[meters]]
-    /// - `alt_buffer_m` (`f64`) - Safety margin added below the floor and above the ceiling [[meters]]
+    ///
+    /// Edges are straight lines in the centroid tangent plane, not lines of
+    /// constant latitude; see the type docs for the resulting bow, and add
+    /// intermediate vertices along lat/lon box edges if it matters.
     pub fn from_vertices(
         ring: Vec<(f64, f64)>,
         alt_min_m: f64,
         alt_max_m: f64,
-        alt_buffer_m: f64,
     ) -> Result<Self, PolygonZoneError> {
         if ring.iter().any(|v| !v.0.is_finite() || !v.1.is_finite()) {
             return Err(PolygonZoneError::NonFinite);
@@ -145,9 +157,6 @@ impl PolygonZone {
         }
         if alt_min_m.is_nan() || alt_max_m.is_nan() || alt_min_m > alt_max_m {
             return Err(PolygonZoneError::InvalidAltitude);
-        }
-        if alt_buffer_m.is_nan() || alt_buffer_m < 0.0 {
-            return Err(PolygonZoneError::InvalidBuffer);
         }
         if ring.len() < 4 {
             // Minimum for polygon is 3 + 1 for closure.
@@ -188,7 +197,6 @@ impl PolygonZone {
             ring,
             alt_min_m,
             alt_max_m,
-            alt_buffer_m,
             ref_alt_m,
             ref_ecef,
             ecef2enu,
@@ -226,7 +234,6 @@ impl PolygonZone {
     /// - `radius_m` (`f64`) - Circle radius [[meters]]
     /// - `alt_min_m`, `alt_max_m` (`f64`) - Floor and ceiling [[meters]]
     /// - `n_sides` (`usize`) - Number of polygon sides, at least 3
-    /// - `alt_buffer_m` (`f64`) - Altitude safety margin [[meters]]
     pub fn from_circle(
         lat_deg: f64,
         lon_deg: f64,
@@ -234,7 +241,6 @@ impl PolygonZone {
         alt_min_m: f64,
         alt_max_m: f64,
         n_sides: usize,
-        alt_buffer_m: f64,
     ) -> Result<Self, PolygonZoneError> {
         if n_sides < 3 {
             return Err(PolygonZoneError::InvalidSides);
@@ -257,7 +263,7 @@ impl PolygonZone {
             ring.push((lat, wrap_lon(lon)));
         }
         ring.push(ring[0]);
-        Self::from_vertices(ring, alt_min_m, alt_max_m, alt_buffer_m)
+        Self::from_vertices(ring, alt_min_m, alt_max_m)
     }
 
     /// Project a geodetic point to (east, north, up) meters at the frame's reference altitude.
@@ -274,28 +280,19 @@ impl PolygonZone {
     }
 
     /// Straight-line ECEF distance from a point to the nearest ring vertex, with
-    /// the vertex altitude clamped to the buffered band. Used for points beyond
+    /// the vertex altitude clamped to the altitude band. Used for points beyond
     /// the frame's horizon, where planar distance is meaningless.
     fn far_side_distance(&self, lat_deg: f64, lon_deg: f64, alt_m: f64) -> f64 {
         let p = lla2ecef((lat_deg, lon_deg, alt_m));
-        let (lo, hi) = self.alt_band();
-        let v_alt = alt_m.clamp(lo, hi);
+        let v_alt = alt_m.clamp(self.alt_min_m, self.alt_max_m);
         self.ring
             .iter()
             .map(|&(lat, lon)| lla2ecef((lat, lon, v_alt)).distance(p))
             .fold(f64::INFINITY, f64::min)
     }
 
-    fn alt_band(&self) -> (f64, f64) {
-        (
-            self.alt_min_m - self.alt_buffer_m,
-            self.alt_max_m + self.alt_buffer_m,
-        )
-    }
-
     fn in_alt_band(&self, alt_m: f64) -> bool {
-        let (lo, hi) = self.alt_band();
-        alt_m >= lo && alt_m <= hi
+        alt_m >= self.alt_min_m && alt_m <= self.alt_max_m
     }
 
     /// Even-odd ray cast against the projected ring, with a bounding-box reject.
@@ -337,25 +334,23 @@ impl PolygonZone {
         self.ring.clone()
     }
 
-    /// Floor altitude in meters (without the safety buffer).
+    /// Floor altitude in meters.
     #[getter]
     pub fn alt_min_m(&self) -> f64 {
         self.alt_min_m
     }
 
-    /// Ceiling altitude in meters (without the safety buffer).
+    /// Ceiling altitude in meters.
     #[getter]
     pub fn alt_max_m(&self) -> f64 {
         self.alt_max_m
     }
 
-    /// Altitude safety buffer in meters applied below the floor and above the ceiling.
-    #[getter]
-    pub fn alt_buffer_m(&self) -> f64 {
-        self.alt_buffer_m
-    }
-
     /// Is the point inside the zone?
+    ///
+    /// The altitude band is inclusive with no tolerance. Near an east-west
+    /// edge of a lat/lon box, the horizontal verdict follows the tangent-plane
+    /// edge, which bows poleward of the parallel (see the type docs).
     ///
     /// # Arguments
     ///
@@ -363,7 +358,7 @@ impl PolygonZone {
     ///
     /// # Returns
     ///
-    /// - `bool` - True if the point is inside the footprint and within the buffered altitude band
+    /// - `bool` - True if the point is inside the footprint and within `[alt_min_m, alt_max_m]`
     pub fn contains(&self, point: EitherGeoPosOrLLATup) -> bool {
         let (lat, lon, alt) = point.into_lat_lon_triple();
         if !self.in_alt_band(alt) {
@@ -394,12 +389,25 @@ impl PolygonZone {
         } else {
             self.boundary_distance_local(p)
         };
-        let (lo, hi) = self.alt_band();
-        let vertical = (lo - alt).max(alt - hi).max(0.0);
+        let vertical = (self.alt_min_m - alt).max(alt - self.alt_max_m).max(0.0);
         horizontal.hypot(vertical)
     }
 
-    /// Does the straight segment between two points pass through the zone?
+    /// Does the path between two points pass through the zone?
+    ///
+    /// The path follows the Earth's surface rather than cutting through it: its
+    /// ground track is the straight line between the endpoints in the zone's
+    /// local tangent plane, and its altitude is interpolated linearly from `a`
+    /// to `b`. A path with equal endpoint altitudes therefore stays at that
+    /// altitude the whole way, even when a true 3D chord between the points
+    /// would dip below ground.
+    ///
+    /// The ground track matches the great-circle track exactly when it passes
+    /// over the zone's centroid. Elsewhere the track is off by roughly
+    /// `d^2 / 8R · sin(delta)`, where `d` is the path length, `R` is the Earth's radius
+    /// and `delta` is the angular distance from the centroid to the great circle.
+    /// That is about 150 m for a 1000 km path passing 50 km from the centroid,
+    /// so it only matters for long paths that just graze the zone's edge.
     ///
     /// # Arguments
     ///
@@ -416,7 +424,7 @@ impl PolygonZone {
         let (p1, p2) = (e1.truncate(), e2.truncate());
 
         // Clip the parametric segment to the altitude band.
-        let (lo, hi) = self.alt_band();
+        let (lo, hi) = (self.alt_min_m, self.alt_max_m);
         let dalt = alt2 - alt1;
         let (mut t0, mut t1) = if dalt.abs() < 1e-12 {
             if alt1 < lo || alt1 > hi {
@@ -463,11 +471,10 @@ impl PolygonZone {
     /// Python repr.
     fn __repr__(&self) -> String {
         format!(
-            "PolygonZone({} vertices, alt={}-{} m, buffer={} m)",
+            "PolygonZone({} vertices, alt={}-{} m)",
             self.ring.len() - 1,
             self.alt_min_m,
-            self.alt_max_m,
-            self.alt_buffer_m
+            self.alt_max_m
         )
     }
 
@@ -478,21 +485,20 @@ impl PolygonZone {
     /// - `vertices` (`list[tuple[float, float]]`) - Closed ring: the last vertex must equal the first [[degrees]]
     /// - `alt_min_m` (`float`) - Floor altitude [[meters]]
     /// - `alt_max_m` (`float`) - Ceiling altitude, may be `inf` [[meters]]
-    /// - `alt_buffer_m` (`float`) - Safety margin added below the floor and above the ceiling [[meters]]
+    ///
+    /// Edges are straight lines in the centroid tangent plane, not lines of
+    /// constant latitude: each east-west edge of a 2 x 2 degree box at 9 N bows
+    /// poleward by about 150 m at its midpoint. Add intermediate vertices along
+    /// lat/lon box edges before building the zone if that margin matters.
     ///
     /// # Raises
     ///
     /// - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, has a latitude outside [-90, 90], spans 90 degrees or more from its centroid, or the altitudes are invalid
     #[cfg(feature = "pyo3")]
     #[new]
-    #[pyo3(signature = (vertices, alt_min_m, alt_max_m, alt_buffer_m = DEFAULT_ALT_BUFFER_M))]
-    fn py_new(
-        vertices: Vec<(f64, f64)>,
-        alt_min_m: f64,
-        alt_max_m: f64,
-        alt_buffer_m: f64,
-    ) -> PyResult<Self> {
-        Self::from_vertices(vertices, alt_min_m, alt_max_m, alt_buffer_m)
+    #[pyo3(signature = (vertices, alt_min_m, alt_max_m))]
+    fn py_new(vertices: Vec<(f64, f64)>, alt_min_m: f64, alt_max_m: f64) -> PyResult<Self> {
+        Self::from_vertices(vertices, alt_min_m, alt_max_m)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
@@ -508,14 +514,13 @@ impl PolygonZone {
     /// - `radius_m` (`float`) - Circle radius [[meters]]
     /// - `alt_min_m`, `alt_max_m` (`float`) - Floor and ceiling [[meters]]
     /// - `n_sides` (`int`) - Number of polygon sides, at least 3
-    /// - `alt_buffer_m` (`float`) - Altitude safety margin [[meters]]
     ///
     /// # Raises
     ///
     /// - `ValueError` if the radius or side count is invalid, or the centre is not a valid lat/lon
     #[cfg(feature = "pyo3")]
     #[staticmethod]
-    #[pyo3(name = "from_circle", signature = (lat_deg, lon_deg, radius_m, alt_min_m, alt_max_m, n_sides = DEFAULT_CIRCLE_SIDES, alt_buffer_m = DEFAULT_ALT_BUFFER_M))]
+    #[pyo3(name = "from_circle", signature = (lat_deg, lon_deg, radius_m, alt_min_m, alt_max_m, n_sides = DEFAULT_CIRCLE_SIDES))]
     fn py_from_circle(
         lat_deg: f64,
         lon_deg: f64,
@@ -523,38 +528,23 @@ impl PolygonZone {
         alt_min_m: f64,
         alt_max_m: f64,
         n_sides: usize,
-        alt_buffer_m: f64,
     ) -> PyResult<Self> {
-        Self::from_circle(
-            lat_deg,
-            lon_deg,
-            radius_m,
-            alt_min_m,
-            alt_max_m,
-            n_sides,
-            alt_buffer_m,
-        )
-        .map_err(|e| PyValueError::new_err(e.to_string()))
+        Self::from_circle(lat_deg, lon_deg, radius_m, alt_min_m, alt_max_m, n_sides)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
-    /// Two zones are equal when their rings, altitudes and buffers are identical.
+    /// Two zones are equal when their rings and altitudes are identical.
     #[cfg(feature = "pyo3")]
     fn __eq__(&self, rhs: PolygonZone) -> bool {
         self.ring == rhs.ring
             && self.alt_min_m == rhs.alt_min_m
             && self.alt_max_m == rhs.alt_max_m
-            && self.alt_buffer_m == rhs.alt_buffer_m
     }
 
     /// Support for pickle/deepcopy.
     #[cfg(feature = "pyo3")]
-    fn __getnewargs__(&self) -> PyResult<(Vec<(f64, f64)>, f64, f64, f64)> {
-        Ok((
-            self.ring.clone(),
-            self.alt_min_m,
-            self.alt_max_m,
-            self.alt_buffer_m,
-        ))
+    fn __getnewargs__(&self) -> PyResult<(Vec<(f64, f64)>, f64, f64)> {
+        Ok((self.ring.clone(), self.alt_min_m, self.alt_max_m))
     }
 }
 
@@ -616,7 +606,7 @@ mod test_polygon_zone {
     }
 
     fn square_zone(alt_min: f64, alt_max: f64) -> PolygonZone {
-        PolygonZone::from_vertices(square(), alt_min, alt_max, 1.0).unwrap()
+        PolygonZone::from_vertices(square(), alt_min, alt_max).unwrap()
     }
 
     /// L shape: a 2x2 square with the north-east quadrant removed.
@@ -643,7 +633,7 @@ mod test_polygon_zone {
         let mut ring = square();
         ring.pop();
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::RingNotClosed)
         ));
     }
@@ -652,12 +642,12 @@ mod test_polygon_zone {
     fn fewer_than_three_distinct_vertices_is_rejected() {
         let ring = vec![(0.0, 0.0), (0.0, 1.0), (0.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::TooFewVertices)
         ));
         let ring = vec![(0.0, 0.0), (0.0, 1.0), (0.0, 1.0), (0.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::TooFewVertices)
         ));
     }
@@ -665,7 +655,7 @@ mod test_polygon_zone {
     #[test]
     fn inverted_altitude_band_is_rejected() {
         assert!(matches!(
-            PolygonZone::from_vertices(square(), 1000.0, 0.0, 1.0),
+            PolygonZone::from_vertices(square(), 1000.0, 0.0),
             Err(PolygonZoneError::InvalidAltitude)
         ));
     }
@@ -675,7 +665,7 @@ mod test_polygon_zone {
         let mut ring = square();
         ring[1].0 = f64::NAN;
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::NonFinite)
         ));
     }
@@ -683,7 +673,7 @@ mod test_polygon_zone {
     #[test]
     fn triangle_is_accepted() {
         let ring = vec![(0.0, 0.0), (0.0, 0.1), (0.1, 0.05), (0.0, 0.0)];
-        let z = PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0).unwrap();
+        let z = PolygonZone::from_vertices(ring, 0.0, 1000.0).unwrap();
         assert!(z.contains((0.03, 0.05, 500.0).into_either()));
         assert!(!z.contains((0.09, 0.0, 500.0).into_either()));
     }
@@ -692,7 +682,7 @@ mod test_polygon_zone {
     fn vertex_latitude_out_of_range_is_rejected() {
         let ring = vec![(89.0, 0.0), (89.0, 90.0), (95.0, 45.0), (89.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::LatitudeOutOfRange)
         ));
     }
@@ -700,15 +690,15 @@ mod test_polygon_zone {
     #[test]
     fn circle_centre_is_validated() {
         assert!(matches!(
-            PolygonZone::from_circle(91.0, 0.0, 1000.0, 0.0, 100.0, 25, 1.0),
+            PolygonZone::from_circle(91.0, 0.0, 1000.0, 0.0, 100.0, 25),
             Err(PolygonZoneError::LatitudeOutOfRange)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(f64::NAN, 0.0, 1000.0, 0.0, 100.0, 25, 1.0),
+            PolygonZone::from_circle(f64::NAN, 0.0, 1000.0, 0.0, 100.0, 25),
             Err(PolygonZoneError::NonFinite)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(0.0, f64::INFINITY, 1000.0, 0.0, 100.0, 25, 1.0),
+            PolygonZone::from_circle(0.0, f64::INFINITY, 1000.0, 0.0, 100.0, 25),
             Err(PolygonZoneError::NonFinite)
         ));
     }
@@ -725,27 +715,19 @@ mod test_polygon_zone {
             (-10.0, -10.0),
         ];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            PolygonZone::from_vertices(ring, 0.0, 1000.0),
             Err(PolygonZoneError::RingTooLarge)
-        ));
-    }
-
-    #[test]
-    fn negative_buffer_is_rejected() {
-        assert!(matches!(
-            PolygonZone::from_vertices(square(), 0.0, 1000.0, -1.0),
-            Err(PolygonZoneError::InvalidBuffer)
         ));
     }
 
     #[test]
     fn circle_needs_three_sides_and_positive_radius() {
         assert!(matches!(
-            PolygonZone::from_circle(0.0, 0.0, 1000.0, 0.0, 100.0, 2, 1.0),
+            PolygonZone::from_circle(0.0, 0.0, 1000.0, 0.0, 100.0, 2),
             Err(PolygonZoneError::InvalidSides)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(0.0, 0.0, 0.0, 0.0, 100.0, 25, 1.0),
+            PolygonZone::from_circle(0.0, 0.0, 0.0, 0.0, 100.0, 25),
             Err(PolygonZoneError::InvalidRadius)
         ));
     }
@@ -759,11 +741,10 @@ mod test_polygon_zone {
 
     #[test]
     fn getters_return_the_inputs_unchanged() {
-        let z = PolygonZone::from_vertices(square(), 10.0, 500.0, 2.5).unwrap();
+        let z = PolygonZone::from_vertices(square(), 10.0, 500.0).unwrap();
         assert_eq!(z.vertices(), square());
         assert_eq!(z.alt_min_m(), 10.0);
         assert_eq!(z.alt_max_m(), 500.0);
-        assert_eq!(z.alt_buffer_m(), 2.5);
     }
 
     // --- containment -----------------------------------------------------------
@@ -779,10 +760,10 @@ mod test_polygon_zone {
 
     #[test]
     fn concave_notch_is_outside_for_both_orientations() {
-        let ccw = PolygonZone::from_vertices(l_shape(), 0.0, INF, 1.0).unwrap();
+        let ccw = PolygonZone::from_vertices(l_shape(), 0.0, INF).unwrap();
         let mut rev = l_shape();
         rev.reverse();
-        let cw = PolygonZone::from_vertices(rev, 0.0, INF, 1.0).unwrap();
+        let cw = PolygonZone::from_vertices(rev, 0.0, INF).unwrap();
         for z in [&ccw, &cw] {
             assert!(z.contains((37.5, -76.5, 100.0).into_either()));
             assert!(z.contains((38.5, -77.5, 100.0).into_either()));
@@ -821,15 +802,37 @@ mod test_polygon_zone {
     }
 
     #[test]
-    fn altitude_buffer_widens_the_band() {
-        let with = PolygonZone::from_vertices(square(), 0.0, 1000.0, 1.0).unwrap();
-        let without = PolygonZone::from_vertices(square(), 0.0, 1000.0, 0.0).unwrap();
-        assert!(with.contains((0.0, 0.0, 1000.5).into_either()));
-        assert!(!without.contains((0.0, 0.0, 1000.5).into_either()));
-        assert!(with.contains((0.0, 0.0, -0.5).into_either()));
-        assert!(!without.contains((0.0, 0.0, -0.5).into_either()));
-        // Nominal bounds are reported, not the widened ones.
-        assert_eq!(with.alt_max_m(), 1000.0);
+    fn altitude_band_is_inclusive_with_no_tolerance() {
+        let z = square_zone(0.0, 1000.0);
+        assert!(z.contains((0.0, 0.0, 1000.0).into_either()));
+        assert!(z.contains((0.0, 0.0, 0.0).into_either()));
+        assert!(!z.contains((0.0, 0.0, 1000.001).into_either()));
+        assert!(!z.contains((0.0, 0.0, -0.001).into_either()));
+    }
+
+    #[test]
+    fn lat_lon_box_edges_bow_poleward_of_the_parallels() {
+        // Documented approximation: the north and south edges of the 2 x 2
+        // degree box at 9 N sit roughly 150 m poleward of lat 10 and lat 8
+        // at mid-edge (lon 180), so a point 100 m north of lat 10 there is still
+        // inside, and a point 100 m north of lat 8 is outside.
+        let z = pacific_box();
+        let (n_lat, n_lon) = dest(10.0, 180.0, 0.0, 100.0);
+        assert!(z.contains((n_lat, n_lon, 1000.0).into_either()));
+        let (s_lat, s_lon) = dest(8.0, 180.0, 0.0, 100.0);
+        assert!(!z.contains((s_lat, s_lon, 1000.0).into_either()));
+        // Densifying the edges removes most of the bow.
+        let mut ring = Vec::new();
+        for i in 0..=20 {
+            ring.push((10.0, wrap_lon(179.0 + 0.1 * i as f64)));
+        }
+        for i in 0..=20 {
+            ring.push((8.0, wrap_lon(181.0 - 0.1 * i as f64)));
+        }
+        ring.push(ring[0]);
+        let dense = PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
+        assert!(!dense.contains((n_lat, n_lon, 1000.0).into_either()));
+        assert!(dense.contains((s_lat, s_lon, 1000.0).into_either()));
     }
 
     // --- segments ---------------------------------------------------------------
@@ -871,7 +874,7 @@ mod test_polygon_zone {
 
     #[test]
     fn distance_beside_above_and_combined() {
-        let z = PolygonZone::from_vertices(square(), 0.0, 10_000.0, 0.0).unwrap();
+        let z = PolygonZone::from_vertices(square(), 0.0, 10_000.0).unwrap();
         // East edge runs along lon 0.05; 1 km further east.
         let (lat, lon) = dest(0.0, 0.05, 90.0, 1000.0);
         let beside = z.distance_to((lat, lon, 5000.0).into_either());
@@ -886,7 +889,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_vertices_lie_on_the_radius_and_ring_is_closed() {
-        let z = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 25, 1.0).unwrap();
+        let z = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 25).unwrap();
         let ring = z.vertices();
         assert_eq!(ring.len(), 26);
         assert_eq!(ring[0], ring[25]);
@@ -894,14 +897,14 @@ mod test_polygon_zone {
             let (d, _, _) = vincenty_inverse(36.15, -115.1, lat, lon, 1e-12, 200).unwrap();
             assert!((d - 20_000.0).abs() < 0.01, "vertex at {d} m");
         }
-        let eight = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 8, 1.0).unwrap();
+        let eight = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 8).unwrap();
         assert_eq!(eight.vertices().len(), 9);
     }
 
     #[test]
     fn circle_is_an_inscribed_polygon() {
         let r = 20_000.0;
-        let z = PolygonZone::from_circle(36.15, -115.1, r, 0.0, 5000.0, 25, 1.0).unwrap();
+        let z = PolygonZone::from_circle(36.15, -115.1, r, 0.0, 5000.0, 25).unwrap();
         for i in 0..36 {
             let (lat, lon) = dest(36.15, -115.1, 10.0 * i as f64, 0.99 * r);
             assert!(
@@ -924,7 +927,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_across_the_antimeridian() {
-        let z = PolygonZone::from_circle(0.0, 179.95, 20_000.0, 0.0, 5000.0, 25, 1.0).unwrap();
+        let z = PolygonZone::from_circle(0.0, 179.95, 20_000.0, 0.0, 5000.0, 25).unwrap();
         assert!(z.contains((0.0, -179.99, 1000.0).into_either()));
         assert!(z.contains((0.0, 179.9, 1000.0).into_either()));
         assert!(!z.contains((0.0, 179.5, 1000.0).into_either()));
@@ -940,7 +943,7 @@ mod test_polygon_zone {
             (8.0, 179.0),
             (10.0, 179.0),
         ];
-        PolygonZone::from_vertices(ring, 0.0, 10_000.0, 1.0).unwrap()
+        PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap()
     }
 
     #[test]
@@ -969,7 +972,7 @@ mod test_polygon_zone {
             (8.0, 179.0),
             (10.0, 179.0),
         ];
-        let a = PolygonZone::from_vertices(ring, 0.0, 10_000.0, 1.0).unwrap();
+        let a = PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
         let b = pacific_box();
         for lon in [178.9, 179.5, 180.0, -179.5, -178.9, 0.0] {
             let p = (9.0, lon, 1000.0);
@@ -1004,7 +1007,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_near_the_pole() {
-        let z = PolygonZone::from_circle(89.99, 0.0, 50_000.0, 0.0, 5000.0, 25, 1.0).unwrap();
+        let z = PolygonZone::from_circle(89.99, 0.0, 50_000.0, 0.0, 5000.0, 25).unwrap();
         assert!(z.contains((90.0, 123.0, 1000.0).into_either()));
         assert!(z.contains((89.8, 180.0, 1000.0).into_either()));
         assert!(!z.contains((89.0, 0.0, 1000.0).into_either()));
@@ -1023,7 +1026,7 @@ mod test_polygon_zone {
             d(270.0, 50_000.0),
             d(180.0, 50_000.0),
         ];
-        let z = PolygonZone::from_vertices(ring, 0.0, 5_000.0, 1.0).unwrap();
+        let z = PolygonZone::from_vertices(ring, 0.0, 5_000.0).unwrap();
         let mid = 50_000.0 / std::f64::consts::SQRT_2;
         let inside = d(45.0, mid - 20.0);
         let outside = d(45.0, mid + 20.0);
