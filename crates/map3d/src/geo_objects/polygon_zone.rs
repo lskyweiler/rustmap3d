@@ -5,10 +5,15 @@
 //! geometry in meters. Tangent-plane error grows as `d^3 / (6 R^2)` with the
 //! distance `d` from the centroid: about 4 m at 100 km, 17 m at 160 km and
 //! 130 m at 300 km. The type is intended for zones up to a few hundred km across.
+//!
+//! Points more than 90 degrees from the centroid would fold back onto the
+//! tangent plane (the antipode projects onto the centroid), so they are treated
+//! as beyond the frame's horizon: never contained, and measured by straight-line
+//! distance instead of planar distance.
 
 use crate::traits::*;
 use crate::transforms::*;
-use crate::vincenty::{vincenty_direct, DomainError};
+use crate::vincenty::vincenty_direct;
 use core::fmt;
 use glam::{DMat3, DVec2, DVec3};
 #[cfg(not(feature = "pyo3"))]
@@ -42,10 +47,13 @@ pub enum PolygonZoneError {
     InvalidSides,
     /// `from_circle` with a non-positive radius.
     InvalidRadius,
-    /// A vertex coordinate is NaN or infinite.
+    /// A vertex or circle-centre coordinate is NaN or infinite.
     NonFinite,
-    /// Vincenty rejected the circle centre.
-    Vincenty(DomainError),
+    /// A vertex or circle-centre latitude is outside `[-90, 90]`.
+    LatitudeOutOfRange,
+    /// A vertex is 90 degrees or more from the ring centroid, so the ring
+    /// cannot be represented in a single tangent plane.
+    RingTooLarge,
 }
 
 impl fmt::Display for PolygonZoneError {
@@ -57,8 +65,12 @@ impl fmt::Display for PolygonZoneError {
             Self::InvalidBuffer => write!(f, "alt_buffer_m must be >= 0"),
             Self::InvalidSides => write!(f, "n_sides must be >= 3"),
             Self::InvalidRadius => write!(f, "radius_m must be > 0"),
-            Self::NonFinite => write!(f, "vertex coordinates must be finite"),
-            Self::Vincenty(e) => write!(f, "{}", e),
+            Self::NonFinite => write!(f, "coordinates must be finite"),
+            Self::LatitudeOutOfRange => write!(f, "latitudes must be in [-90, 90] degrees"),
+            Self::RingTooLarge => write!(
+                f,
+                "every vertex must be less than 90 degrees from the ring centroid"
+            ),
         }
     }
 }
@@ -82,17 +94,31 @@ impl fmt::Display for PolygonZoneError {
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
 pub struct PolygonZone {
+    /// Closed `(lat_deg, lon_deg)` ring exactly as supplied; first == last.
     ring: Vec<(f64, f64)>,
+    /// Floor altitude [m], without the buffer.
     alt_min_m: f64,
+    /// Ceiling altitude [m], without the buffer; may be `+inf`.
     alt_max_m: f64,
+    /// Margin added below the floor and above the ceiling [m].
     alt_buffer_m: f64,
-    /// Reference `(lat, lon, alt)` of the tangent frame.
-    ref_lla: (f64, f64, f64),
+    /// Altitude of the tangent plane [m]: `alt_min_m` if finite, else 0. Every
+    /// point is projected at this altitude so a vertical column maps to one
+    /// planar point.
+    ref_alt_m: f64,
+    /// ECEF origin of the ENU frame: the ring centroid at `ref_alt_m` [m].
     ref_ecef: DVec3,
+    /// Rotation from ECEF offsets to East-North-Up at `ref_ecef`.
     ecef2enu: DMat3,
-    /// Ring projected to (east, north) meters; closed like `ring`.
+    /// Height of `ref_ecef` above the plane through the Earth's centre that is
+    /// normal to the local up axis [m]. A point is on the near side of the frame
+    /// when its up coordinate exceeds `-horizon_m` (less than 90 degrees away).
+    horizon_m: f64,
+    /// Ring projected to (east, north) [m]; closed like `ring`.
     local: Vec<DVec2>,
+    /// South-west corner of the bounding box of `local` [m], for fast rejection.
     local_min: DVec2,
+    /// North-east corner of the bounding box of `local` [m], for fast rejection.
     local_max: DVec2,
 }
 
@@ -114,13 +140,20 @@ impl PolygonZone {
         if ring.iter().any(|v| !v.0.is_finite() || !v.1.is_finite()) {
             return Err(PolygonZoneError::NonFinite);
         }
+        if ring.iter().any(|v| v.0.abs() > 90.0) {
+            return Err(PolygonZoneError::LatitudeOutOfRange);
+        }
         if alt_min_m.is_nan() || alt_max_m.is_nan() || alt_min_m > alt_max_m {
             return Err(PolygonZoneError::InvalidAltitude);
         }
         if alt_buffer_m.is_nan() || alt_buffer_m < 0.0 {
             return Err(PolygonZoneError::InvalidBuffer);
         }
-        if ring.len() < 2 || ring[0] != ring[ring.len() - 1] {
+        if ring.len() < 4 {
+            // Minimum for polygon is 3 + 1 for closure.
+            return Err(PolygonZoneError::TooFewVertices);
+        }
+        if ring[0] != ring[ring.len() - 1] {
             return Err(PolygonZoneError::RingNotClosed);
         }
         let mut distinct: Vec<(f64, f64)> = Vec::new();
@@ -133,7 +166,7 @@ impl PolygonZone {
             return Err(PolygonZoneError::TooFewVertices);
         }
 
-        let alt_ref = if alt_min_m.is_finite() {
+        let ref_alt_m = if alt_min_m.is_finite() {
             alt_min_m
         } else {
             0.0
@@ -141,31 +174,38 @@ impl PolygonZone {
         // Centroid through ECEF so rings across the antimeridian get a sane frame.
         let mean_ecef = distinct
             .iter()
-            .map(|&(lat, lon)| lla2ecef((lat, lon, alt_ref)))
+            .map(|&(lat, lon)| lla2ecef((lat, lon, ref_alt_m)))
             .sum::<DVec3>()
             / distinct.len() as f64;
         let c = ecef2lla(mean_ecef);
-        let ref_lla = (c.x, c.y, alt_ref);
+        let ref_lla = (c.x, c.y, ref_alt_m);
         let ref_ecef = lla2ecef(ref_lla);
         let ecef2enu = ecef2enu_dcm(ref_lla);
+        // Up coordinate of the Earth's centre is -(up . ref_ecef).
+        let horizon_m = (ecef2enu * ref_ecef).z;
 
         let mut zone = Self {
             ring,
             alt_min_m,
             alt_max_m,
             alt_buffer_m,
-            ref_lla,
+            ref_alt_m,
             ref_ecef,
             ecef2enu,
+            horizon_m,
             local: Vec::new(),
             local_min: DVec2::ZERO,
             local_max: DVec2::ZERO,
         };
-        zone.local = zone
+        let enu: Vec<DVec3> = zone
             .ring
             .iter()
-            .map(|&(lat, lon)| zone.project(lat, lon))
+            .map(|&(lat, lon)| zone.project_enu(lat, lon))
             .collect();
+        if enu.iter().any(|p| !zone.on_near_side(p.z)) {
+            return Err(PolygonZoneError::RingTooLarge);
+        }
+        zone.local = enu.iter().map(|p| p.truncate()).collect();
         zone.local_min = zone.local.iter().fold(DVec2::INFINITY, |m, p| m.min(*p));
         zone.local_max = zone
             .local
@@ -202,22 +242,48 @@ impl PolygonZone {
         if radius_m.is_nan() || radius_m <= 0.0 || !radius_m.is_finite() {
             return Err(PolygonZoneError::InvalidRadius);
         }
+        if !lat_deg.is_finite() || !lon_deg.is_finite() {
+            return Err(PolygonZoneError::NonFinite);
+        }
+        if lat_deg.abs() > 90.0 {
+            return Err(PolygonZoneError::LatitudeOutOfRange);
+        }
         let mut ring = Vec::with_capacity(n_sides + 1);
         for i in 0..n_sides {
             let bearing = 360.0 * i as f64 / n_sides as f64;
+            // Inputs were validated above, so Vincenty's domain checks cannot fail.
             let (lat, lon) = vincenty_direct(lat_deg, lon_deg, radius_m, bearing, 1e-12, 200)
-                .map_err(PolygonZoneError::Vincenty)?;
+                .expect("circle centre and radius already validated");
             ring.push((lat, wrap_lon(lon)));
         }
         ring.push(ring[0]);
         Self::from_vertices(ring, alt_min_m, alt_max_m, alt_buffer_m)
     }
 
-    /// Project a geodetic point to (east, north) meters at the frame's reference altitude.
-    fn project(&self, lat_deg: f64, lon_deg: f64) -> DVec2 {
-        let ecef = lla2ecef((lat_deg, lon_deg, self.ref_lla.2));
-        let enu = self.ecef2enu * (ecef - self.ref_ecef);
-        DVec2::new(enu.x, enu.y)
+    /// Project a geodetic point to (east, north, up) meters at the frame's reference altitude.
+    fn project_enu(&self, lat_deg: f64, lon_deg: f64) -> DVec3 {
+        let ecef = lla2ecef((lat_deg, lon_deg, self.ref_alt_m));
+        self.ecef2enu * (ecef - self.ref_ecef)
+    }
+
+    /// Is a projected point (by its up coordinate) less than 90 degrees from the
+    /// centroid? Far-side points fold back onto the plane, so their (east, north)
+    /// is meaningless. NaN compares false, so it counts as far side.
+    fn on_near_side(&self, up_m: f64) -> bool {
+        up_m > -self.horizon_m
+    }
+
+    /// Straight-line ECEF distance from a point to the nearest ring vertex, with
+    /// the vertex altitude clamped to the buffered band. Used for points beyond
+    /// the frame's horizon, where planar distance is meaningless.
+    fn far_side_distance(&self, lat_deg: f64, lon_deg: f64, alt_m: f64) -> f64 {
+        let p = lla2ecef((lat_deg, lon_deg, alt_m));
+        let (lo, hi) = self.alt_band();
+        let v_alt = alt_m.clamp(lo, hi);
+        self.ring
+            .iter()
+            .map(|&(lat, lon)| lla2ecef((lat, lon, v_alt)).distance(p))
+            .fold(f64::INFINITY, f64::min)
     }
 
     fn alt_band(&self) -> (f64, f64) {
@@ -300,7 +366,11 @@ impl PolygonZone {
     /// - `bool` - True if the point is inside the footprint and within the buffered altitude band
     pub fn contains(&self, point: EitherGeoPosOrLLATup) -> bool {
         let (lat, lon, alt) = point.into_lat_lon_triple();
-        self.in_alt_band(alt) && self.contains_local(self.project(lat, lon))
+        if !self.in_alt_band(alt) {
+            return false;
+        }
+        let enu = self.project_enu(lat, lon);
+        self.on_near_side(enu.z) && self.contains_local(enu.truncate())
     }
 
     /// Shortest distance from the point to the zone, in meters (0 when inside).
@@ -311,10 +381,14 @@ impl PolygonZone {
     ///
     /// # Returns
     ///
-    /// - `float` - Euclidean distance in the local frame to the extruded solid [[meters]]
+    /// - `float` - Euclidean distance in the local frame to the extruded solid; for points more than 90 degrees from the centroid, straight-line distance to the nearest vertex [[meters]]
     pub fn distance_to(&self, point: EitherGeoPosOrLLATup) -> f64 {
         let (lat, lon, alt) = point.into_lat_lon_triple();
-        let p = self.project(lat, lon);
+        let enu = self.project_enu(lat, lon);
+        if !self.on_near_side(enu.z) {
+            return self.far_side_distance(lat, lon, alt);
+        }
+        let p = enu.truncate();
         let horizontal = if self.contains_local(p) {
             0.0
         } else {
@@ -337,13 +411,14 @@ impl PolygonZone {
     pub fn intersects_segment(&self, a: EitherGeoPosOrLLATup, b: EitherGeoPosOrLLATup) -> bool {
         let (lat1, lon1, alt1) = a.into_lat_lon_triple();
         let (lat2, lon2, alt2) = b.into_lat_lon_triple();
-        let p1 = self.project(lat1, lon1);
-        let p2 = self.project(lat2, lon2);
+        let e1 = self.project_enu(lat1, lon1);
+        let e2 = self.project_enu(lat2, lon2);
+        let (p1, p2) = (e1.truncate(), e2.truncate());
 
         // Clip the parametric segment to the altitude band.
         let (lo, hi) = self.alt_band();
         let dalt = alt2 - alt1;
-        let (t0, t1) = if dalt.abs() < 1e-12 {
+        let (mut t0, mut t1) = if dalt.abs() < 1e-12 {
             if alt1 < lo || alt1 > hi {
                 return false;
             }
@@ -351,13 +426,26 @@ impl PolygonZone {
         } else {
             let ta = (lo - alt1) / dalt;
             let tb = (hi - alt1) / dalt;
-            let t0 = ta.min(tb).max(0.0);
-            let t1 = ta.max(tb).min(1.0);
-            if t0 > t1 {
-                return false;
-            }
-            (t0, t1)
+            (ta.min(tb).max(0.0), ta.max(tb).min(1.0))
         };
+
+        // Clip to the near side of the frame so a far-side endpoint, whose
+        // projection has folded back onto the plane, cannot fake a crossing.
+        let (n1, n2) = (self.on_near_side(e1.z), self.on_near_side(e2.z));
+        if !n1 && !n2 {
+            return false;
+        }
+        if n1 != n2 {
+            let t_h = (-self.horizon_m - e1.z) / (e2.z - e1.z);
+            if n1 {
+                t1 = t1.min(t_h);
+            } else {
+                t0 = t0.max(t_h);
+            }
+        }
+        if !(t0 <= t1) {
+            return false;
+        }
         let c1 = p1.lerp(p2, t0);
         let c2 = p1.lerp(p2, t1);
 
@@ -394,7 +482,7 @@ impl PolygonZone {
     ///
     /// # Raises
     ///
-    /// - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, or the altitudes are invalid
+    /// - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, has a latitude outside [-90, 90], spans 90 degrees or more from its centroid, or the altitudes are invalid
     #[cfg(feature = "pyo3")]
     #[new]
     #[pyo3(signature = (vertices, alt_min_m, alt_max_m, alt_buffer_m = DEFAULT_ALT_BUFFER_M))]
@@ -589,6 +677,56 @@ mod test_polygon_zone {
         assert!(matches!(
             PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
             Err(PolygonZoneError::NonFinite)
+        ));
+    }
+
+    #[test]
+    fn triangle_is_accepted() {
+        let ring = vec![(0.0, 0.0), (0.0, 0.1), (0.1, 0.05), (0.0, 0.0)];
+        let z = PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0).unwrap();
+        assert!(z.contains((0.03, 0.05, 500.0).into_either()));
+        assert!(!z.contains((0.09, 0.0, 500.0).into_either()));
+    }
+
+    #[test]
+    fn vertex_latitude_out_of_range_is_rejected() {
+        let ring = vec![(89.0, 0.0), (89.0, 90.0), (95.0, 45.0), (89.0, 0.0)];
+        assert!(matches!(
+            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            Err(PolygonZoneError::LatitudeOutOfRange)
+        ));
+    }
+
+    #[test]
+    fn circle_centre_is_validated() {
+        assert!(matches!(
+            PolygonZone::from_circle(91.0, 0.0, 1000.0, 0.0, 100.0, 25, 1.0),
+            Err(PolygonZoneError::LatitudeOutOfRange)
+        ));
+        assert!(matches!(
+            PolygonZone::from_circle(f64::NAN, 0.0, 1000.0, 0.0, 100.0, 25, 1.0),
+            Err(PolygonZoneError::NonFinite)
+        ));
+        assert!(matches!(
+            PolygonZone::from_circle(0.0, f64::INFINITY, 1000.0, 0.0, 100.0, 25, 1.0),
+            Err(PolygonZoneError::NonFinite)
+        ));
+    }
+
+    #[test]
+    fn hemisphere_sized_ring_is_rejected() {
+        // Centroid is near (0, 0); the vertex at lon 170 is ~170 degrees away.
+        let ring = vec![
+            (-10.0, -10.0),
+            (-10.0, 10.0),
+            (10.0, 10.0),
+            (0.0, 170.0),
+            (10.0, -10.0),
+            (-10.0, -10.0),
+        ];
+        assert!(matches!(
+            PolygonZone::from_vertices(ring, 0.0, 1000.0, 1.0),
+            Err(PolygonZoneError::RingTooLarge)
         ));
     }
 
@@ -791,6 +929,77 @@ mod test_polygon_zone {
         assert!(z.contains((0.0, 179.9, 1000.0).into_either()));
         assert!(!z.contains((0.0, 179.5, 1000.0).into_either()));
         assert!(z.vertices().iter().all(|v| v.1 > -180.0 && v.1 <= 180.0));
+    }
+
+    /// 2 x 2 degree box straddling the antimeridian, NW -> NE -> SE -> SW.
+    fn pacific_box() -> PolygonZone {
+        let ring = vec![
+            (10.0, 179.0),
+            (10.0, -179.0),
+            (8.0, -179.0),
+            (8.0, 179.0),
+            (10.0, 179.0),
+        ];
+        PolygonZone::from_vertices(ring, 0.0, 10_000.0, 1.0).unwrap()
+    }
+
+    #[test]
+    fn box_across_the_antimeridian_takes_the_short_way() {
+        let z = pacific_box();
+        for lon in [179.01, 179.5, 180.0, -180.0, -179.5, -179.01] {
+            assert!(z.contains((9.0, lon, 1000.0).into_either()), "lon {lon}");
+        }
+        // Just outside each side, and the long way round (lon 0 lies "between"
+        // 179 and -179 if longitudes were interpolated naively).
+        for (lat, lon) in [(9.0, 178.9), (9.0, -178.9), (10.1, 180.0), (7.9, 180.0), (9.0, 0.0)] {
+            assert!(!z.contains((lat, lon, 1000.0).into_either()), "({lat}, {lon})");
+        }
+        // A segment along lat 9 from 178.5 to -178.5 crosses the 2 degree box.
+        assert!(seg(&z, (9.0, 178.5, 1000.0), (9.0, -178.5, 1000.0)));
+        // East of the box, going further east: never touches it.
+        assert!(!seg(&z, (9.0, -178.5, 1000.0), (9.0, -170.0, 1000.0)));
+    }
+
+    #[test]
+    fn same_box_with_longitudes_in_0_to_360_is_identical() {
+        let ring = vec![
+            (10.0, 179.0),
+            (10.0, 181.0),
+            (8.0, 181.0),
+            (8.0, 179.0),
+            (10.0, 179.0),
+        ];
+        let a = PolygonZone::from_vertices(ring, 0.0, 10_000.0, 1.0).unwrap();
+        let b = pacific_box();
+        for lon in [178.9, 179.5, 180.0, -179.5, -178.9, 0.0] {
+            let p = (9.0, lon, 1000.0);
+            assert_eq!(a.contains(p.into_either()), b.contains(p.into_either()), "lon {lon}");
+        }
+    }
+
+    #[test]
+    fn far_side_points_are_never_inside() {
+        let z = square_zone(0.0, 10_000.0);
+        // The antipode of the centroid projects onto the centroid itself.
+        assert!(!z.contains((0.0, 180.0, 5000.0).into_either()));
+        assert!(!z.contains((-0.01, 179.99, 5000.0).into_either()));
+        let d = z.distance_to((0.0, 180.0, 5000.0).into_either());
+        assert!(d > 12_000_000.0, "antipode distance {d}");
+        // Pacific box and the matching point on the far side of the Earth.
+        assert!(!pacific_box().contains((-9.0, 0.0, 1000.0).into_either()));
+    }
+
+    #[test]
+    fn segment_with_a_far_side_endpoint_is_clipped() {
+        let z = square_zone(0.0, 10_000.0);
+        // From well east of the square to its antipode: the folded projection of
+        // the far end would sit on the centroid, but the near part never enters.
+        assert!(!seg(&z, (0.0, 1.0, 5000.0), (0.0, 180.0, 5000.0)));
+        assert!(!seg(&z, (0.0, 180.0, 5000.0), (0.0, 1.0, 5000.0)));
+        // Both endpoints on the far side.
+        assert!(!seg(&z, (0.0, 179.0, 5000.0), (0.0, -179.0, 5000.0)));
+        // Starting inside and heading to the far side still hits.
+        assert!(seg(&z, (0.0, 0.0, 5000.0), (0.0, 180.0, 5000.0)));
     }
 
     #[test]

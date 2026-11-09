@@ -1708,7 +1708,7 @@ class PolygonZone:
 
         # Returns
 
-        - `float` - Euclidean distance in the local frame to the extruded solid [[meters]]
+        - `float` - Euclidean distance in the local frame to the extruded solid; for points more than 90 degrees from the centroid, straight-line distance to the nearest vertex [[meters]]
         """
     def intersects_segment(
         self,
@@ -1753,7 +1753,7 @@ class PolygonZone:
 
         # Raises
 
-        - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, or the altitudes are invalid
+        - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, has a latitude outside [-90, 90], spans 90 degrees or more from its centroid, or the altitudes are invalid
         """
     @staticmethod
     def from_circle(
