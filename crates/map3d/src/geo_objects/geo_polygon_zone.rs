@@ -21,6 +21,7 @@
 
 use crate::traits::*;
 use crate::transforms::*;
+use crate::utils::{point_segment_distance, segments_cross, wrap_lon, PLANAR_EPS_M as EPS_M};
 use crate::vincenty::vincenty_direct;
 use core::fmt;
 use glam::{DMat3, DVec2, DVec3};
@@ -31,14 +32,12 @@ use pyo3::{exceptions::PyValueError, prelude::*};
 #[cfg(feature = "pyo3")]
 use pyo3_stub_gen::derive::*;
 
-/// Tolerance used when comparing projected coordinates (meters).
-const EPS_M: f64 = 1e-9;
-/// Default number of sides for [`PolygonZone::from_circle`].
+/// Default number of sides for [`GeoPolygonZone::from_circle`].
 pub const DEFAULT_CIRCLE_SIDES: usize = 25;
 
-/// Reasons a [`PolygonZone`] could not be built.
+/// Reasons a [`GeoPolygonZone`] could not be built.
 #[derive(Debug, Clone)]
-pub enum PolygonZoneError {
+pub enum GeoPolygonZoneError {
     /// The first and last vertex differ.
     RingNotClosed,
     /// Fewer than three distinct vertices.
@@ -58,7 +57,7 @@ pub enum PolygonZoneError {
     RingTooLarge,
 }
 
-impl fmt::Display for PolygonZoneError {
+impl fmt::Display for GeoPolygonZoneError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RingNotClosed => write!(f, "vertices must form a closed ring (first == last)"),
@@ -105,7 +104,7 @@ impl fmt::Display for PolygonZoneError {
     pyclass(from_py_object)
 )]
 #[cfg_attr(not(feature = "pyo3"), derive(DummyPyO3))]
-pub struct PolygonZone {
+pub struct GeoPolygonZone {
     /// Closed `(lat_deg, lon_deg)` ring exactly as supplied; first == last.
     ring: Vec<(f64, f64)>,
     /// Floor altitude [m].
@@ -132,7 +131,7 @@ pub struct PolygonZone {
     local_max: DVec2,
 }
 
-impl PolygonZone {
+impl GeoPolygonZone {
     /// Build a zone from a closed ring of `(lat_deg, lon_deg)` vertices.
     ///
     /// # Arguments
@@ -148,22 +147,22 @@ impl PolygonZone {
         ring: Vec<(f64, f64)>,
         alt_min_m: f64,
         alt_max_m: f64,
-    ) -> Result<Self, PolygonZoneError> {
+    ) -> Result<Self, GeoPolygonZoneError> {
         if ring.iter().any(|v| !v.0.is_finite() || !v.1.is_finite()) {
-            return Err(PolygonZoneError::NonFinite);
+            return Err(GeoPolygonZoneError::NonFinite);
         }
         if ring.iter().any(|v| v.0.abs() > 90.0) {
-            return Err(PolygonZoneError::LatitudeOutOfRange);
+            return Err(GeoPolygonZoneError::LatitudeOutOfRange);
         }
         if alt_min_m.is_nan() || alt_max_m.is_nan() || alt_min_m > alt_max_m {
-            return Err(PolygonZoneError::InvalidAltitude);
+            return Err(GeoPolygonZoneError::InvalidAltitude);
         }
         if ring.len() < 4 {
             // Minimum for polygon is 3 + 1 for closure.
-            return Err(PolygonZoneError::TooFewVertices);
+            return Err(GeoPolygonZoneError::TooFewVertices);
         }
         if ring[0] != ring[ring.len() - 1] {
-            return Err(PolygonZoneError::RingNotClosed);
+            return Err(GeoPolygonZoneError::RingNotClosed);
         }
         let mut distinct: Vec<(f64, f64)> = Vec::new();
         for &v in &ring[..ring.len() - 1] {
@@ -172,7 +171,7 @@ impl PolygonZone {
             }
         }
         if distinct.len() < 3 {
-            return Err(PolygonZoneError::TooFewVertices);
+            return Err(GeoPolygonZoneError::TooFewVertices);
         }
 
         let ref_alt_m = if alt_min_m.is_finite() {
@@ -211,7 +210,7 @@ impl PolygonZone {
             .map(|&(lat, lon)| zone.project_enu(lat, lon))
             .collect();
         if enu.iter().any(|p| !zone.on_near_side(p.z)) {
-            return Err(PolygonZoneError::RingTooLarge);
+            return Err(GeoPolygonZoneError::RingTooLarge);
         }
         zone.local = enu.iter().map(|p| p.truncate()).collect();
         zone.local_min = zone.local.iter().fold(DVec2::INFINITY, |m, p| m.min(*p));
@@ -241,18 +240,18 @@ impl PolygonZone {
         alt_min_m: f64,
         alt_max_m: f64,
         n_sides: usize,
-    ) -> Result<Self, PolygonZoneError> {
+    ) -> Result<Self, GeoPolygonZoneError> {
         if n_sides < 3 {
-            return Err(PolygonZoneError::InvalidSides);
+            return Err(GeoPolygonZoneError::InvalidSides);
         }
         if radius_m.is_nan() || radius_m <= 0.0 || !radius_m.is_finite() {
-            return Err(PolygonZoneError::InvalidRadius);
+            return Err(GeoPolygonZoneError::InvalidRadius);
         }
         if !lat_deg.is_finite() || !lon_deg.is_finite() {
-            return Err(PolygonZoneError::NonFinite);
+            return Err(GeoPolygonZoneError::NonFinite);
         }
         if lat_deg.abs() > 90.0 {
-            return Err(PolygonZoneError::LatitudeOutOfRange);
+            return Err(GeoPolygonZoneError::LatitudeOutOfRange);
         }
         let mut ring = Vec::with_capacity(n_sides + 1);
         for i in 0..n_sides {
@@ -327,7 +326,7 @@ impl PolygonZone {
 }
 
 #[cfg_attr(feature = "pyo3", gen_stub_pymethods, pymethods)]
-impl PolygonZone {
+impl GeoPolygonZone {
     /// The closed `(lat_deg, lon_deg)` ring exactly as supplied.
     #[getter]
     pub fn vertices(&self) -> Vec<(f64, f64)> {
@@ -471,7 +470,7 @@ impl PolygonZone {
     /// Python repr.
     fn __repr__(&self) -> String {
         format!(
-            "PolygonZone({} vertices, alt={}-{} m)",
+            "GeoPolygonZone({} vertices, alt={}-{} m)",
             self.ring.len() - 1,
             self.alt_min_m,
             self.alt_max_m
@@ -535,10 +534,8 @@ impl PolygonZone {
 
     /// Two zones are equal when their rings and altitudes are identical.
     #[cfg(feature = "pyo3")]
-    fn __eq__(&self, rhs: PolygonZone) -> bool {
-        self.ring == rhs.ring
-            && self.alt_min_m == rhs.alt_min_m
-            && self.alt_max_m == rhs.alt_max_m
+    fn __eq__(&self, rhs: GeoPolygonZone) -> bool {
+        self.ring == rhs.ring && self.alt_min_m == rhs.alt_min_m && self.alt_max_m == rhs.alt_max_m
     }
 
     /// Support for pickle/deepcopy.
@@ -548,45 +545,8 @@ impl PolygonZone {
     }
 }
 
-/// Wrap a longitude in degrees to `(-180, 180]`.
-fn wrap_lon(lon_deg: f64) -> f64 {
-    let w = (lon_deg + 180.0).rem_euclid(360.0) - 180.0;
-    if w == -180.0 {
-        180.0
-    } else {
-        w
-    }
-}
-
-/// Distance from `p` to the segment `a..b`; a zero-length segment is a point.
-fn point_segment_distance(p: DVec2, a: DVec2, b: DVec2) -> f64 {
-    let ab = b - a;
-    let len_sq = ab.length_squared();
-    if len_sq < EPS_M * EPS_M {
-        return p.distance(a);
-    }
-    let t = ((p - a).dot(ab) / len_sq).clamp(0.0, 1.0);
-    p.distance(a + ab * t)
-}
-
-/// Do the segments `p..q` and `a..b` cross? Parallel segments never cross here;
-/// collinear overlap is caught by the endpoint containment test that precedes
-/// this in `intersects_segment`.
-fn segments_cross(p: DVec2, q: DVec2, a: DVec2, b: DVec2) -> bool {
-    let d1 = q - p;
-    let d2 = b - a;
-    let denom = d1.perp_dot(d2);
-    if denom.abs() < EPS_M {
-        return false;
-    }
-    let r = a - p;
-    let t = r.perp_dot(d2) / denom;
-    let u = r.perp_dot(d1) / denom;
-    (-EPS_M..=1.0 + EPS_M).contains(&t) && (-EPS_M..=1.0 + EPS_M).contains(&u)
-}
-
 #[cfg(test)]
-mod test_polygon_zone {
+mod test_geo_polygon_zone {
     use super::*;
     use crate::geo_objects::geo_position::GeoPosition;
     use crate::vincenty_inverse;
@@ -605,8 +565,8 @@ mod test_polygon_zone {
         ]
     }
 
-    fn square_zone(alt_min: f64, alt_max: f64) -> PolygonZone {
-        PolygonZone::from_vertices(square(), alt_min, alt_max).unwrap()
+    fn square_zone(alt_min: f64, alt_max: f64) -> GeoPolygonZone {
+        GeoPolygonZone::from_vertices(square(), alt_min, alt_max).unwrap()
     }
 
     /// L shape: a 2x2 square with the north-east quadrant removed.
@@ -633,8 +593,8 @@ mod test_polygon_zone {
         let mut ring = square();
         ring.pop();
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::RingNotClosed)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::RingNotClosed)
         ));
     }
 
@@ -642,21 +602,21 @@ mod test_polygon_zone {
     fn fewer_than_three_distinct_vertices_is_rejected() {
         let ring = vec![(0.0, 0.0), (0.0, 1.0), (0.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::TooFewVertices)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::TooFewVertices)
         ));
         let ring = vec![(0.0, 0.0), (0.0, 1.0), (0.0, 1.0), (0.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::TooFewVertices)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::TooFewVertices)
         ));
     }
 
     #[test]
     fn inverted_altitude_band_is_rejected() {
         assert!(matches!(
-            PolygonZone::from_vertices(square(), 1000.0, 0.0),
-            Err(PolygonZoneError::InvalidAltitude)
+            GeoPolygonZone::from_vertices(square(), 1000.0, 0.0),
+            Err(GeoPolygonZoneError::InvalidAltitude)
         ));
     }
 
@@ -665,15 +625,15 @@ mod test_polygon_zone {
         let mut ring = square();
         ring[1].0 = f64::NAN;
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::NonFinite)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::NonFinite)
         ));
     }
 
     #[test]
     fn triangle_is_accepted() {
         let ring = vec![(0.0, 0.0), (0.0, 0.1), (0.1, 0.05), (0.0, 0.0)];
-        let z = PolygonZone::from_vertices(ring, 0.0, 1000.0).unwrap();
+        let z = GeoPolygonZone::from_vertices(ring, 0.0, 1000.0).unwrap();
         assert!(z.contains((0.03, 0.05, 500.0).into_either()));
         assert!(!z.contains((0.09, 0.0, 500.0).into_either()));
     }
@@ -682,24 +642,24 @@ mod test_polygon_zone {
     fn vertex_latitude_out_of_range_is_rejected() {
         let ring = vec![(89.0, 0.0), (89.0, 90.0), (95.0, 45.0), (89.0, 0.0)];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::LatitudeOutOfRange)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::LatitudeOutOfRange)
         ));
     }
 
     #[test]
     fn circle_centre_is_validated() {
         assert!(matches!(
-            PolygonZone::from_circle(91.0, 0.0, 1000.0, 0.0, 100.0, 25),
-            Err(PolygonZoneError::LatitudeOutOfRange)
+            GeoPolygonZone::from_circle(91.0, 0.0, 1000.0, 0.0, 100.0, 25),
+            Err(GeoPolygonZoneError::LatitudeOutOfRange)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(f64::NAN, 0.0, 1000.0, 0.0, 100.0, 25),
-            Err(PolygonZoneError::NonFinite)
+            GeoPolygonZone::from_circle(f64::NAN, 0.0, 1000.0, 0.0, 100.0, 25),
+            Err(GeoPolygonZoneError::NonFinite)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(0.0, f64::INFINITY, 1000.0, 0.0, 100.0, 25),
-            Err(PolygonZoneError::NonFinite)
+            GeoPolygonZone::from_circle(0.0, f64::INFINITY, 1000.0, 0.0, 100.0, 25),
+            Err(GeoPolygonZoneError::NonFinite)
         ));
     }
 
@@ -715,20 +675,20 @@ mod test_polygon_zone {
             (-10.0, -10.0),
         ];
         assert!(matches!(
-            PolygonZone::from_vertices(ring, 0.0, 1000.0),
-            Err(PolygonZoneError::RingTooLarge)
+            GeoPolygonZone::from_vertices(ring, 0.0, 1000.0),
+            Err(GeoPolygonZoneError::RingTooLarge)
         ));
     }
 
     #[test]
     fn circle_needs_three_sides_and_positive_radius() {
         assert!(matches!(
-            PolygonZone::from_circle(0.0, 0.0, 1000.0, 0.0, 100.0, 2),
-            Err(PolygonZoneError::InvalidSides)
+            GeoPolygonZone::from_circle(0.0, 0.0, 1000.0, 0.0, 100.0, 2),
+            Err(GeoPolygonZoneError::InvalidSides)
         ));
         assert!(matches!(
-            PolygonZone::from_circle(0.0, 0.0, 0.0, 0.0, 100.0, 25),
-            Err(PolygonZoneError::InvalidRadius)
+            GeoPolygonZone::from_circle(0.0, 0.0, 0.0, 0.0, 100.0, 25),
+            Err(GeoPolygonZoneError::InvalidRadius)
         ));
     }
 
@@ -741,7 +701,7 @@ mod test_polygon_zone {
 
     #[test]
     fn getters_return_the_inputs_unchanged() {
-        let z = PolygonZone::from_vertices(square(), 10.0, 500.0).unwrap();
+        let z = GeoPolygonZone::from_vertices(square(), 10.0, 500.0).unwrap();
         assert_eq!(z.vertices(), square());
         assert_eq!(z.alt_min_m(), 10.0);
         assert_eq!(z.alt_max_m(), 500.0);
@@ -760,10 +720,10 @@ mod test_polygon_zone {
 
     #[test]
     fn concave_notch_is_outside_for_both_orientations() {
-        let ccw = PolygonZone::from_vertices(l_shape(), 0.0, INF).unwrap();
+        let ccw = GeoPolygonZone::from_vertices(l_shape(), 0.0, INF).unwrap();
         let mut rev = l_shape();
         rev.reverse();
-        let cw = PolygonZone::from_vertices(rev, 0.0, INF).unwrap();
+        let cw = GeoPolygonZone::from_vertices(rev, 0.0, INF).unwrap();
         for z in [&ccw, &cw] {
             assert!(z.contains((37.5, -76.5, 100.0).into_either()));
             assert!(z.contains((38.5, -77.5, 100.0).into_either()));
@@ -830,14 +790,14 @@ mod test_polygon_zone {
             ring.push((8.0, wrap_lon(181.0 - 0.1 * i as f64)));
         }
         ring.push(ring[0]);
-        let dense = PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
+        let dense = GeoPolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
         assert!(!dense.contains((n_lat, n_lon, 1000.0).into_either()));
         assert!(dense.contains((s_lat, s_lon, 1000.0).into_either()));
     }
 
     // --- segments ---------------------------------------------------------------
 
-    fn seg(z: &PolygonZone, a: (f64, f64, f64), b: (f64, f64, f64)) -> bool {
+    fn seg(z: &GeoPolygonZone, a: (f64, f64, f64), b: (f64, f64, f64)) -> bool {
         z.intersects_segment(a.into_either(), b.into_either())
     }
 
@@ -874,7 +834,7 @@ mod test_polygon_zone {
 
     #[test]
     fn distance_beside_above_and_combined() {
-        let z = PolygonZone::from_vertices(square(), 0.0, 10_000.0).unwrap();
+        let z = GeoPolygonZone::from_vertices(square(), 0.0, 10_000.0).unwrap();
         // East edge runs along lon 0.05; 1 km further east.
         let (lat, lon) = dest(0.0, 0.05, 90.0, 1000.0);
         let beside = z.distance_to((lat, lon, 5000.0).into_either());
@@ -889,7 +849,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_vertices_lie_on_the_radius_and_ring_is_closed() {
-        let z = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 25).unwrap();
+        let z = GeoPolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 25).unwrap();
         let ring = z.vertices();
         assert_eq!(ring.len(), 26);
         assert_eq!(ring[0], ring[25]);
@@ -897,14 +857,14 @@ mod test_polygon_zone {
             let (d, _, _) = vincenty_inverse(36.15, -115.1, lat, lon, 1e-12, 200).unwrap();
             assert!((d - 20_000.0).abs() < 0.01, "vertex at {d} m");
         }
-        let eight = PolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 8).unwrap();
+        let eight = GeoPolygonZone::from_circle(36.15, -115.1, 20_000.0, 0.0, 5000.0, 8).unwrap();
         assert_eq!(eight.vertices().len(), 9);
     }
 
     #[test]
     fn circle_is_an_inscribed_polygon() {
         let r = 20_000.0;
-        let z = PolygonZone::from_circle(36.15, -115.1, r, 0.0, 5000.0, 25).unwrap();
+        let z = GeoPolygonZone::from_circle(36.15, -115.1, r, 0.0, 5000.0, 25).unwrap();
         for i in 0..36 {
             let (lat, lon) = dest(36.15, -115.1, 10.0 * i as f64, 0.99 * r);
             assert!(
@@ -927,7 +887,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_across_the_antimeridian() {
-        let z = PolygonZone::from_circle(0.0, 179.95, 20_000.0, 0.0, 5000.0, 25).unwrap();
+        let z = GeoPolygonZone::from_circle(0.0, 179.95, 20_000.0, 0.0, 5000.0, 25).unwrap();
         assert!(z.contains((0.0, -179.99, 1000.0).into_either()));
         assert!(z.contains((0.0, 179.9, 1000.0).into_either()));
         assert!(!z.contains((0.0, 179.5, 1000.0).into_either()));
@@ -935,7 +895,7 @@ mod test_polygon_zone {
     }
 
     /// 2 x 2 degree box straddling the antimeridian, NW -> NE -> SE -> SW.
-    fn pacific_box() -> PolygonZone {
+    fn pacific_box() -> GeoPolygonZone {
         let ring = vec![
             (10.0, 179.0),
             (10.0, -179.0),
@@ -943,7 +903,7 @@ mod test_polygon_zone {
             (8.0, 179.0),
             (10.0, 179.0),
         ];
-        PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap()
+        GeoPolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap()
     }
 
     #[test]
@@ -954,8 +914,17 @@ mod test_polygon_zone {
         }
         // Just outside each side, and the long way round (lon 0 lies "between"
         // 179 and -179 if longitudes were interpolated naively).
-        for (lat, lon) in [(9.0, 178.9), (9.0, -178.9), (10.1, 180.0), (7.9, 180.0), (9.0, 0.0)] {
-            assert!(!z.contains((lat, lon, 1000.0).into_either()), "({lat}, {lon})");
+        for (lat, lon) in [
+            (9.0, 178.9),
+            (9.0, -178.9),
+            (10.1, 180.0),
+            (7.9, 180.0),
+            (9.0, 0.0),
+        ] {
+            assert!(
+                !z.contains((lat, lon, 1000.0).into_either()),
+                "({lat}, {lon})"
+            );
         }
         // A segment along lat 9 from 178.5 to -178.5 crosses the 2 degree box.
         assert!(seg(&z, (9.0, 178.5, 1000.0), (9.0, -178.5, 1000.0)));
@@ -972,11 +941,15 @@ mod test_polygon_zone {
             (8.0, 179.0),
             (10.0, 179.0),
         ];
-        let a = PolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
+        let a = GeoPolygonZone::from_vertices(ring, 0.0, 10_000.0).unwrap();
         let b = pacific_box();
         for lon in [178.9, 179.5, 180.0, -179.5, -178.9, 0.0] {
             let p = (9.0, lon, 1000.0);
-            assert_eq!(a.contains(p.into_either()), b.contains(p.into_either()), "lon {lon}");
+            assert_eq!(
+                a.contains(p.into_either()),
+                b.contains(p.into_either()),
+                "lon {lon}"
+            );
         }
     }
 
@@ -1007,7 +980,7 @@ mod test_polygon_zone {
 
     #[test]
     fn circle_near_the_pole() {
-        let z = PolygonZone::from_circle(89.99, 0.0, 50_000.0, 0.0, 5000.0, 25).unwrap();
+        let z = GeoPolygonZone::from_circle(89.99, 0.0, 50_000.0, 0.0, 5000.0, 25).unwrap();
         assert!(z.contains((90.0, 123.0, 1000.0).into_either()));
         assert!(z.contains((89.8, 180.0, 1000.0).into_either()));
         assert!(!z.contains((89.0, 0.0, 1000.0).into_either()));
@@ -1026,7 +999,7 @@ mod test_polygon_zone {
             d(270.0, 50_000.0),
             d(180.0, 50_000.0),
         ];
-        let z = PolygonZone::from_vertices(ring, 0.0, 5_000.0).unwrap();
+        let z = GeoPolygonZone::from_vertices(ring, 0.0, 5_000.0).unwrap();
         let mid = 50_000.0 / std::f64::consts::SQRT_2;
         let inside = d(45.0, mid - 20.0);
         let outside = d(45.0, mid + 20.0);
@@ -1038,7 +1011,7 @@ mod test_polygon_zone {
     fn repr_mentions_vertex_count() {
         let z = square_zone(0.0, 10_000.0);
         let r = z.__repr__();
-        assert!(r.contains("PolygonZone"), "{r}");
+        assert!(r.contains("GeoPolygonZone"), "{r}");
         assert!(r.contains('4'), "{r}");
     }
 }

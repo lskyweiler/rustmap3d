@@ -13,10 +13,10 @@ __all__ = [
     "DVec3",
     "EulerRot",
     "GeoOrientation",
+    "GeoPolygonZone",
     "GeoPosition",
     "GeoVector",
     "GeoVelocity",
-    "PolygonZone",
     "ThreadScope",
     "aer2ecef",
     "aer2ecef_batch",
@@ -722,6 +722,185 @@ class GeoOrientation:
     ) -> tuple[tuple[builtins.float, builtins.float, builtins.float, builtins.float]]:
         r"""
         Support for pickle/deepcopy
+        """
+
+@typing.final
+class GeoPolygonZone:
+    r"""
+    A closed `(lat, lon)` ring in degrees, extruded between `alt_min_m` and `alt_max_m`.
+
+    Containment, segment intersection and distance are computed in a local
+    East-North-Up tangent frame at the ring centroid. The horizontal projection
+    is taken at the floor altitude so a vertical column of points maps to one
+    planar point; altitude is tested separately against the band
+    `[alt_min_m, alt_max_m]` (inclusive, with no tolerance).
+
+    Approximation error to be aware of:
+
+    - Edges are straight in the tangent plane, so they bow poleward of lines of
+      constant latitude: about 150 m at mid-edge for a 2 x 2 degree box at 9 N.
+      Add intermediate vertices along lat/lon box edges if that matters.
+    - Tangent-plane error grows as `d^3 / (6 R^2)` with distance `d` from the
+      centroid (about 4 m at 100 km, 130 m at 300 km).
+    - There is no altitude tolerance. A `GeoPosition` is converted from ECEF to
+      altitude before the test, so a point placed exactly on the floor or
+      ceiling can land a few nanometres either side of it.
+    """
+    @property
+    def vertices(self) -> builtins.list[tuple[builtins.float, builtins.float]]:
+        r"""
+        The closed `(lat_deg, lon_deg)` ring exactly as supplied.
+        """
+    @property
+    def alt_min_m(self) -> builtins.float:
+        r"""
+        Floor altitude in meters.
+        """
+    @property
+    def alt_max_m(self) -> builtins.float:
+        r"""
+        Ceiling altitude in meters.
+        """
+    def contains(
+        self,
+        point: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.bool:
+        r"""
+        Is the point inside the zone?
+
+        The altitude band is inclusive with no tolerance. Near an east-west
+        edge of a lat/lon box, the horizontal verdict follows the tangent-plane
+        edge, which bows poleward of the parallel (see the type docs).
+
+        # Arguments
+
+        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `bool` - True if the point is inside the footprint and within `[alt_min_m, alt_max_m]`
+        """
+    def distance_to(
+        self,
+        point: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.float:
+        r"""
+        Shortest distance from the point to the zone, in meters (0 when inside).
+
+        # Arguments
+
+        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `float` - Euclidean distance in the local frame to the extruded solid; for points more than 90 degrees from the centroid, straight-line distance to the nearest vertex [[meters]]
+        """
+    def intersects_segment(
+        self,
+        a: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+        b: typing.Union[
+            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
+        ],
+    ) -> builtins.bool:
+        r"""
+        Does the path between two points pass through the zone?
+
+        The path follows the Earth's surface rather than cutting through it: its
+        ground track is the straight line between the endpoints in the zone's
+        local tangent plane, and its altitude is interpolated linearly from `a`
+        to `b`. A path with equal endpoint altitudes therefore stays at that
+        altitude the whole way, even when a true 3D chord between the points
+        would dip below ground.
+
+        The ground track matches the great-circle track exactly when it passes
+        over the zone's centroid. Elsewhere the track is off by roughly
+        `d^2 / 8R · sin(delta)`, where `d` is the path length, `R` is the Earth's radius
+        and `delta` is the angular distance from the centroid to the great circle.
+        That is about 150 m for a 1000 km path passing 50 km from the centroid,
+        so it only matters for long paths that just graze the zone's edge.
+
+        # Arguments
+
+        - `a`, `b` (`tuple[float, float, float] | GeoPosition`) - Segment endpoints; tuples are `(lat_deg, lon_deg, alt_m)`
+
+        # Returns
+
+        - `bool` - True if any part of the segment lies inside the zone
+        """
+    def __repr__(self) -> builtins.str:
+        r"""
+        Python repr.
+        """
+    def __new__(
+        cls,
+        vertices: typing.Sequence[tuple[builtins.float, builtins.float]],
+        alt_min_m: builtins.float,
+        alt_max_m: builtins.float,
+    ) -> GeoPolygonZone:
+        r"""
+        Construct from a closed ring of `(lat_deg, lon_deg)` vertices.
+
+        # Arguments
+
+        - `vertices` (`list[tuple[float, float]]`) - Closed ring: the last vertex must equal the first [[degrees]]
+        - `alt_min_m` (`float`) - Floor altitude [[meters]]
+        - `alt_max_m` (`float`) - Ceiling altitude, may be `inf` [[meters]]
+
+        Edges are straight lines in the centroid tangent plane, not lines of
+        constant latitude: each east-west edge of a 2 x 2 degree box at 9 N bows
+        poleward by about 150 m at its midpoint. Add intermediate vertices along
+        lat/lon box edges before building the zone if that margin matters.
+
+        # Raises
+
+        - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, has a latitude outside [-90, 90], spans 90 degrees or more from its centroid, or the altitudes are invalid
+        """
+    @staticmethod
+    def from_circle(
+        lat_deg: builtins.float,
+        lon_deg: builtins.float,
+        radius_m: builtins.float,
+        alt_min_m: builtins.float,
+        alt_max_m: builtins.float,
+        n_sides: builtins.int = ...,
+    ) -> GeoPolygonZone:
+        r"""
+        Regular polygon inscribed in a geodesic circle.
+
+        Vertices lie on the circle at evenly spaced bearings starting at true
+        north, so points between the inradius `r cos(pi / n_sides)` and `r` near
+        an edge midpoint are outside the zone.
+
+        # Arguments
+
+        - `lat_deg`, `lon_deg` (`float`) - Circle centre [[degrees]]
+        - `radius_m` (`float`) - Circle radius [[meters]]
+        - `alt_min_m`, `alt_max_m` (`float`) - Floor and ceiling [[meters]]
+        - `n_sides` (`int`) - Number of polygon sides, at least 3
+
+        # Raises
+
+        - `ValueError` if the radius or side count is invalid, or the centre is not a valid lat/lon
+        """
+    def __eq__(self, rhs: GeoPolygonZone) -> builtins.bool:
+        r"""
+        Two zones are equal when their rings and altitudes are identical.
+        """
+    def __getnewargs__(
+        self,
+    ) -> tuple[
+        builtins.list[tuple[builtins.float, builtins.float]],
+        builtins.float,
+        builtins.float,
+    ]:
+        r"""
+        Support for pickle/deepcopy.
         """
 
 @typing.final
@@ -1643,185 +1822,6 @@ class GeoVelocity:
     ) -> tuple[tuple[builtins.float, builtins.float, builtins.float], builtins.float]:
         r"""
         Support for pickle/deepcopy
-        """
-
-@typing.final
-class PolygonZone:
-    r"""
-    A closed `(lat, lon)` ring in degrees, extruded between `alt_min_m` and `alt_max_m`.
-
-    Containment, segment intersection and distance are computed in a local
-    East-North-Up tangent frame at the ring centroid. The horizontal projection
-    is taken at the floor altitude so a vertical column of points maps to one
-    planar point; altitude is tested separately against the band
-    `[alt_min_m, alt_max_m]` (inclusive, with no tolerance).
-
-    Approximation error to be aware of:
-
-    - Edges are straight in the tangent plane, so they bow poleward of lines of
-      constant latitude: about 150 m at mid-edge for a 2 x 2 degree box at 9 N.
-      Add intermediate vertices along lat/lon box edges if that matters.
-    - Tangent-plane error grows as `d^3 / (6 R^2)` with distance `d` from the
-      centroid (about 4 m at 100 km, 130 m at 300 km).
-    - There is no altitude tolerance. A `GeoPosition` is converted from ECEF to
-      altitude before the test, so a point placed exactly on the floor or
-      ceiling can land a few nanometres either side of it.
-    """
-    @property
-    def vertices(self) -> builtins.list[tuple[builtins.float, builtins.float]]:
-        r"""
-        The closed `(lat_deg, lon_deg)` ring exactly as supplied.
-        """
-    @property
-    def alt_min_m(self) -> builtins.float:
-        r"""
-        Floor altitude in meters.
-        """
-    @property
-    def alt_max_m(self) -> builtins.float:
-        r"""
-        Ceiling altitude in meters.
-        """
-    def contains(
-        self,
-        point: typing.Union[
-            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
-        ],
-    ) -> builtins.bool:
-        r"""
-        Is the point inside the zone?
-
-        The altitude band is inclusive with no tolerance. Near an east-west
-        edge of a lat/lon box, the horizontal verdict follows the tangent-plane
-        edge, which bows poleward of the parallel (see the type docs).
-
-        # Arguments
-
-        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
-
-        # Returns
-
-        - `bool` - True if the point is inside the footprint and within `[alt_min_m, alt_max_m]`
-        """
-    def distance_to(
-        self,
-        point: typing.Union[
-            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
-        ],
-    ) -> builtins.float:
-        r"""
-        Shortest distance from the point to the zone, in meters (0 when inside).
-
-        # Arguments
-
-        - `point` (`tuple[float, float, float] | GeoPosition`) - Query point; tuples are `(lat_deg, lon_deg, alt_m)`
-
-        # Returns
-
-        - `float` - Euclidean distance in the local frame to the extruded solid; for points more than 90 degrees from the centroid, straight-line distance to the nearest vertex [[meters]]
-        """
-    def intersects_segment(
-        self,
-        a: typing.Union[
-            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
-        ],
-        b: typing.Union[
-            tuple[builtins.float, builtins.float, builtins.float], GeoPosition
-        ],
-    ) -> builtins.bool:
-        r"""
-        Does the path between two points pass through the zone?
-
-        The path follows the Earth's surface rather than cutting through it: its
-        ground track is the straight line between the endpoints in the zone's
-        local tangent plane, and its altitude is interpolated linearly from `a`
-        to `b`. A path with equal endpoint altitudes therefore stays at that
-        altitude the whole way, even when a true 3D chord between the points
-        would dip below ground.
-
-        The ground track matches the great-circle track exactly when it passes
-        over the zone's centroid. Elsewhere the track is off by roughly
-        `d^2 / 8R · sin(delta)`, where `d` is the path length, `R` is the Earth's radius
-        and `delta` is the angular distance from the centroid to the great circle.
-        That is about 150 m for a 1000 km path passing 50 km from the centroid,
-        so it only matters for long paths that just graze the zone's edge.
-
-        # Arguments
-
-        - `a`, `b` (`tuple[float, float, float] | GeoPosition`) - Segment endpoints; tuples are `(lat_deg, lon_deg, alt_m)`
-
-        # Returns
-
-        - `bool` - True if any part of the segment lies inside the zone
-        """
-    def __repr__(self) -> builtins.str:
-        r"""
-        Python repr.
-        """
-    def __new__(
-        cls,
-        vertices: typing.Sequence[tuple[builtins.float, builtins.float]],
-        alt_min_m: builtins.float,
-        alt_max_m: builtins.float,
-    ) -> PolygonZone:
-        r"""
-        Construct from a closed ring of `(lat_deg, lon_deg)` vertices.
-
-        # Arguments
-
-        - `vertices` (`list[tuple[float, float]]`) - Closed ring: the last vertex must equal the first [[degrees]]
-        - `alt_min_m` (`float`) - Floor altitude [[meters]]
-        - `alt_max_m` (`float`) - Ceiling altitude, may be `inf` [[meters]]
-
-        Edges are straight lines in the centroid tangent plane, not lines of
-        constant latitude: each east-west edge of a 2 x 2 degree box at 9 N bows
-        poleward by about 150 m at its midpoint. Add intermediate vertices along
-        lat/lon box edges before building the zone if that margin matters.
-
-        # Raises
-
-        - `ValueError` if the ring is not closed, has fewer than 3 distinct vertices, has a latitude outside [-90, 90], spans 90 degrees or more from its centroid, or the altitudes are invalid
-        """
-    @staticmethod
-    def from_circle(
-        lat_deg: builtins.float,
-        lon_deg: builtins.float,
-        radius_m: builtins.float,
-        alt_min_m: builtins.float,
-        alt_max_m: builtins.float,
-        n_sides: builtins.int = ...,
-    ) -> PolygonZone:
-        r"""
-        Regular polygon inscribed in a geodesic circle.
-
-        Vertices lie on the circle at evenly spaced bearings starting at true
-        north, so points between the inradius `r cos(pi / n_sides)` and `r` near
-        an edge midpoint are outside the zone.
-
-        # Arguments
-
-        - `lat_deg`, `lon_deg` (`float`) - Circle centre [[degrees]]
-        - `radius_m` (`float`) - Circle radius [[meters]]
-        - `alt_min_m`, `alt_max_m` (`float`) - Floor and ceiling [[meters]]
-        - `n_sides` (`int`) - Number of polygon sides, at least 3
-
-        # Raises
-
-        - `ValueError` if the radius or side count is invalid, or the centre is not a valid lat/lon
-        """
-    def __eq__(self, rhs: PolygonZone) -> builtins.bool:
-        r"""
-        Two zones are equal when their rings and altitudes are identical.
-        """
-    def __getnewargs__(
-        self,
-    ) -> tuple[
-        builtins.list[tuple[builtins.float, builtins.float]],
-        builtins.float,
-        builtins.float,
-    ]:
-        r"""
-        Support for pickle/deepcopy.
         """
 
 @typing.final

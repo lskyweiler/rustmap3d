@@ -19,7 +19,7 @@ fn rustmap3d(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<map3d::geo_objects::geo_orientation::GeoOrientation>()?;
         m.add_class::<map3d::geo_objects::geo_velocity::GeoVelocity>()?;
         m.add_class::<map3d::geo_objects::geo_orientation::EulerRot>()?;
-        m.add_class::<map3d::geo_objects::polygon_zone::PolygonZone>()?;
+        m.add_class::<map3d::geo_objects::geo_polygon_zone::GeoPolygonZone>()?;
 
         // We need to tell python that these classes are compiled into this library
         override_pyclass_module::<map3d::DVec3>(m.py(), "rustmap3d")?;
