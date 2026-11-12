@@ -183,6 +183,34 @@ print(dumped)  # > { "pos": { "ecef": [6378137.0, 0., 0.] } }
 validated = MyModel.model_validate(dumped)
 ```
 
+Geodetic zones
+
+```python
+import rustmap3d
+
+# A closed (lat, lon) ring extruded between two altitudes in meters (inclusive).
+# Queries run in a local ENU tangent frame at the ring centroid, so
+# they are accurate for zones up to a few hundred km across.
+#
+# Edges are straight in that tangent plane, not lines of constant latitude. On a
+# 2 x 2 degree box at ~9 N, the north and south edges bow poleward by ~150 m at
+# their midpoints. If your zones are lat/lon boxes and that margin matters, add
+# intermediate points along those edges before building the zone.
+zone = rustmap3d.GeoPolygonZone(
+    [(37.0, -78.0), (37.0, -76.0), (39.0, -76.0), (39.0, -78.0), (37.0, -78.0)],
+    alt_min_m=0.0,
+    alt_max_m=10_000.0,
+)
+zone.contains((38.0, -77.0, 5000.0))  # > True
+zone.contains(rustmap3d.GeoPosition.from_lla((38.0, -77.0, 5000.0)))  # > True
+zone.distance_to((38.0, -77.0, 11_000.0))  # > 1000.0 (1 km above the ceiling)
+zone.intersects_segment((36.0, -77.0, 5000.0), (40.0, -77.0, 5000.0))  # > True
+
+# Circles are regular polygons inscribed in a geodesic circle (25 sides by default).
+# A spherical zone is approximated by a cylinder containing that sphere and height +/- radius.
+zone = rustmap3d.GeoPolygonZone.from_circle(38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36)
+```
+
 ## Build From Source
 
 Uses standard [maturin](https://github.com/PyO3/maturin) build process
