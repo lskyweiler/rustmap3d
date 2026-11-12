@@ -208,7 +208,9 @@ zone.intersects_segment((36.0, -77.0, 5000.0), (40.0, -77.0, 5000.0))  # > True
 
 # Circles are regular polygons inscribed in a geodesic circle (25 sides by default).
 # A spherical zone is approximated by a cylinder containing that sphere and height +/- radius.
-zone = rustmap3d.GeoPolygonZone.from_circle(38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36)
+zone = rustmap3d.GeoPolygonZone.from_circle(
+    38.0, -77.0, 5_000.0, 5_000.0 - 5_000.0, 5_000.0 + 5_000.0, n_sides=36
+)
 ```
 
 ## Build From Source
