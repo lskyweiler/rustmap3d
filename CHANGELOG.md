@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-11-18
+
+### 🚀 Features
+
+- *(map3d)* Add PolygonZone geodetic extruded polygon
+- *(python)* Expose PolygonZone to python
+
+### 🐛 Bug Fixes
+
+- *(map3d)* Reject far-side points and invalid input in PolygonZone
+
+### 📚 Documentation
+
+- Add PolygonZone to the README examples
+
+### 🎨 Styling
+
+- Renamed PolygonZone to GeoPolygonZone and moved wrap_lon, point_segment_distance, and segments_cross to map3d::utils
+
 ## [0.8.1] - 2026-11-06
 
 ### 🚀 Features
