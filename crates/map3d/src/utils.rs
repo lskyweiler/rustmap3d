@@ -81,6 +81,75 @@ pub fn wrap_to_0_360(angle_d: f64) -> f64 {
     wrapped
 }
 
+/// Tolerance used when comparing planar coordinates [[meters]].
+pub const PLANAR_EPS_M: f64 = 1e-9;
+
+/// Wraps a longitude in degrees to `(-180, 180]`.
+///
+/// # Arguments
+///
+/// - `lon_deg` (`f64`) - Longitude [[degrees]]
+///
+/// # Returns
+///
+/// - `f64` - Equivalent longitude in `(-180, 180]` [[degrees]]
+pub fn wrap_lon(lon_deg: f64) -> f64 {
+    let w = (lon_deg + 180.0).rem_euclid(360.0) - 180.0;
+    if w == -180.0 {
+        180.0
+    } else {
+        w
+    }
+}
+
+/// Distance from `p` to the segment `a..b`; a zero-length segment is treated as a point.
+///
+/// # Arguments
+///
+/// - `p` (`DVec2`) - Query point
+/// - `a`, `b` (`DVec2`) - Segment endpoints
+///
+/// # Returns
+///
+/// - `f64` - Shortest planar distance from `p` to the segment, in the units of the inputs
+pub fn point_segment_distance(p: glam::DVec2, a: glam::DVec2, b: glam::DVec2) -> f64 {
+    let ab = b - a;
+    let len_sq = ab.length_squared();
+    if len_sq < PLANAR_EPS_M * PLANAR_EPS_M {
+        return p.distance(a);
+    }
+    let t = ((p - a).dot(ab) / len_sq).clamp(0.0, 1.0);
+    p.distance(a + ab * t)
+}
+
+/// Do the segments `p..q` and `a..b` cross?
+///
+/// Endpoints touching count as crossing, within [`PLANAR_EPS_M`] in the segment
+/// parameters. Parallel and collinear segments never cross here, even when they
+/// overlap; callers that care about collinear overlap must test it separately.
+///
+/// # Arguments
+///
+/// - `p`, `q` (`DVec2`) - First segment endpoints
+/// - `a`, `b` (`DVec2`) - Second segment endpoints
+///
+/// # Returns
+///
+/// - `bool` - True if the segments intersect at a single point
+pub fn segments_cross(p: glam::DVec2, q: glam::DVec2, a: glam::DVec2, b: glam::DVec2) -> bool {
+    let d1 = q - p;
+    let d2 = b - a;
+    let denom = d1.perp_dot(d2);
+    if denom.abs() < PLANAR_EPS_M {
+        return false;
+    }
+    let r = a - p;
+    let t = r.perp_dot(d2) / denom;
+    let u = r.perp_dot(d1) / denom;
+    let range = -PLANAR_EPS_M..=1.0 + PLANAR_EPS_M;
+    range.contains(&t) && range.contains(&u)
+}
+
 /// Generates a uniform random point on the surface of a sphere.
 ///
 /// # Arguments
@@ -416,5 +485,42 @@ mod util_tests {
             max_relative = 1e-13,
             epsilon = 1e-14
         ));
+    }
+
+    #[rstest]
+    #[case(0.0, 0.0)]
+    #[case(180.0, 180.0)]
+    #[case(-180.0, 180.0)]
+    #[case(181.0, -179.0)]
+    #[case(-181.0, 179.0)]
+    #[case(540.0, 180.0)]
+    #[case(359.0, -1.0)]
+    fn test_wrap_lon(#[case] lon: f64, #[case] truth: f64) {
+        assert!(relative_eq!(wrap_lon(lon), truth, epsilon = 1e-12));
+    }
+
+    #[test]
+    fn test_point_segment_distance() {
+        use glam::dvec2;
+        let (a, b) = (dvec2(0.0, 0.0), dvec2(10.0, 0.0));
+        assert_eq!(point_segment_distance(dvec2(5.0, 3.0), a, b), 3.0);
+        // Beyond an endpoint, the distance is to that endpoint.
+        assert_eq!(point_segment_distance(dvec2(13.0, 4.0), a, b), 5.0);
+        assert_eq!(point_segment_distance(dvec2(-3.0, -4.0), a, b), 5.0);
+        // Zero-length segment.
+        assert_eq!(point_segment_distance(dvec2(3.0, 4.0), a, a), 5.0);
+    }
+
+    #[test]
+    fn test_segments_cross() {
+        use glam::dvec2;
+        let (p, q) = (dvec2(0.0, 0.0), dvec2(10.0, 10.0));
+        assert!(segments_cross(p, q, dvec2(0.0, 10.0), dvec2(10.0, 0.0)));
+        assert!(!segments_cross(p, q, dvec2(20.0, 0.0), dvec2(20.0, 10.0)));
+        // Touching at an endpoint counts.
+        assert!(segments_cross(p, q, dvec2(10.0, 10.0), dvec2(20.0, 0.0)));
+        // Parallel and collinear segments never cross.
+        assert!(!segments_cross(p, q, dvec2(1.0, 0.0), dvec2(11.0, 10.0)));
+        assert!(!segments_cross(p, q, dvec2(5.0, 5.0), dvec2(15.0, 15.0)));
     }
 }

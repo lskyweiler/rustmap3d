@@ -41,8 +41,8 @@ dev = [
 features = ["pyo3/extension-module"]
 
 [tool.ruff]
-extend-exclude = [".venv", "target", "*.pyi"]
+extend-exclude = [".venv", "target", "*.pyi", "*.md"]
 
 [tool.pylint.main]
-ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target"]
+ignore = ["test", ".venv", "examples", "tools", "resources", "docs", "target", "*.md"]
 ignore-patterns = ["^test_*", "^bench_*", "rustmap3d.pyi"]
