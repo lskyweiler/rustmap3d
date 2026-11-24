@@ -24,10 +24,10 @@ version = "0.9.0"
 map3d = { path = "crates/map3d", features = ["pyo3"] }
 pymap3d = { path = "crates/pymap3d" }
 
-bevy = "0.18"
+bevy = "0.20"
 
 either = "1.15"
-glam = "0.30"
+glam = "0.33"
 pyo3 = { version = "0.30", features = [
     "either",
     "extension-module",
